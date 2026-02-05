@@ -1,0 +1,282 @@
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Crimson Pro', Georgia, serif;
+  background: white;
+  color: black;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  padding: 20px 20px 40px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.logo {
+  display: block;
+  margin-bottom: 0;
+}
+
+.logo img {
+  max-width: 70%;
+  height: auto;
+}
+
+.site-name {
+  display: block;
+  font-size: 18px;
+  margin-top: -16px;
+  margin-bottom: 30px;
+}
+
+.sidebar a {
+  text-decoration: none;
+  color: black;
+  font-size: 16px;
+}
+
+.sidebar a:hover {
+  text-decoration: underline;
+}
+
+.content {
+  padding: 60px;
+  max-width: 900px;
+  flex: 1;
+}
+
+.content h2 {
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+.content p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* --- Writing submenu --- */
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.submenu {
+  display: none;
+  padding-left: 14px;
+  border-left: 1px solid black;
+  gap: 10px;
+  flex-direction: column;
+}
+
+.has-submenu:hover .submenu {
+  display: flex;
+}
+
+.submenu a {
+  font-size: 15px;
+}
+
+.home-link {
+  color: black;
+  text-decoration: none;
+}
+
+.home-link:hover {
+  text-decoration: underline;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid black;
+  margin: 30px 0;
+}
+
+.subscribe-embed {
+  margin: 18px 0 10px;
+  max-width: 520px;
+}
+
+.post-embed {
+  margin: 22px 0;
+  max-width: 700px;
+}
+
+/* --- Expandable sections --- */
+
+.expandable {
+  display: none;
+  margin-top: 12px;
+  padding-left: 20px;
+  border-left: 1px solid #ccc;
+}
+
+.expandable.open {
+  display: block;
+}
+
+.expand-btn {
+  background: none;
+  border: 1px solid black;
+  padding: 4px 10px;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.expand-btn:hover {
+  background: black;
+  color: white;
+}
+
+.expandable p {
+  font-size: 14px;
+  margin: 0;
+}
+
+.expandable p strong {
+  margin-top: 16px;
+  display: inline-block;
+}
+
+.expandable p:first-child strong {
+  margin-top: 0;
+}
+
+.expandable ul {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.expandable li {
+  margin-bottom: 2px;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.expandable ul ul {
+  margin-top: 2px;
+}
+
+/* --- About page --- */
+
+.about-section {
+  margin-bottom: 30px;
+}
+
+.about-section p {
+  margin-bottom: 16px;
+}
+
+.about-section > p:first-child {
+  margin-bottom: 0;
+}
+
+.contact-links {
+  margin-top: 30px;
+}
+
+.contact-links a {
+  color: black;
+  margin-right: 20px;
+}
+
+.contact-links a:hover {
+  text-decoration: none;
+}
+
+.logo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.logo-grid img {
+  height: 20px;
+  width: auto;
+  filter: grayscale(100%);
+  opacity: 0.7;
+}
+
+.direct-list {
+  columns: 2;
+  column-gap: 40px;
+}
+
+/* --- Reading page --- */
+
+/* --- Deal table --- */
+
+.deal-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 20px 0;
+  font-size: 14px;
+}
+
+.deal-table th {
+  text-align: left;
+  font-weight: normal;
+  padding: 6px 12px 6px 0;
+  border-bottom: 1px solid #ccc;
+  color: #666;
+}
+
+.deal-table td {
+  padding: 8px 12px 8px 0;
+  vertical-align: middle;
+}
+
+.deal-table img {
+  height: 20px;
+  width: auto;
+  filter: grayscale(100%);
+  opacity: 0.7;
+}
+
+.deal-table img.logo-sm {
+  height: 14px;
+}
+
+.deal-table img.logo-md {
+  height: 24px;
+}
+
+.deal-table.horizontal th {
+  text-align: left;
+  font-weight: normal;
+  color: #666;
+  padding-right: 20px;
+}
+
+.deal-table.horizontal td {
+  text-align: center;
+  padding: 6px 16px;
+}
+
+/* --- Reading page --- */
+
+.sheet-embed {
+  margin-top: 20px;
+}
+
+.sheet-embed iframe {
+  border: 1px solid #ccc;
+}
