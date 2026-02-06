@@ -232,6 +232,10 @@ body {
   border: 1px solid #ccc;
 }
 
+.deal-box > p {
+  margin-bottom: 10px;
+}
+
 .deal-table {
   width: 100%;
   border-collapse: collapse;
