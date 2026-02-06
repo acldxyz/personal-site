@@ -63,7 +63,7 @@ body {
 }
 
 .content p {
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.6;
 }
 
@@ -122,7 +122,6 @@ body {
   display: none;
   margin-top: 12px;
   padding-left: 20px;
-  border-left: 1px solid #ccc;
 }
 
 .expandable.open {
@@ -136,7 +135,9 @@ body {
   font-family: 'Crimson Pro', Georgia, serif;
   font-size: 12px;
   cursor: pointer;
-  display: inline-block;
+  display: block;
+  margin-top: 0.6em;
+  width: fit-content;
 }
 
 .expand-btn:hover {
@@ -145,7 +146,7 @@ body {
 }
 
 .expandable p {
-  font-size: 14px;
+  font-size: 16px;
   margin: 0;
 }
 
@@ -166,7 +167,7 @@ body {
 .expandable li {
   margin-bottom: 2px;
   line-height: 1.5;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .expandable ul ul {
@@ -224,11 +225,18 @@ body {
 
 /* --- Deal table --- */
 
+.deal-box {
+  background: #f5f5f5;
+  padding: 16px 20px;
+  margin-left: 20px;
+  border: 1px solid #ccc;
+}
+
 .deal-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 10px 0 20px 0;
-  font-size: 14px;
+  margin: 10px 0 0 0;
+  font-size: 16px;
 }
 
 .deal-table th {
@@ -242,6 +250,12 @@ body {
 .deal-table td {
   padding: 8px 12px 8px 0;
   vertical-align: middle;
+  border-bottom: 1px solid #ccc;
+}
+
+.deal-table tbody tr:last-child th,
+.deal-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .deal-table img {
@@ -257,6 +271,10 @@ body {
 
 .deal-table img.logo-md {
   height: 24px;
+}
+
+.deal-table img.logo-lg {
+  height: 32px;
 }
 
 .deal-table.horizontal th {
