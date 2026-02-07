@@ -33,18 +33,257 @@
   <main class="content">
     <h2>Reading List</h2>
 
-    <div class="sheet-embed">
-      <iframe
-        src="https://docs.google.com/spreadsheets/d/15kQ61Pj5LecEecksPCdt0W0QcT0TunYmN5-j8PuBQOc/pubhtml?widget=true&headers=false"
-        width="100%"
-        height="600"
-        frameborder="0">
-      </iframe>
+    <div class="reading-charts">
+      <div class="chart" id="chart-genre">
+        <h3>By Genre</h3>
+        <div class="chart-bars"></div>
+      </div>
+      <div class="chart" id="chart-year">
+        <h3>By Year</h3>
+        <div class="chart-bars"></div>
+      </div>
     </div>
+
+    <div class="reading-filters">
+      <div class="filter-group">
+        <span class="filter-label">Year</span>
+        <button class="filter-btn active" data-filter="year" data-value="all">All</button>
+        <button class="filter-btn" data-filter="year" data-value="2026">2026</button>
+        <button class="filter-btn" data-filter="year" data-value="2025">2025</button>
+        <button class="filter-btn" data-filter="year" data-value="2024">2024</button>
+        <button class="filter-btn" data-filter="year" data-value="2023">2023</button>
+        <button class="filter-btn" data-filter="year" data-value="2022">2022</button>
+        <button class="filter-btn" data-filter="year" data-value="≤ 2021">≤ 2021</button>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Genre</span>
+        <button class="filter-btn active" data-filter="genre" data-value="all">All</button>
+        <button class="filter-btn" data-filter="genre" data-value="Sci-Fi">Sci-Fi</button>
+        <button class="filter-btn" data-filter="genre" data-value="Fantasy">Fantasy</button>
+        <button class="filter-btn" data-filter="genre" data-value="Non-Fiction">Non-Fiction</button>
+        <button class="filter-btn" data-filter="genre" data-value="Novel">Novel</button>
+        <button class="filter-btn" data-filter="genre" data-value="Play">Play</button>
+        <button class="filter-btn" data-filter="genre" data-value="Short Stories">Short Stories</button>
+      </div>
+      <div class="filter-group" id="subgenre-filters" style="display:none">
+        <span class="filter-label">Subgenre</span>
+        <button class="filter-btn active" data-filter="subgenre" data-value="all">All</button>
+        <button class="filter-btn" data-filter="subgenre" data-value="Space Opera">Space Opera</button>
+        <button class="filter-btn" data-filter="subgenre" data-value="Hard Sci-Fi">Hard Sci-Fi</button>
+        <button class="filter-btn" data-filter="subgenre" data-value="Adventure">Adventure</button>
+        <button class="filter-btn" data-filter="subgenre" data-value="Dystopian">Dystopian</button>
+        <button class="filter-btn" data-filter="subgenre" data-value="Cyberpunk">Cyberpunk</button>
+        <button class="filter-btn" data-filter="subgenre" data-value="LitRPG">LitRPG</button>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Recommend</span>
+        <button class="filter-btn active" data-filter="rec" data-value="all">All</button>
+        <button class="filter-btn" data-filter="rec" data-value="S">Strongly</button>
+        <button class="filter-btn" data-filter="rec" data-value="X">Yes</button>
+      </div>
+    </div>
+
+    <table class="reading-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Genre</th>
+          <th>Rec</th>
+          <th>Year</th>
+        </tr>
+      </thead>
+      <tbody id="book-list"></tbody>
+    </table>
+
+    <p class="reading-count" id="book-count"></p>
 
   </main>
 
 </div>
+
+<script>
+var books = [
+  { title: "The Ministry of Time", year: "2026", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
+  { title: "Blindsight", year: "2026", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Into Thin Air", year: "2025", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Sense of an Ending", year: "2025", rec: "S", genre: "Novel", subgenre: "" },
+  { title: "The Ocean at the End of the Lane", year: "2025", rec: "X", genre: "Fantasy", subgenre: "" },
+  { title: "Einstein's Dreams", year: "2025", rec: "S", genre: "Novel", subgenre: "" },
+  { title: "Contact", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "The Fall of Hyperion", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "A Short Stay in Hell", year: "2025", rec: "", genre: "Fantasy", subgenre: "" },
+  { title: "Orbital", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Semiosis", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "The Dungeon Anarchist's Cookbook", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" },
+  { title: "Solaris", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Carl's Doomsday Scenario", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" },
+  { title: "Dungeon Crawler Carl", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "LitRPG" },
+  { title: "Murderbot: Exit Strategy", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "I, Robot", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Dystopian" },
+  { title: "Jurassic Park", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Project Hail Mary", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Upgrade", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
+  { title: "Annie Bot", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
+  { title: "Golden Son", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "The Left Hand of Darkness", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
+  { title: "Chapterhouse Dune", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Counter-Intelligence", year: "2025", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Murderbot: Rogue Protocol", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Murderbot: Artificial Condition", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Hyperion", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "The Return of the King", year: "2024", rec: "X", genre: "Fantasy", subgenre: "" },
+  { title: "The Two Towers", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
+  { title: "The Fellowship of the Ring", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
+  { title: "A River Runs Through It", year: "2024", rec: "", genre: "Novel", subgenre: "" },
+  { title: "Murderbot: All Systems Red", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "The Hobbit", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
+  { title: "Do Androids Dream of Electric Sheep", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" },
+  { title: "The Man Who Solved the Market", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Sounds of Life", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Hidden Life of Trees", year: "2023", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Billion Dollar Whale", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Kill Chain", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Heretics of Dune", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "The Three Body Problem", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Red Rising", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Troy", year: "2023", rec: "X", genre: "Novel", subgenre: "" },
+  { title: "Speaker for the Dead", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Ender's Game", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "A View from the Bridge", year: "2023", rec: "S", genre: "Play", subgenre: "" },
+  { title: "The Paper Menagerie and Other Stories", year: "2023", rec: "X", genre: "Short Stories", subgenre: "" },
+  { title: "The Creative Act: A Way of Being", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "God Emperor of Dune", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "The Age of A.I. and our Human Future", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Rocket Men", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Ghost Wars", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Barbarian Days: A Surfing Life", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Psychology of Money", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Neuromancer", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" },
+  { title: "Damascus Station", year: "2022", rec: "X", genre: "Novel", subgenre: "" },
+  { title: "Foundation and the Empire", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Ardennes 1944", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Ringworld", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Snowcrash", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Cyberpunk" },
+  { title: "Kitchen Confidential", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Beginner's Mind", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Merchants of Debt", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Weed the People", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Bad Blood", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Children of Dune", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Stories of Your Life and Others", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
+  { title: "Macbeth", year: "2022", rec: "S", genre: "Play", subgenre: "" },
+  { title: "The Hard Thing About Hard Things", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "My Life at the Limit", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Cold Start Problem", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Super Pumped", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Martian", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Division by Zero", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
+  { title: "Exhalation", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
+  { title: "Dune Messiah", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Boys in the Boat", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Dune", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Foundation", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "A Little Life", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" },
+  { title: "The Corrections", year: "≤ 2021", rec: "", genre: "Novel", subgenre: "" },
+  { title: "Freedom", year: "≤ 2021", rec: "X", genre: "Novel", subgenre: "" },
+  { title: "Curious Case of the Dog in the Nighttime", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" },
+  { title: "Sol Lewitt 100 Views", year: "≤ 2021", rec: "S", genre: "Non-Fiction", subgenre: "" },
+];
+
+(function() {
+  var filters = { year: 'all', genre: 'all', subgenre: 'all', rec: 'all' };
+  var tbody = document.getElementById('book-list');
+  var countEl = document.getElementById('book-count');
+
+  var genreOrder = ['Sci-Fi', 'Non-Fiction', 'Novel', 'Fantasy', 'Short Stories', 'Play'];
+  var yearOrder = ['2026', '2025', '2024', '2023', '2022', '\u2264 2021'];
+
+  function buildChart(containerId, keys, field) {
+    var counts = {};
+    keys.forEach(function(k) { counts[k] = 0; });
+    books.forEach(function(b) {
+      if (counts[b[field]] !== undefined) counts[b[field]]++;
+    });
+    var max = Math.max.apply(null, keys.map(function(k) { return counts[k]; }));
+
+    var container = document.querySelector('#' + containerId + ' .chart-bars');
+    container.innerHTML = '';
+    keys.forEach(function(k) {
+      var pct = max > 0 ? (counts[k] / max * 100) : 0;
+      var row = document.createElement('div');
+      row.className = 'chart-row';
+      row.innerHTML =
+        '<span class="chart-label">' + k + '</span>' +
+        '<div class="chart-bar-track"><div class="chart-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<span class="chart-value">' + counts[k] + '</span>';
+      container.appendChild(row);
+    });
+  }
+
+  function recLabel(r) {
+    if (r === 'S') return 'Strongly';
+    if (r === 'X') return 'Yes';
+    return '';
+  }
+
+  function render() {
+    var filtered = books.filter(function(b) {
+      if (filters.year !== 'all' && b.year !== filters.year) return false;
+      if (filters.genre !== 'all' && b.genre !== filters.genre) return false;
+      if (filters.subgenre !== 'all' && b.subgenre !== filters.subgenre) return false;
+      if (filters.rec !== 'all' && b.rec !== filters.rec) return false;
+      return true;
+    });
+
+    tbody.innerHTML = '';
+    filtered.forEach(function(b) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + b.title + '</td>' +
+        '<td>' + b.genre + '</td>' +
+        '<td>' + recLabel(b.rec) + '</td>' +
+        '<td>' + b.year + '</td>';
+      tbody.appendChild(tr);
+    });
+
+    countEl.textContent = filtered.length + ' book' + (filtered.length !== 1 ? 's' : '');
+  }
+
+  var subgenreRow = document.getElementById('subgenre-filters');
+
+  document.querySelectorAll('.filter-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var group = btn.getAttribute('data-filter');
+      var value = btn.getAttribute('data-value');
+      filters[group] = value;
+
+      document.querySelectorAll('.filter-btn[data-filter="' + group + '"]').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+
+      if (group === 'genre') {
+        if (value === 'Sci-Fi') {
+          subgenreRow.style.display = '';
+        } else {
+          subgenreRow.style.display = 'none';
+          filters.subgenre = 'all';
+          document.querySelectorAll('.filter-btn[data-filter="subgenre"]').forEach(function(b) {
+            b.classList.remove('active');
+          });
+          document.querySelector('.filter-btn[data-filter="subgenre"][data-value="all"]').classList.add('active');
+        }
+      }
+
+      render();
+    });
+  });
+
+  buildChart('chart-genre', genreOrder, 'genre');
+  buildChart('chart-year', yearOrder, 'year');
+  render();
+})();
+</script>
 
 </body>
 </html>

@@ -295,6 +295,132 @@ body {
 
 /* --- Reading page --- */
 
+.reading-charts {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 30px;
+}
+
+.chart {
+  flex: 1;
+  min-width: 0;
+}
+
+.chart h3 {
+  font-size: 14px;
+  font-weight: normal;
+  color: #666;
+  margin: 0 0 12px 0;
+}
+
+.chart-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-label {
+  font-size: 13px;
+  width: 90px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.chart-bar-track {
+  flex: 1;
+  height: 16px;
+  background: #f0f0f0;
+  position: relative;
+}
+
+.chart-bar-fill {
+  height: 100%;
+  background: black;
+  transition: width 0.3s ease;
+}
+
+.chart-value {
+  font-size: 12px;
+  color: #666;
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.reading-filters {
+  margin-bottom: 24px;
+}
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.filter-label {
+  font-size: 14px;
+  color: #666;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.filter-btn {
+  background: none;
+  border: 1px solid #ccc;
+  padding: 4px 10px;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  border-color: black;
+}
+
+.filter-btn.active {
+  background: black;
+  color: white;
+  border-color: black;
+}
+
+.reading-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+
+.reading-table th {
+  text-align: left;
+  font-weight: normal;
+  color: #666;
+  padding: 6px 12px 6px 0;
+  border-bottom: 1px solid black;
+  font-size: 14px;
+}
+
+.reading-table td {
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+
+.reading-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.reading-count {
+  font-size: 14px;
+  color: #666;
+  margin-top: 16px;
+}
+
 .sheet-embed {
   margin-top: 20px;
 }

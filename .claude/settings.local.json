@@ -3,7 +3,9 @@
     "allow": [
       "WebFetch(domain:heirlloom.substack.com)",
       "WebFetch(domain:www.wikiart.org)",
-      "WebFetch(domain:massmoca.org)"
+      "WebFetch(domain:massmoca.org)",
+      "WebFetch(domain:docs.google.com)",
+      "WebFetch(domain:doc-00-bs-sheets.googleusercontent.com)"
     ]
   }
 }
