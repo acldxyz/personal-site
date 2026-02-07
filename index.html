@@ -30,8 +30,8 @@
     <a href="mailto:hello@acld.xyz">Contact</a>
   </nav>
 
-  <main class="content">
-    <canvas id="lewitt"></canvas>
+  <main class="content" onclick="window.location.href='about.html'" style="cursor: pointer;">
+    <canvas id="lewitt" style="pointer-events: none;"></canvas>
   </main>
 
 </div>
@@ -41,9 +41,19 @@
   const canvas = document.getElementById('lewitt');
   const ctx = canvas.getContext('2d');
 
-  // --- Grid config ---
-  const COLS = 5;
-  const ROWS = 3;
+  // --- Grid config (responsive) ---
+  var COLS = 5;
+  var ROWS = 3;
+
+  function updateGrid() {
+    if (window.innerWidth < 768) {
+      COLS = 3;
+      ROWS = 5;
+    } else {
+      COLS = 5;
+      ROWS = 3;
+    }
+  }
 
   // --- Animation timing ---
   const CELL_DRAW_DURATION = 1200;
@@ -256,6 +266,7 @@
   }
 
   function init() {
+    updateGrid();
     resize();
     startTime = null;
     requestAnimationFrame(animate);
