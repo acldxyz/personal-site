@@ -6,16 +6,16 @@
   <link rel="icon" type="image/png" href="acldxyz logo.png">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="home">
 
 <div class="layout">
 
   <nav class="sidebar">
     <a href="index.html" class="logo"><img src="acldxyz logo.png" alt="Adam Dawson"></a>
     <span class="site-name">Adam Dawson</span>
-  
+
     <a href="about.html">About</a>
-  
+
     <div class="nav-item has-submenu">
       <a class="parent-link" href="#">Writing</a>
       <div class="submenu">
@@ -24,16 +24,252 @@
         <a href="#">Musings</a>
       </div>
     </div>
-  
+
     <a href="reading.html">Reading List</a>
     <a href="#">Top Picks</a>
     <a href="mailto:hello@acld.xyz">Contact</a>
-  </nav>  
+  </nav>
 
   <main class="content">
+    <canvas id="lewitt"></canvas>
   </main>
 
 </div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('lewitt');
+  const ctx = canvas.getContext('2d');
+
+  // --- Grid config ---
+  const COLS = 5;
+  const ROWS = 3;
+
+  // --- Animation timing ---
+  const CELL_DRAW_DURATION = 1200;
+  const CELL_STAGGER = 200;
+  const TOTAL_DURATION = CELL_STAGGER * 14 + CELL_DRAW_DURATION;
+
+  // --- Element types and combinations ---
+  const TYPES = ['arcs-corners', 'arcs-sides', 'straight', 'not-straight', 'broken'];
+  const combinations = [];
+  for (let i = 0; i < TYPES.length; i++) {
+    for (let j = i; j < TYPES.length; j++) {
+      combinations.push([TYPES[i], TYPES[j]]);
+    }
+  }
+
+  // --- Seeded PRNG for deterministic wavy lines ---
+  function mulberry32(a) {
+    return function() {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  // --- Canvas sizing ---
+  let logicalW, logicalH;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    logicalW = rect.width;
+    logicalH = rect.height;
+  }
+
+  // --- Drawing functions (each draws ONE line/arc) ---
+
+  function drawArcFromCorner(ctx, x, y, w, h, progress, variant) {
+    var r = Math.min(w, h) * 0.9;
+    var arcs = [
+      { cx: x,     cy: y,     sa: 0,              ea: Math.PI / 2 },
+      { cx: x + w, cy: y,     sa: Math.PI / 2,    ea: Math.PI },
+      { cx: x + w, cy: y + h, sa: Math.PI,        ea: 3 * Math.PI / 2 },
+      { cx: x,     cy: y + h, sa: 3 * Math.PI / 2, ea: 2 * Math.PI },
+    ];
+    var a = arcs[variant % 4];
+    ctx.beginPath();
+    var sweep = a.ea - a.sa;
+    ctx.arc(a.cx, a.cy, r, a.sa, a.sa + sweep * progress);
+    ctx.stroke();
+  }
+
+  function drawArcFromSide(ctx, x, y, w, h, progress, variant) {
+    var sides = [
+      { cx: x + w / 2, cy: y,         r: w / 2, sa: 0,              ea: Math.PI },
+      { cx: x + w,     cy: y + h / 2, r: h / 2, sa: Math.PI / 2,    ea: 3 * Math.PI / 2 },
+      { cx: x + w / 2, cy: y + h,     r: w / 2, sa: Math.PI,        ea: 2 * Math.PI },
+      { cx: x,         cy: y + h / 2, r: h / 2, sa: 3 * Math.PI / 2, ea: 5 * Math.PI / 2 },
+    ];
+    var s = sides[variant % 4];
+    ctx.beginPath();
+    var sweep = s.ea - s.sa;
+    ctx.arc(s.cx, s.cy, s.r, s.sa, s.sa + sweep * progress);
+    ctx.stroke();
+  }
+
+  function drawStraightLine(ctx, x, y, w, h, progress, variant) {
+    var lines = [
+      [[x, y + h / 2], [x + w, y + h / 2]],
+      [[x + w / 2, y], [x + w / 2, y + h]],
+      [[x, y], [x + w, y + h]],
+      [[x + w, y], [x, y + h]],
+    ];
+    var l = lines[variant % 4];
+    ctx.beginPath();
+    ctx.moveTo(l[0][0], l[0][1]);
+    var dx = (l[1][0] - l[0][0]) * progress;
+    var dy = (l[1][1] - l[0][1]) * progress;
+    ctx.lineTo(l[0][0] + dx, l[0][1] + dy);
+    ctx.stroke();
+  }
+
+  function drawNotStraightLine(ctx, x, y, w, h, progress, variant, cellIndex) {
+    var amplitude = Math.min(w, h) * 0.07;
+    var segments = 10;
+    var rng = mulberry32(cellIndex * 77 + variant * 13 + 31);
+    var paths = [
+      { from: [x, y + h / 2], to: [x + w, y + h / 2], px: 0, py: 1 },
+      { from: [x + w / 2, y], to: [x + w / 2, y + h], px: 1, py: 0 },
+      { from: [x, y], to: [x + w, y + h], px: -0.707, py: 0.707 },
+      { from: [x + w, y], to: [x, y + h], px: 0.707, py: 0.707 },
+    ];
+    var path = paths[variant % 4];
+    ctx.beginPath();
+    ctx.moveTo(path.from[0], path.from[1]);
+    var activeSegs = Math.ceil(segments * progress);
+    for (var i = 0; i < activeSegs; i++) {
+      var t1 = i / segments;
+      var t2 = Math.min((i + 1) / segments, progress);
+      var midT = (t1 + t2) / 2;
+      var sign = (i % 2 === 0) ? 1 : -1;
+      var ampVar = amplitude * (0.6 + rng() * 0.8);
+      var cpx = lerp(path.from[0], path.to[0], midT) + path.px * ampVar * sign;
+      var cpy = lerp(path.from[1], path.to[1], midT) + path.py * ampVar * sign;
+      var ex = lerp(path.from[0], path.to[0], t2);
+      var ey = lerp(path.from[1], path.to[1], t2);
+      ctx.quadraticCurveTo(cpx, cpy, ex, ey);
+    }
+    ctx.stroke();
+  }
+
+  function drawBrokenLine(ctx, x, y, w, h, progress, variant) {
+    ctx.save();
+    ctx.setLineDash([8, 6]);
+    drawStraightLine(ctx, x, y, w, h, progress, variant);
+    ctx.restore();
+  }
+
+  function drawElement(ctx, type, x, y, w, h, progress, variant, cellIndex) {
+    switch (type) {
+      case 'arcs-corners':  drawArcFromCorner(ctx, x, y, w, h, progress, variant); break;
+      case 'arcs-sides':    drawArcFromSide(ctx, x, y, w, h, progress, variant); break;
+      case 'straight':      drawStraightLine(ctx, x, y, w, h, progress, variant); break;
+      case 'not-straight':  drawNotStraightLine(ctx, x, y, w, h, progress, variant, cellIndex); break;
+      case 'broken':        drawBrokenLine(ctx, x, y, w, h, progress, variant); break;
+    }
+  }
+
+  // --- Animation ---
+  var startTime = null;
+
+  function animate(timestamp) {
+    if (!startTime) startTime = timestamp;
+    var elapsed = timestamp - startTime;
+
+    ctx.clearRect(0, 0, logicalW, logicalH);
+
+    // Black background
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, logicalW, logicalH);
+
+    var cellW = logicalW / COLS;
+    var cellH = logicalH / ROWS;
+
+    // Faint grid lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    for (var c = 1; c < COLS; c++) {
+      ctx.beginPath();
+      ctx.moveTo(c * cellW, 0);
+      ctx.lineTo(c * cellW, logicalH);
+      ctx.stroke();
+    }
+    for (var r = 1; r < ROWS; r++) {
+      ctx.beginPath();
+      ctx.moveTo(0, r * cellH);
+      ctx.lineTo(logicalW, r * cellH);
+      ctx.stroke();
+    }
+
+    // Draw cells
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.setLineDash([]);
+
+    combinations.forEach(function(combo, index) {
+      var col = index % COLS;
+      var row = Math.floor(index / COLS);
+      var x = col * cellW;
+      var y = row * cellH;
+
+      var cellStart = index * CELL_STAGGER;
+      var cellElapsed = elapsed - cellStart;
+      var progress = Math.max(0, Math.min(1, cellElapsed / CELL_DRAW_DURATION));
+
+      if (progress > 0) {
+        var easedProgress = easeInOutCubic(progress);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, cellW, cellH);
+        ctx.clip();
+
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1.5;
+        ctx.lineCap = 'round';
+        ctx.setLineDash([]);
+
+        drawElement(ctx, combo[0], x, y, cellW, cellH, easedProgress, index, index);
+        drawElement(ctx, combo[1], x, y, cellW, cellH, easedProgress, index + 2, index);
+
+        ctx.restore();
+      }
+    });
+
+    if (elapsed < TOTAL_DURATION) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  function init() {
+    resize();
+    startTime = null;
+    requestAnimationFrame(animate);
+  }
+
+  var resizeTimeout;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(init, 150);
+  });
+
+  init();
+})();
+</script>
 
 </body>
 </html>

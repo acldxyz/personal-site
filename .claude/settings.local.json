@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:heirlloom.substack.com)"
+      "WebFetch(domain:heirlloom.substack.com)",
+      "WebFetch(domain:www.wikiart.org)",
+      "WebFetch(domain:massmoca.org)"
     ]
   }
 }
