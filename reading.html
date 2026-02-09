@@ -86,6 +86,7 @@
     <table class="reading-table">
       <thead>
         <tr>
+          <th class="th-cover"></th>
           <th>Title</th>
           <th>Genre</th>
           <th>Rec</th>
@@ -103,97 +104,98 @@
 
 <script>
 var books = [
-  { title: "The Ministry of Time", year: "2026", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
-  { title: "Blindsight", year: "2026", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "Into Thin Air", year: "2025", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "The Sense of an Ending", year: "2025", rec: "S", genre: "Novel", subgenre: "" },
-  { title: "The Ocean at the End of the Lane", year: "2025", rec: "X", genre: "Fantasy", subgenre: "" },
-  { title: "Einstein's Dreams", year: "2025", rec: "S", genre: "Novel", subgenre: "" },
-  { title: "Contact", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "The Fall of Hyperion", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "A Short Stay in Hell", year: "2025", rec: "", genre: "Fantasy", subgenre: "" },
-  { title: "Orbital", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "Semiosis", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "The Dungeon Anarchist's Cookbook", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" },
-  { title: "Solaris", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "Carl's Doomsday Scenario", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" },
-  { title: "Dungeon Crawler Carl", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "LitRPG" },
-  { title: "Murderbot: Exit Strategy", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
-  { title: "I, Robot", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Dystopian" },
-  { title: "Jurassic Park", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Adventure" },
-  { title: "Project Hail Mary", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "Upgrade", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
-  { title: "Annie Bot", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
-  { title: "Golden Son", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "The Left Hand of Darkness", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
-  { title: "Chapterhouse Dune", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Counter-Intelligence", year: "2025", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "Murderbot: Rogue Protocol", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
-  { title: "Murderbot: Artificial Condition", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
-  { title: "Hyperion", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "The Return of the King", year: "2024", rec: "X", genre: "Fantasy", subgenre: "" },
-  { title: "The Two Towers", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
-  { title: "The Fellowship of the Ring", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
-  { title: "A River Runs Through It", year: "2024", rec: "", genre: "Novel", subgenre: "" },
-  { title: "Murderbot: All Systems Red", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
-  { title: "The Hobbit", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
-  { title: "Do Androids Dream of Electric Sheep", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" },
-  { title: "The Man Who Solved the Market", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "The Sounds of Life", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Hidden Life of Trees", year: "2023", rec: "S", genre: "Non-Fiction", subgenre: "" },
-  { title: "Billion Dollar Whale", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "The Kill Chain", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "Heretics of Dune", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "The Three Body Problem", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "Red Rising", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Troy", year: "2023", rec: "X", genre: "Novel", subgenre: "" },
-  { title: "Speaker for the Dead", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Ender's Game", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "A View from the Bridge", year: "2023", rec: "S", genre: "Play", subgenre: "" },
-  { title: "The Paper Menagerie and Other Stories", year: "2023", rec: "X", genre: "Short Stories", subgenre: "" },
-  { title: "The Creative Act: A Way of Being", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "God Emperor of Dune", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "The Age of A.I. and our Human Future", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "Rocket Men", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Ghost Wars", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Barbarian Days: A Surfing Life", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
-  { title: "Psychology of Money", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Neuromancer", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" },
-  { title: "Damascus Station", year: "2022", rec: "X", genre: "Novel", subgenre: "" },
-  { title: "Foundation and the Empire", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Ardennes 1944", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
-  { title: "Ringworld", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Adventure" },
-  { title: "Snowcrash", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Cyberpunk" },
-  { title: "Kitchen Confidential", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
-  { title: "Beginner's Mind", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Merchants of Debt", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Weed the People", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "Bad Blood", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Children of Dune", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Stories of Your Life and Others", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
-  { title: "Macbeth", year: "2022", rec: "S", genre: "Play", subgenre: "" },
-  { title: "The Hard Thing About Hard Things", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "My Life at the Limit", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "The Cold Start Problem", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "Super Pumped", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "The Martian", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "Division by Zero", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
-  { title: "Exhalation", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
-  { title: "Dune Messiah", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Boys in the Boat", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
-  { title: "Dune", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Foundation", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "A Little Life", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" },
-  { title: "The Corrections", year: "≤ 2021", rec: "", genre: "Novel", subgenre: "" },
-  { title: "Freedom", year: "≤ 2021", rec: "X", genre: "Novel", subgenre: "" },
-  { title: "Curious Case of the Dog in the Nighttime", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" },
-  { title: "Sol Lewitt 100 Views", year: "≤ 2021", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Ministry of Time", author: "Kaliane Bradley", year: "2026", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
+  { title: "Blindsight", author: "Peter Watts", year: "2026", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Into Thin Air", author: "Jon Krakauer", year: "2025", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Sense of an Ending", author: "Julian Barnes", year: "2025", rec: "S", genre: "Novel", subgenre: "" },
+  { title: "The Ocean at the End of the Lane", author: "Neil Gaiman", year: "2025", rec: "X", genre: "Fantasy", subgenre: "" },
+  { title: "Einstein's Dreams", author: "Alan Lightman", year: "2025", rec: "S", genre: "Novel", subgenre: "" },
+  { title: "Contact", author: "Carl Sagan", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "The Fall of Hyperion", author: "Dan Simmons", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "A Short Stay in Hell", author: "Steven L. Peck", year: "2025", rec: "", genre: "Fantasy", subgenre: "" },
+  { title: "Orbital", author: "Samantha Harvey", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Semiosis", author: "Sue Burke", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "The Dungeon Anarchist's Cookbook", author: "Matt Dinniman", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" },
+  { title: "Solaris", author: "Stanislaw Lem", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Carl's Doomsday Scenario", author: "Matt Dinniman", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" },
+  { title: "Dungeon Crawler Carl", author: "Matt Dinniman", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "LitRPG" },
+  { title: "Murderbot: Exit Strategy", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "I, Robot", author: "Isaac Asimov", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Dystopian" },
+  { title: "Jurassic Park", author: "Michael Crichton", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Project Hail Mary", author: "Andy Weir", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Upgrade", author: "Blake Crouch", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
+  { title: "Annie Bot", author: "Sierra Greer", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
+  { title: "Golden Son", author: "Pierce Brown", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "The Left Hand of Darkness", author: "Ursula K. Le Guin", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
+  { title: "Chapterhouse Dune", author: "Frank Herbert", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Counter-Intelligence", author: "Robert Hannigan", year: "2025", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Murderbot: Rogue Protocol", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Murderbot: Artificial Condition", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Hyperion", author: "Dan Simmons", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "The Return of the King", author: "J.R.R. Tolkien", year: "2024", rec: "X", genre: "Fantasy", subgenre: "" },
+  { title: "The Two Towers", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
+  { title: "The Fellowship of the Ring", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
+  { title: "A River Runs Through It", author: "Norman Maclean", year: "2024", rec: "", genre: "Novel", subgenre: "" },
+  { title: "Murderbot: All Systems Red", author: "Martha Wells", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "The Hobbit", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
+  { title: "Do Androids Dream of Electric Sheep", author: "Philip K. Dick", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" },
+  { title: "The Man Who Solved the Market", author: "Gregory Zuckerman", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Sounds of Life", author: "Karen Bakker", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Hidden Life of Trees", author: "Peter Wohlleben", year: "2023", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Billion Dollar Whale", author: "Tom Wright", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Kill Chain", author: "Christian Brose", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Heretics of Dune", author: "Frank Herbert", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "The Three Body Problem", author: "Liu Cixin", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Red Rising", author: "Pierce Brown", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Troy", author: "Stephen Fry", year: "2023", rec: "X", genre: "Novel", subgenre: "" },
+  { title: "Speaker for the Dead", author: "Orson Scott Card", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Ender's Game", author: "Orson Scott Card", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "A View from the Bridge", author: "Arthur Miller", year: "2023", rec: "S", genre: "Play", subgenre: "" },
+  { title: "The Paper Menagerie and Other Stories", author: "Ken Liu", year: "2023", rec: "X", genre: "Short Stories", subgenre: "" },
+  { title: "The Creative Act: A Way of Being", author: "Rick Rubin", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "God Emperor of Dune", author: "Frank Herbert", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "The Age of A.I. and our Human Future", author: "Henry Kissinger", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Rocket Men", author: "Robert Kurson", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Ghost Wars", author: "Steve Coll", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Barbarian Days: A Surfing Life", author: "William Finnegan", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Psychology of Money", author: "Morgan Housel", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Neuromancer", author: "William Gibson", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" },
+  { title: "Damascus Station", author: "David McCloskey", year: "2022", rec: "X", genre: "Novel", subgenre: "" },
+  { title: "Foundation and the Empire", author: "Isaac Asimov", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Ardennes 1944", author: "Antony Beevor", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Ringworld", author: "Larry Niven", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Snowcrash", author: "Neal Stephenson", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Cyberpunk" },
+  { title: "Kitchen Confidential", author: "Anthony Bourdain", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Beginner's Mind", author: "Yo-Yo Ma", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Merchants of Debt", author: "George Anders", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Weed the People", author: "Bruce Barcott", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Bad Blood", author: "John Carreyrou", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "Children of Dune", author: "Frank Herbert", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Stories of Your Life and Others", author: "Ted Chiang", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
+  { title: "Macbeth", author: "William Shakespeare", year: "2022", rec: "S", genre: "Play", subgenre: "" },
+  { title: "The Hard Thing About Hard Things", author: "Ben Horowitz", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "My Life at the Limit", author: "Reinhold Messner", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Cold Start Problem", author: "Andrew Chen", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Super Pumped", author: "Mike Isaac", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Martian", author: "Andy Weir", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Division by Zero", author: "Ted Chiang", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
+  { title: "Exhalation", author: "Ted Chiang", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
+  { title: "Dune Messiah", author: "Frank Herbert", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Boys in the Boat", author: "Daniel James Brown", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Dune", author: "Frank Herbert", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Foundation", author: "Isaac Asimov", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "A Little Life", author: "Hanya Yanagihara", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" },
+  { title: "The Corrections", author: "Jonathan Franzen", year: "≤ 2021", rec: "", genre: "Novel", subgenre: "" },
+  { title: "Freedom", author: "Jonathan Franzen", year: "≤ 2021", rec: "X", genre: "Novel", subgenre: "" },
+  { title: "Curious Case of the Dog in the Nighttime", author: "Mark Haddon", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" },
+  { title: "Sol Lewitt 100 Views", author: "Sol LeWitt", year: "≤ 2021", rec: "S", genre: "Non-Fiction", subgenre: "" },
 ];
 
 (function() {
   var filters = { year: 'all', genre: 'all', subgenre: 'all', rec: 'all' };
   var tbody = document.getElementById('book-list');
   var countEl = document.getElementById('book-count');
+  var coverCache = {};
 
   var genreOrder = ['Sci-Fi', 'Non-Fiction', 'Novel', 'Fantasy', 'Short Stories', 'Play'];
   var yearOrder = ['2026', '2025', '2024', '2023', '2022', '\u2264 2021'];
@@ -226,6 +228,40 @@ var books = [
     return '';
   }
 
+  function fetchCover(title, author, imgEl) {
+    var key = title + '||' + author;
+    if (coverCache[key] !== undefined) {
+      if (coverCache[key]) {
+        imgEl.src = coverCache[key];
+      } else {
+        imgEl.style.display = 'none';
+      }
+      return;
+    }
+    var query = 'intitle:' + encodeURIComponent(title) + '+inauthor:' + encodeURIComponent(author);
+    fetch('https://www.googleapis.com/books/v1/volumes?q=' + query + '&maxResults=5')
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.items) {
+          for (var i = 0; i < data.items.length; i++) {
+            var links = data.items[i].volumeInfo.imageLinks;
+            if (links && (links.thumbnail || links.smallThumbnail)) {
+              var url = (links.thumbnail || links.smallThumbnail).replace('http://', 'https://');
+              coverCache[key] = url;
+              imgEl.src = url;
+              return;
+            }
+          }
+        }
+        coverCache[key] = '';
+        imgEl.style.display = 'none';
+      })
+      .catch(function() {
+        coverCache[key] = '';
+        imgEl.style.display = 'none';
+      });
+  }
+
   function render() {
     var filtered = books.filter(function(b) {
       if (filters.year !== 'all' && b.year !== filters.year) return false;
@@ -238,11 +274,21 @@ var books = [
     tbody.innerHTML = '';
     filtered.forEach(function(b) {
       var tr = document.createElement('tr');
-      tr.innerHTML =
+      var coverTd = document.createElement('td');
+      coverTd.className = 'td-cover';
+      var img = document.createElement('img');
+      img.className = 'book-cover';
+      img.alt = '';
+      img.loading = 'lazy';
+      coverTd.appendChild(img);
+      fetchCover(b.title, b.author, img);
+
+      tr.appendChild(coverTd);
+      tr.insertAdjacentHTML('beforeend',
         '<td>' + b.title + '</td>' +
         '<td>' + b.genre + '</td>' +
         '<td>' + recLabel(b.rec) + '</td>' +
-        '<td>' + b.year + '</td>';
+        '<td>' + b.year + '</td>');
       tbody.appendChild(tr);
     });
 
