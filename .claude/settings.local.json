@@ -6,7 +6,11 @@
       "WebFetch(domain:massmoca.org)",
       "WebFetch(domain:docs.google.com)",
       "WebFetch(domain:doc-00-bs-sheets.googleusercontent.com)",
-      "WebFetch(domain:www.googleapis.com)"
+      "WebFetch(domain:www.googleapis.com)",
+      "Bash(curl:*)",
+      "WebFetch(domain:www.newyorker.com)",
+      "WebFetch(domain:99percentinvisible.org)",
+      "WebFetch(domain:joincolossus.com)"
     ]
   }
 }
