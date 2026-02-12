@@ -298,6 +298,18 @@ body {
   padding: 6px 16px;
 }
 
+.deal-table.horizontal.compact {
+  table-layout: fixed;
+}
+
+.deal-table.horizontal.compact td {
+  padding: 6px 8px;
+}
+
+.deal-table.horizontal.compact th {
+  padding-right: 8px;
+}
+
 /* --- Reading page --- */
 
 .reading-charts {
@@ -452,6 +464,31 @@ body {
 }
 
 /* --- Links page --- */
+
+.links-filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.links-filter-btn {
+  background: none;
+  border: 1px solid #ccc;
+  padding: 4px 10px;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.links-filter-btn:hover {
+  border-color: black;
+}
+
+.links-filter-btn.active {
+  background: black;
+  color: white;
+  border-color: black;
+}
 
 .links-section {
   margin-bottom: 36px;

@@ -10,7 +10,11 @@
       "Bash(curl:*)",
       "WebFetch(domain:www.newyorker.com)",
       "WebFetch(domain:99percentinvisible.org)",
-      "WebFetch(domain:joincolossus.com)"
+      "WebFetch(domain:joincolossus.com)",
+      "Bash(npx:*)",
+      "Bash(where:*)",
+      "Bash(python -m http.server:*)",
+      "Bash(git add:*)"
     ]
   }
 }

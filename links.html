@@ -33,7 +33,13 @@
     <h2>Links</h2>
     <p>Content I revisit again and again</p>
 
-    <div class="links-section">
+    <div class="links-filters">
+      <button class="links-filter-btn" data-filter="video">Video</button>
+      <button class="links-filter-btn" data-filter="written">Written</button>
+      <button class="links-filter-btn" data-filter="audio">Audio</button>
+    </div>
+
+    <div class="links-section" data-category="video">
       <h3 class="links-category">Videos</h3>
       <div class="video-grid">
         <div class="video-item">
@@ -99,18 +105,13 @@
       </div>
     </div>
 
-    <div class="links-section">
+    <div class="links-section" data-category="written">
       <h3 class="links-category">Written</h3>
       <div class="written-grid">
         <a class="written-tile" href="https://www.newyorker.com/magazine/2016/08/29/michael-heizers-city" target="_blank">
           <img class="written-tile-image" src="images/links/michael-heizer.jpg" alt="Michael Heizer's City">
           <span class="written-title">Michael Heizer's City</span>
           <span class="written-source">The New Yorker</span>
-        </a>
-        <a class="written-tile" href="https://99percentinvisible.org/episode/take-a-walk/" target="_blank">
-          <img class="written-tile-image" src="images/links/take-a-walk.jpg" alt="Take a Walk">
-          <span class="written-title">Take a Walk</span>
-          <span class="written-source">99% Invisible</span>
         </a>
         <a class="written-tile" href="https://joincolossus.com/article/joshua-kushner-thrive-new-world/" target="_blank">
           <img class="written-tile-image" src="images/links/josh-kushner.jpg" alt="Josh Kushner">
@@ -155,9 +156,42 @@
       </div>
     </div>
 
+    <div class="links-section" data-category="audio">
+      <h3 class="links-category">Audio</h3>
+      <div class="written-grid">
+        <a class="written-tile" href="https://99percentinvisible.org/episode/take-a-walk/" target="_blank">
+          <img class="written-tile-image" src="images/links/take-a-walk.jpg" alt="Take a Walk">
+          <span class="written-title">Take a Walk</span>
+          <span class="written-source">99% Invisible</span>
+        </a>
+      </div>
+    </div>
+
   </main>
 
 </div>
 
+<script>
+  document.querySelectorAll('.links-filter-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var wasActive = btn.classList.contains('active');
+      // Deselect all buttons first
+      document.querySelectorAll('.links-filter-btn').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      // If this button wasn't already active, select it
+      if (!wasActive) {
+        btn.classList.add('active');
+      }
+      // Show/hide sections
+      var activeBtn = document.querySelector('.links-filter-btn.active');
+      var filter = activeBtn ? activeBtn.getAttribute('data-filter') : null;
+      document.querySelectorAll('.links-section').forEach(function(section) {
+        var cat = section.getAttribute('data-category');
+        section.style.display = !filter || cat === filter ? '' : 'none';
+      });
+    });
+  });
+</script>
 </body>
 </html>
