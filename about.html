@@ -2,37 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>About — Adam Dawson</title>
   <link rel="icon" type="image/png" href="acldxyz logo.png">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="about">
 
 <div class="layout">
 
   <nav class="sidebar">
     <a href="index.html" class="logo"><img src="acldxyz logo.png" alt="Adam Dawson"></a>
     <span class="site-name">Adam Dawson</span>
+    <button class="hamburger" aria-label="Menu" onclick="document.querySelector('.nav-links').classList.toggle('open'); this.classList.toggle('open');">
+      <span></span><span></span><span></span>
+    </button>
 
-    <a href="about.html" aria-current="page">About</a>
+    <div class="nav-links">
+      <a href="about.html" aria-current="page">About</a>
 
-    <div class="nav-item has-submenu">
-      <a class="parent-link" href="#">Writing</a>
-      <div class="submenu">
-        <a href="fatherhood.html">Fatherhood</a>
-        <a href="research.html">Research</a>
+      <div class="nav-item has-submenu">
+        <a class="parent-link" href="#">Writing</a>
+        <div class="submenu">
+          <a href="fatherhood.html">Fatherhood</a>
+          <a href="research.html">Research</a>
+        </div>
       </div>
-    </div>
 
-    <a href="reading.html">Reading List</a>
-    <a href="links.html">Links</a>
-    <a href="mailto:adam@acld.xyz">Contact</a>
+      <a href="reading.html">Reading List</a>
+      <a href="links.html">Links</a>
+      <a href="mailto:adam@acld.xyz">Contact</a>
+    </div>
   </nav>
 
   <main class="content">
     <h2>About</h2>
 
-    <h3>A practiced allocator with experience across the venture capital stack</h3>
+    <h3>A puruit of absurd and truthful</h3>
 
     <p>Tech banking at <strong>Piper Jaffray</strong> led to the buy-side at <strong>StepStone</strong>, then to <strong>Mousse Partners</strong>, a family office, where I invested in venture funds and companies. <strong>Privateer</strong>, an investment I led at Mousse, recruited me to lead strategic finance and complete a spectrum of public and private market transactions. I brought <strong>Delta Emerald</strong>, a data science-powered VC firm, onto the cap table through a fundraise, and later joined to lead external marketing and internal research.</p>
 
@@ -109,10 +115,12 @@
             <img src="dragoneer.png" alt="Dragoneer">
             <img src="altimeter.png" alt="Altimeter">
             <img src="thrive.png" alt="Thrive">
+            <span style="min-width: 1px; flex-shrink: 0;">&nbsp;</span>
           </div>
         </div>
         <div class="deal-box" style="margin-top: 12px;">
           <p><strong>Select directs:</strong></p>
+          <p style="font-size: 12px; color: #999; margin: 0 0 10px 0;">*investments represent gains of $390M as of February 2026</p>
           <table class="deal-table horizontal compact">
             <thead>
               <tr>
@@ -146,7 +154,6 @@
               </tr>
             </tbody>
           </table>
-          <p style="font-size: 12px; color: #999; margin: 10px 0 0 0;">*investments represent gains of $390M as of February 2026</p>
         </div>
       </div>
     </div>
@@ -165,7 +172,11 @@
 
     <div class="about-section">
       <p>
-        <strong>Dad</strong> | NYC | 2025 – Present. Delta Emerald wound down shortly after my son was born. I took an extended break to care for him. It's been the greatest adventure. I'm now searching for my next role, either leading privates for a family office or strategic finance for a growth-stage company. I'm open to select contract/consulting engagements in the interim.
+        <strong>Dad</strong> | NYC | 2025 – Present. Delta Emerald wound down shortly after my son was born. I took an extended break to care for him. It's been the greatest adventure. A few months into it, I started Heirlloom, a collection of essays and guides that have helped hundreds of new dads. 
+      </p>
+
+      <p>
+I'm now searching for my next role, either leading privates for a family office or strategic finance for a growth-stage company. I'm open to select contract/consulting engagements in the interim.
       </p>
     </div>
 
