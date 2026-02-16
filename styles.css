@@ -808,14 +808,7 @@ body {
   margin-bottom: 20px;
 }
 
-.article-body p:first-child::first-letter {
-  float: left;
-  font-size: 3.4em;
-  line-height: 0.8;
-  padding-right: 8px;
-  padding-top: 6px;
-  font-weight: 600;
-}
+/* drop cap removed */
 
 .article-body h3 {
   font-size: 22px;
@@ -1097,10 +1090,6 @@ body.home .content canvas {
 
   .article-body p {
     font-size: 17px;
-  }
-
-  .article-body p:first-child::first-letter {
-    font-size: 2.8em;
   }
 
   /* --- Reading page --- */

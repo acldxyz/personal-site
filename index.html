@@ -101,7 +101,7 @@
   // --- Drawing functions (each draws ONE line/arc) ---
 
   function drawArcFromCorner(ctx, x, y, w, h, progress, variant) {
-    var r = Math.min(w, h) * 0.9;
+    var r = Math.min(w, h);
     var arcs = [
       { cx: x,     cy: y,     sa: 0,              ea: Math.PI / 2 },
       { cx: x + w, cy: y,     sa: Math.PI / 2,    ea: Math.PI },
@@ -116,6 +116,8 @@
   }
 
   function drawArcFromSide(ctx, x, y, w, h, progress, variant) {
+    // Side arcs: semicircles centered on a side midpoint, radius = half that side's length
+    // Endpoints land on the two corners of that side
     var sides = [
       { cx: x + w / 2, cy: y,         r: w / 2, sa: 0,              ea: Math.PI },
       { cx: x + w,     cy: y + h / 2, r: h / 2, sa: Math.PI / 2,    ea: 3 * Math.PI / 2 },
@@ -245,7 +247,8 @@
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(x, y, cellW, cellH);
+        var pad = 0.5;
+        ctx.rect(x - pad, y - pad, cellW + pad * 2, cellH + pad * 2);
         ctx.clip();
 
         ctx.strokeStyle = 'white';
