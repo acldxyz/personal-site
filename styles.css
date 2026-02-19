@@ -211,7 +211,7 @@ body {
   flex-wrap: wrap;
   gap: 20px;
   align-items: center;
-  margin: 16px 0;
+  margin: 16px 0 4px;
 }
 
 .logo-grid img {
@@ -235,6 +235,10 @@ body {
   padding: 16px 20px;
   margin-left: 20px;
   border: 1px solid #ccc;
+}
+
+.deal-box--funds {
+  padding-bottom: 12px;
 }
 
 .deal-box > p {
@@ -1050,6 +1054,7 @@ body.home .content canvas {
   .logo-grid {
     flex-wrap: nowrap;
     gap: 14px;
+    margin-bottom: 8px;
   }
 
   .direct-list {
