@@ -207,8 +207,13 @@ var books = [
   var tbody = document.getElementById('book-list');
   var countEl = document.getElementById('book-count');
   var coverCache = {};
+  try { var _stored = localStorage.getItem('bookCovers'); if (_stored) coverCache = JSON.parse(_stored); } catch(e) {}
   var coverQueue = [];
   var coverQueueRunning = false;
+
+  function persistCoverCache() {
+    try { localStorage.setItem('bookCovers', JSON.stringify(coverCache)); } catch(e) {}
+  }
 
   function processCoverQueue() {
     if (coverQueue.length === 0) { coverQueueRunning = false; return; }
@@ -269,12 +274,14 @@ var books = [
               if (links && (links.thumbnail || links.smallThumbnail)) {
                 var url = (links.thumbnail || links.smallThumbnail).replace('http://', 'https://');
                 coverCache[key] = url;
+                persistCoverCache();
                 imgEl.src = url;
                 return;
               }
             }
           }
           coverCache[key] = '';
+          persistCoverCache();
           imgEl.style.display = 'none';
         })
         .catch(function() {
