@@ -207,6 +207,15 @@ var books = [
   var tbody = document.getElementById('book-list');
   var countEl = document.getElementById('book-count');
   var coverCache = {};
+  var coverQueue = [];
+  var coverQueueRunning = false;
+
+  function processCoverQueue() {
+    if (coverQueue.length === 0) { coverQueueRunning = false; return; }
+    coverQueueRunning = true;
+    coverQueue.shift()();
+    setTimeout(processCoverQueue, 120);
+  }
 
   var genreOrder = ['Sci-Fi', 'Non-Fiction', 'Novel', 'Fantasy', 'Short Stories', 'Play'];
   var yearOrder = ['2026', '2025', '2024', '2023', '2022', '\u2264 2021'];
@@ -249,28 +258,31 @@ var books = [
       }
       return;
     }
-    var query = 'intitle:' + encodeURIComponent(title) + '+inauthor:' + encodeURIComponent(author);
-    fetch('https://www.googleapis.com/books/v1/volumes?q=' + query + '&maxResults=5')
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (data.items) {
-          for (var i = 0; i < data.items.length; i++) {
-            var links = data.items[i].volumeInfo.imageLinks;
-            if (links && (links.thumbnail || links.smallThumbnail)) {
-              var url = (links.thumbnail || links.smallThumbnail).replace('http://', 'https://');
-              coverCache[key] = url;
-              imgEl.src = url;
-              return;
+    coverQueue.push(function() {
+      var query = 'intitle:' + encodeURIComponent(title) + '+inauthor:' + encodeURIComponent(author);
+      fetch('https://www.googleapis.com/books/v1/volumes?q=' + query + '&maxResults=5')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.items) {
+            for (var i = 0; i < data.items.length; i++) {
+              var links = data.items[i].volumeInfo.imageLinks;
+              if (links && (links.thumbnail || links.smallThumbnail)) {
+                var url = (links.thumbnail || links.smallThumbnail).replace('http://', 'https://');
+                coverCache[key] = url;
+                imgEl.src = url;
+                return;
+              }
             }
           }
-        }
-        coverCache[key] = '';
-        imgEl.style.display = 'none';
-      })
-      .catch(function() {
-        coverCache[key] = '';
-        imgEl.style.display = 'none';
-      });
+          coverCache[key] = '';
+          imgEl.style.display = 'none';
+        })
+        .catch(function() {
+          coverCache[key] = '';
+          imgEl.style.display = 'none';
+        });
+    });
+    if (!coverQueueRunning) processCoverQueue();
   }
 
   function render() {
