@@ -112,7 +112,7 @@
 
 <script>
 var books = [
-  { title: "Food Rules: An Eater's Manual", author: "Michael Pollan", year: "2026", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "Food Rules: An Eater's Manual", author: "Michael Pollan", year: "2026", rec: "", genre: "Non-Fiction", subgenre: "", coverTitle: "Food Rules" },
   { title: "The Metamorphosis of Prime Intellect", author: "Roger Williams", year: "2026", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
   { title: "Never Let Me Go", author: "Kazuo Ishiguro", year: "2026", rec: "", genre: "Novel", subgenre: "" },
   { title: "The Ministry of Time", author: "Kaliane Bradley", year: "2026", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
@@ -130,7 +130,7 @@ var books = [
   { title: "Solaris", author: "Stanislaw Lem", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
   { title: "Carl's Doomsday Scenario", author: "Matt Dinniman", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" },
   { title: "Dungeon Crawler Carl", author: "Matt Dinniman", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "LitRPG" },
-  { title: "Murderbot: Exit Strategy", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Murderbot: Exit Strategy", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure", coverTitle: "Exit Strategy" },
   { title: "I, Robot", author: "Isaac Asimov", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Dystopian" },
   { title: "Jurassic Park", author: "Michael Crichton", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Adventure" },
   { title: "Project Hail Mary", author: "Andy Weir", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
@@ -139,15 +139,15 @@ var books = [
   { title: "Golden Son", author: "Pierce Brown", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
   { title: "The Left Hand of Darkness", author: "Ursula K. Le Guin", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
   { title: "Chapterhouse Dune", author: "Frank Herbert", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Counter-Intelligence", author: "Robert Hannigan", year: "2025", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "Murderbot: Rogue Protocol", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
-  { title: "Murderbot: Artificial Condition", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Counter-Intelligence", author: "Robert Hannigan", year: "2025", rec: "", genre: "Non-Fiction", subgenre: "", coverTitle: "Counter Intelligence" },
+  { title: "Murderbot: Rogue Protocol", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure", coverTitle: "Rogue Protocol" },
+  { title: "Murderbot: Artificial Condition", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure", coverTitle: "Artificial Condition" },
   { title: "Hyperion", author: "Dan Simmons", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
   { title: "The Return of the King", author: "J.R.R. Tolkien", year: "2024", rec: "X", genre: "Fantasy", subgenre: "" },
   { title: "The Two Towers", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
   { title: "The Fellowship of the Ring", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
   { title: "A River Runs Through It", author: "Norman Maclean", year: "2024", rec: "", genre: "Novel", subgenre: "" },
-  { title: "Murderbot: All Systems Red", author: "Martha Wells", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
+  { title: "Murderbot: All Systems Red", author: "Martha Wells", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Adventure", coverTitle: "All Systems Red" },
   { title: "The Hobbit", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
   { title: "Do Androids Dream of Electric Sheep", author: "Philip K. Dick", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" },
   { title: "The Man Who Solved the Market", author: "Gregory Zuckerman", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
@@ -165,14 +165,14 @@ var books = [
   { title: "The Paper Menagerie and Other Stories", author: "Ken Liu", year: "2023", rec: "X", genre: "Short Stories", subgenre: "" },
   { title: "The Creative Act: A Way of Being", author: "Rick Rubin", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
   { title: "God Emperor of Dune", author: "Frank Herbert", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "The Age of A.I. and our Human Future", author: "Henry Kissinger", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
+  { title: "The Age of A.I. and our Human Future", author: "Henry Kissinger", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "", coverTitle: "The Age of AI and Our Human Future" },
   { title: "Rocket Men", author: "Robert Kurson", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
   { title: "Ghost Wars", author: "Steve Coll", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
   { title: "Barbarian Days: A Surfing Life", author: "William Finnegan", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
   { title: "Psychology of Money", author: "Morgan Housel", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
   { title: "Neuromancer", author: "William Gibson", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" },
   { title: "Damascus Station", author: "David McCloskey", year: "2022", rec: "X", genre: "Novel", subgenre: "" },
-  { title: "Foundation and the Empire", author: "Isaac Asimov", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
+  { title: "Foundation and the Empire", author: "Isaac Asimov", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera", coverTitle: "Foundation and Empire" },
   { title: "Ardennes 1944", author: "Antony Beevor", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
   { title: "Ringworld", author: "Larry Niven", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Adventure" },
   { title: "Snow Crash", author: "Neal Stephenson", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Cyberpunk" },
@@ -198,7 +198,7 @@ var books = [
   { title: "A Little Life", author: "Hanya Yanagihara", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" },
   { title: "The Corrections", author: "Jonathan Franzen", year: "≤ 2021", rec: "", genre: "Novel", subgenre: "" },
   { title: "Freedom", author: "Jonathan Franzen", year: "≤ 2021", rec: "X", genre: "Novel", subgenre: "" },
-  { title: "Curious Case of the Dog in the Nighttime", author: "Mark Haddon", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" },
+  { title: "Curious Case of the Dog in the Nighttime", author: "Mark Haddon", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "", coverTitle: "The Curious Incident of the Dog in the Night-Time" },
   { title: "Sol Lewitt 100 Views", author: "Sol LeWitt", year: "≤ 2021", rec: "S", genre: "Non-Fiction", subgenre: "" },
 ];
 
@@ -207,9 +207,9 @@ var books = [
   var tbody = document.getElementById('book-list');
   var countEl = document.getElementById('book-count');
   var coverCache = {};
-  try { var _stored = localStorage.getItem('bookCoversV2'); if (_stored) coverCache = JSON.parse(_stored); } catch(e) {}
+  try { var _stored = localStorage.getItem('bookCoversV3'); if (_stored) coverCache = JSON.parse(_stored); } catch(e) {}
   function persistCoverCache() {
-    try { localStorage.setItem('bookCoversV2', JSON.stringify(coverCache)); } catch(e) {}
+    try { localStorage.setItem('bookCoversV3', JSON.stringify(coverCache)); } catch(e) {}
   }
 
   var genreOrder = ['Sci-Fi', 'Non-Fiction', 'Novel', 'Fantasy', 'Short Stories', 'Play'];
@@ -290,7 +290,7 @@ var books = [
       img.alt = '';
       img.loading = 'lazy';
       coverTd.appendChild(img);
-      fetchCover(b.title, b.author, img);
+      fetchCover(b.coverTitle || b.title, b.author, img);
 
       tr.appendChild(coverTd);
       tr.insertAdjacentHTML('beforeend',
