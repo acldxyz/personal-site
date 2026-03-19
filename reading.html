@@ -112,106 +112,100 @@
 
 <script>
 var books = [
-  { title: "Food Rules: An Eater's Manual", author: "Michael Pollan", year: "2026", rec: "", genre: "Non-Fiction", subgenre: "", coverUrl: "https://covers.openlibrary.org/b/isbn/9780143116387-M.jpg" },
-  { title: "The Metamorphosis of Prime Intellect", author: "Roger Williams", year: "2026", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "Never Let Me Go", author: "Kazuo Ishiguro", year: "2026", rec: "", genre: "Novel", subgenre: "" },
-  { title: "The Ministry of Time", author: "Kaliane Bradley", year: "2026", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
-  { title: "Blindsight", author: "Peter Watts", year: "2026", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "Into Thin Air", author: "Jon Krakauer", year: "2025", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "The Sense of an Ending", author: "Julian Barnes", year: "2025", rec: "S", genre: "Novel", subgenre: "" },
-  { title: "The Ocean at the End of the Lane", author: "Neil Gaiman", year: "2025", rec: "X", genre: "Fantasy", subgenre: "" },
-  { title: "Einstein's Dreams", author: "Alan Lightman", year: "2025", rec: "S", genre: "Novel", subgenre: "" },
-  { title: "Contact", author: "Carl Sagan", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "The Fall of Hyperion", author: "Dan Simmons", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "A Short Stay in Hell", author: "Steven L. Peck", year: "2025", rec: "", genre: "Fantasy", subgenre: "" },
-  { title: "Orbital", author: "Samantha Harvey", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Adventure", coverUrl: "https://covers.openlibrary.org/b/id/14541972-M.jpg" },
-  { title: "Semiosis", author: "Sue Burke", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" },
-  { title: "The Dungeon Anarchist's Cookbook", author: "Matt Dinniman", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" },
-  { title: "Solaris", author: "Stanislaw Lem", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "Carl's Doomsday Scenario", author: "Matt Dinniman", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" },
-  { title: "Dungeon Crawler Carl", author: "Matt Dinniman", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "LitRPG" },
-  { title: "Murderbot: Exit Strategy", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure", coverUrl: "https://covers.openlibrary.org/b/isbn/9781250185938-M.jpg" },
-  { title: "I, Robot", author: "Isaac Asimov", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Dystopian" },
-  { title: "Jurassic Park", author: "Michael Crichton", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Adventure" },
-  { title: "Project Hail Mary", author: "Andy Weir", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
-  { title: "Upgrade", author: "Blake Crouch", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian", coverUrl: "https://covers.openlibrary.org/b/isbn/9780593157534-M.jpg" },
-  { title: "Annie Bot", author: "Sierra Greer", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
-  { title: "Golden Son", author: "Pierce Brown", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "The Left Hand of Darkness", author: "Ursula K. Le Guin", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" },
-  { title: "Chapterhouse Dune", author: "Frank Herbert", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Counter-Intelligence", author: "Robert Hannigan", year: "2025", rec: "", genre: "Non-Fiction", subgenre: "", coverTitle: "Counter Intelligence" },
-  { title: "Murderbot: Rogue Protocol", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure", coverTitle: "Rogue Protocol" },
-  { title: "Murderbot: Artificial Condition", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure", coverTitle: "Artificial Condition" },
-  { title: "Hyperion", author: "Dan Simmons", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera", coverUrl: "https://covers.openlibrary.org/b/id/380332-M.jpg" },
-  { title: "The Return of the King", author: "J.R.R. Tolkien", year: "2024", rec: "X", genre: "Fantasy", subgenre: "" },
-  { title: "The Two Towers", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
-  { title: "The Fellowship of the Ring", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
-  { title: "A River Runs Through It", author: "Norman Maclean", year: "2024", rec: "", genre: "Novel", subgenre: "" },
-  { title: "Murderbot: All Systems Red", author: "Martha Wells", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Adventure", coverTitle: "All Systems Red" },
-  { title: "The Hobbit", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" },
-  { title: "Do Androids Dream of Electric Sheep", author: "Philip K. Dick", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" },
-  { title: "The Man Who Solved the Market", author: "Gregory Zuckerman", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "The Sounds of Life", author: "Karen Bakker", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Hidden Life of Trees", author: "Peter Wohlleben", year: "2023", rec: "S", genre: "Non-Fiction", subgenre: "" },
-  { title: "Billion Dollar Whale", author: "Tom Wright", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "The Kill Chain", author: "Christian Brose", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "Heretics of Dune", author: "Frank Herbert", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "The Three Body Problem", author: "Liu Cixin", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi", coverUrl: "https://covers.openlibrary.org/b/isbn/9780765377067-M.jpg" },
-  { title: "Red Rising", author: "Pierce Brown", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Troy", author: "Stephen Fry", year: "2023", rec: "X", genre: "Novel", subgenre: "", coverUrl: "https://covers.openlibrary.org/b/id/10657530-M.jpg" },
-  { title: "Speaker for the Dead", author: "Orson Scott Card", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Ender's Game", author: "Orson Scott Card", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "A View from the Bridge", author: "Arthur Miller", year: "2023", rec: "S", genre: "Play", subgenre: "" },
-  { title: "The Paper Menagerie and Other Stories", author: "Ken Liu", year: "2023", rec: "X", genre: "Short Stories", subgenre: "" },
-  { title: "The Creative Act: A Way of Being", author: "Rick Rubin", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "God Emperor of Dune", author: "Frank Herbert", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "The Age of A.I. and our Human Future", author: "Henry Kissinger", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "", coverTitle: "The Age of AI and Our Human Future" },
-  { title: "Rocket Men", author: "Robert Kurson", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Ghost Wars", author: "Steve Coll", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "", coverUrl: "https://covers.openlibrary.org/b/id/13482051-M.jpg" },
-  { title: "Barbarian Days: A Surfing Life", author: "William Finnegan", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
-  { title: "Psychology of Money", author: "Morgan Housel", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Neuromancer", author: "William Gibson", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" },
-  { title: "Damascus Station", author: "David McCloskey", year: "2022", rec: "X", genre: "Novel", subgenre: "" },
-  { title: "Foundation and the Empire", author: "Isaac Asimov", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera", coverTitle: "Foundation and Empire" },
-  { title: "Ardennes 1944", author: "Antony Beevor", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
-  { title: "Ringworld", author: "Larry Niven", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Adventure" },
-  { title: "Snow Crash", author: "Neal Stephenson", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Cyberpunk" },
-  { title: "Kitchen Confidential", author: "Anthony Bourdain", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
-  { title: "Beginner's Mind", author: "Shunryu Suzuki", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Merchants of Debt", author: "George Anders", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Weed the People", author: "Bruce Barcott", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "Bad Blood", author: "John Carreyrou", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "Children of Dune", author: "Frank Herbert", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Stories of Your Life and Others", author: "Ted Chiang", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
-  { title: "Macbeth", author: "William Shakespeare", year: "2022", rec: "S", genre: "Play", subgenre: "" },
-  { title: "The Hard Thing About Hard Things", author: "Ben Horowitz", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "My Life at the Limit", author: "Reinhold Messner", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "The Cold Start Problem", author: "Andrew Chen", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" },
-  { title: "Super Pumped", author: "Mike Isaac", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" },
-  { title: "The Martian", author: "Andy Weir", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" },
+  { title: "Food Rules: An Eater's Manual", author: "Michael Pollan", year: "2026", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=1ZuJDQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Metamorphosis of Prime Intellect", author: "Roger Williams", year: "2026", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" , coverUrl: "https://books.google.com/books/content?id=JgccBdnUHT8C&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Never Let Me Go", author: "Kazuo Ishiguro", year: "2026", rec: "", genre: "Novel", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=qLfZf7f5_pkC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Ministry of Time", author: "Kaliane Bradley", year: "2026", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" , coverUrl: "https://books.google.com/books/content?id=x8f0EAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Blindsight", author: "Peter Watts", year: "2026", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" , coverUrl: "https://books.google.com/books/content?id=FVMzz-xINLsC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Into Thin Air", author: "Jon Krakauer", year: "2025", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=3FONDQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Sense of an Ending", author: "Julian Barnes", year: "2025", rec: "S", genre: "Novel", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=IHhD0QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "The Ocean at the End of the Lane", author: "Neil Gaiman", year: "2025", rec: "X", genre: "Fantasy", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=5D5DnwEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Einstein's Dreams", author: "Alan Lightman", year: "2025", rec: "S", genre: "Novel", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=RZVNCVpyuIcC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Contact", author: "Carl Sagan", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" , coverUrl: "https://books.google.com/books/content?id=Q6o51-W_z8MC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Fall of Hyperion", author: "Dan Simmons", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=F4P4DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "A Short Stay in Hell", author: "Steven L. Peck", year: "2025", rec: "", genre: "Fantasy", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=V282uQAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Orbital", author: "Samantha Harvey", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Adventure" , coverUrl: "https://books.google.com/books/content?id=3QPkEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Semiosis", author: "Sue Burke", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" , coverUrl: "https://books.google.com/books/content?id=8TdCDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Dungeon Anarchist's Cookbook", author: "Matt Dinniman", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" , coverUrl: "https://books.google.com/books/content?id=0rhmEQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Solaris", author: "Stanislaw Lem", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" , coverUrl: "https://books.google.com/books/content?id=w6-kOwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Carl's Doomsday Scenario", author: "Matt Dinniman", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "LitRPG" , coverUrl: "https://books.google.com/books/content?id=COoCEQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Dungeon Crawler Carl", author: "Matt Dinniman", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "LitRPG" , coverUrl: "https://books.google.com/books/content?id=506EEQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Murderbot: Exit Strategy", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" , coverUrl: "https://books.google.com/books/content?id=n48hEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "I, Robot", author: "Isaac Asimov", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Dystopian" , coverUrl: "https://books.google.com/books/content?id=2vnbMzYXBQsC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Jurassic Park", author: "Michael Crichton", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Adventure" , coverUrl: "https://books.google.com/books/content?id=MNeEFe9qU3cC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Project Hail Mary", author: "Andy Weir", year: "2025", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" , coverUrl: "https://books.google.com/books/content?id=-Ff2DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Upgrade", author: "Blake Crouch", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" , coverUrl: "https://books.google.com/books/content?id=Gj9JEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Annie Bot", author: "Sierra Greer", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" , coverUrl: "https://books.google.com/books/content?id=4---EAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Golden Son", author: "Pierce Brown", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=B4zIAgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Left Hand of Darkness", author: "Ursula K. Le Guin", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Dystopian" , coverUrl: "https://books.google.com/books/content?id=zhERCgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Chapterhouse Dune", author: "Frank Herbert", year: "2025", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=3LyWDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Counter-Intelligence", author: "Robert Hannigan", year: "2025", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=e2fXEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Murderbot: Rogue Protocol", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" , coverUrl: "https://books.google.com/books/content?id=JvAyDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Murderbot: Artificial Condition", author: "Martha Wells", year: "2025", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" , coverUrl: "https://books.google.com/books/content?id=oTU0DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Hyperion", author: "Dan Simmons", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=8nsmEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Return of the King", author: "J.R.R. Tolkien", year: "2024", rec: "X", genre: "Fantasy", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=kSxp0AEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "The Two Towers", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=LRD9EAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Fellowship of the Ring", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=7iS1CCpHrJgC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "A River Runs Through It", author: "Norman Maclean", year: "2024", rec: "", genre: "Novel", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=otrz-KkRIBEC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Murderbot: All Systems Red", author: "Martha Wells", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Adventure" , coverUrl: "https://books.google.com/books/content?id=ZSu2DQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Hobbit", author: "J.R.R. Tolkien", year: "2024", rec: "", genre: "Fantasy", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=U799AY3yfqcC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Do Androids Dream of Electric Sheep", author: "Philip K. Dick", year: "2024", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" , coverUrl: "https://books.google.com/books/content?id=jUX8N9kiCiQC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Man Who Solved the Market", author: "Gregory Zuckerman", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=YUmHDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Sounds of Life", author: "Karen Bakker", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=DldsEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Hidden Life of Trees", author: "Peter Wohlleben", year: "2023", rec: "S", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=WEn4DAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Billion Dollar Whale", author: "Tom Wright", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=CVWYDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "The Kill Chain", author: "Christian Brose", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=CW-nDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Heretics of Dune", author: "Frank Herbert", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=wmKVPwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "The Three Body Problem", author: "Liu Cixin", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" , coverUrl: "https://books.google.com/books/content?id=QxbFBAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Red Rising", author: "Pierce Brown", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=_tbZ0QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Troy", author: "Stephen Fry", year: "2023", rec: "X", genre: "Novel", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=lRsszgEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Speaker for the Dead", author: "Orson Scott Card", year: "2023", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=s_VYLwEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Ender's Game", author: "Orson Scott Card", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=_ZghmgEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "A View from the Bridge", author: "Arthur Miller", year: "2023", rec: "S", genre: "Play", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=4mdNnDqkU8EC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Paper Menagerie and Other Stories", author: "Ken Liu", year: "2023", rec: "X", genre: "Short Stories", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=Y3QmDQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Creative Act: A Way of Being", author: "Rick Rubin", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=l3dtEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "God Emperor of Dune", author: "Frank Herbert", year: "2023", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=8OCwAAAAIAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "The Age of A.I. and our Human Future", author: "Henry Kissinger", year: "2023", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=PrEhzgEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Rocket Men", author: "Robert Kurson", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=ivdQDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Ghost Wars", author: "Steve Coll", year: "2023", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=ToYxFL5wmBIC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Barbarian Days: A Surfing Life", author: "William Finnegan", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=r7IMAwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Psychology of Money", author: "Morgan Housel", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=TnrrDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Neuromancer", author: "William Gibson", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Cyberpunk" , coverUrl: "https://books.google.com/books/content?id=pNQiDQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Damascus Station", author: "David McCloskey", year: "2022", rec: "X", genre: "Novel", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=7bROzwEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Foundation and the Empire", author: "Isaac Asimov", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=CzHuAAAAMAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Ardennes 1944", author: "Antony Beevor", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=3LXZCwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Ringworld", author: "Larry Niven", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Adventure" , coverUrl: "https://books.google.com/books/content?id=tUppPgAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Snow Crash", author: "Neal Stephenson", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Cyberpunk" , coverUrl: "https://books.google.com/books/content?id=SXyqPwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Kitchen Confidential", author: "Anthony Bourdain", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=cocVLbFkgyQC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Beginner's Mind", author: "Shunryu Suzuki", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=g8GGrFCFS8kC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Merchants of Debt", author: "George Anders", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=oeDXAAAAMAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Weed the People", author: "Bruce Barcott", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=tTQrBwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Bad Blood", author: "John Carreyrou", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=zIJcDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Children of Dune", author: "Frank Herbert", year: "2022", rec: "", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=IpLqDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Stories of Your Life and Others", author: "Ted Chiang", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=xa_wbcnyKXMC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Macbeth", author: "William Shakespeare", year: "2022", rec: "S", genre: "Play", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=dvn3uent7VcC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Hard Thing About Hard Things", author: "Ben Horowitz", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=620pAgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "My Life at the Limit", author: "Reinhold Messner", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=OzYVCgAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Cold Start Problem", author: "Andrew Chen", year: "2022", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=duj8DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Super Pumped", author: "Mike Isaac", year: "2022", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=ql6NEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "The Martian", author: "Andy Weir", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" , coverUrl: "https://books.google.com/books/content?id=oGGMDQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
   { title: "Division by Zero", author: "Ted Chiang", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
-  { title: "Exhalation", author: "Ted Chiang", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" },
-  { title: "Dune Messiah", author: "Frank Herbert", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Boys in the Boat", author: "Daniel James Brown", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" },
-  { title: "Dune", author: "Frank Herbert", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "Foundation", author: "Isaac Asimov", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" },
-  { title: "A Little Life", author: "Hanya Yanagihara", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" },
-  { title: "The Corrections", author: "Jonathan Franzen", year: "≤ 2021", rec: "", genre: "Novel", subgenre: "" },
-  { title: "Freedom", author: "Jonathan Franzen", year: "≤ 2021", rec: "X", genre: "Novel", subgenre: "" },
-  { title: "Curious Case of the Dog in the Nighttime", author: "Mark Haddon", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "", coverTitle: "The Curious Incident of the Dog in the Night-Time" },
-  { title: "Sol Lewitt 100 Views", author: "Sol LeWitt", year: "≤ 2021", rec: "S", genre: "Non-Fiction", subgenre: "" },
+  { title: "Exhalation", author: "Ted Chiang", year: "2022", rec: "S", genre: "Short Stories", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=SGOPEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Dune Messiah", author: "Frank Herbert", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=8pHqDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Boys in the Boat", author: "Daniel James Brown", year: "2022", rec: "S", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=tHfWEAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Dune", author: "Frank Herbert", year: "2022", rec: "S", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=iAblDwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Foundation", author: "Isaac Asimov", year: "2022", rec: "X", genre: "Sci-Fi", subgenre: "Space Opera" , coverUrl: "https://books.google.com/books/content?id=EUPyAAAAMAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "A Little Life", author: "Hanya Yanagihara", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=sL_ZCwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "The Corrections", author: "Jonathan Franzen", year: "≤ 2021", rec: "", genre: "Novel", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=3SETVDEO45AC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Freedom", author: "Jonathan Franzen", year: "≤ 2021", rec: "X", genre: "Novel", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=62_6oQEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { title: "Curious Case of the Dog in the Nighttime", author: "Mark Haddon", year: "≤ 2021", rec: "S", genre: "Novel", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=Thc32eB1Kx4C&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
+  { title: "Sol Lewitt 100 Views", author: "Sol LeWitt", year: "≤ 2021", rec: "S", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=PIo0AQAAIAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
 ];
 
 (function() {
   var filters = { year: 'all', genre: 'all', subgenre: 'all', rec: 'all' };
   var tbody = document.getElementById('book-list');
   var countEl = document.getElementById('book-count');
-  var coverCache = {};
-  try { var _stored = localStorage.getItem('bookCoversV4'); if (_stored) coverCache = JSON.parse(_stored); } catch(e) {}
-  function persistCoverCache() {
-    try { localStorage.setItem('bookCoversV4', JSON.stringify(coverCache)); } catch(e) {}
-  }
-
   var genreOrder = ['Sci-Fi', 'Non-Fiction', 'Novel', 'Fantasy', 'Short Stories', 'Play'];
   var yearOrder = ['2026', '2025', '2024', '2023', '2022', '\u2264 2021'];
 
@@ -243,34 +237,6 @@ var books = [
     return '';
   }
 
-  function fetchCover(title, author, imgEl, coverUrl) {
-    var key = title + '||' + author;
-    if (coverCache[key] !== undefined) {
-      if (coverCache[key]) {
-        imgEl.src = coverCache[key];
-      } else {
-        imgEl.style.display = 'none';
-      }
-      return;
-    }
-    var url = coverUrl || ('https://covers.openlibrary.org/b/title/' + encodeURIComponent(title) + '-M.jpg');
-    imgEl.onload = function() {
-      if (imgEl.naturalWidth <= 1) {
-        imgEl.style.display = 'none';
-        coverCache[key] = '';
-      } else {
-        coverCache[key] = url;
-      }
-      persistCoverCache();
-    };
-    imgEl.onerror = function() {
-      imgEl.style.display = 'none';
-      coverCache[key] = '';
-      persistCoverCache();
-    };
-    imgEl.src = url;
-  }
-
   function render() {
     var filtered = books.filter(function(b) {
       if (filters.year !== 'all' && b.year !== filters.year) return false;
@@ -285,12 +251,14 @@ var books = [
       var tr = document.createElement('tr');
       var coverTd = document.createElement('td');
       coverTd.className = 'td-cover';
-      var img = document.createElement('img');
-      img.className = 'book-cover';
-      img.alt = '';
-      img.loading = 'lazy';
-      coverTd.appendChild(img);
-      fetchCover(b.coverTitle || b.title, b.author, img, b.coverUrl);
+      if (b.coverUrl) {
+        var img = document.createElement('img');
+        img.className = 'book-cover';
+        img.alt = '';
+        img.loading = 'lazy';
+        img.src = b.coverUrl;
+        coverTd.appendChild(img);
+      }
 
       tr.appendChild(coverTd);
       tr.insertAdjacentHTML('beforeend',
