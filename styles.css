@@ -417,7 +417,14 @@ body {
   width: 100%;
   border-collapse: collapse;
   font-size: 16px;
+  table-layout: fixed;
 }
+
+.reading-table col.col-cover  { width: 6%; }
+.reading-table col.col-title  { /* takes remaining space */ }
+.reading-table col.col-genre  { width: 16%; }
+.reading-table col.col-rec    { width: 12%; }
+.reading-table col.col-year   { width: 8%; }
 
 .reading-table th {
   text-align: left;
@@ -1117,9 +1124,14 @@ body.home .content canvas {
   }
 
   .reading-table .th-cover,
-  .reading-table .td-cover {
+  .reading-table .td-cover,
+  .reading-table col.col-cover {
     display: none;
   }
+
+  .reading-table col.col-genre { width: 20%; }
+  .reading-table col.col-rec   { width: 15%; }
+  .reading-table col.col-year  { width: 10%; }
 
   /* --- Links page --- */
   .video-grid {
