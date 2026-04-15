@@ -119,6 +119,8 @@
 
 <script>
 var books = [
+  { title: "There Is No Antimemetics Division", author: "qntm", year: "2026", rec: "", genre: "Sci-Fi", subgenre: "Adventure" , coverUrl: "https://covers.openlibrary.org/b/id/11457905-L.jpg" },
+  { title: "Trail Wise, Path Ways", author: "John Illig", year: "2026", rec: "", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://covers.openlibrary.org/b/id/3793932-L.jpg" },
   { title: "Breakneck", author: "Dan Wang", year: "2026", rec: "S", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://covers.openlibrary.org/b/id/15121652-L.jpg" },
   { title: "Permutation City", author: "Greg Egan", year: "2026", rec: "X", genre: "Sci-Fi", subgenre: "Hard Sci-Fi" , coverUrl: "https://books.google.com/books/content?id=_37NGwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
   { title: "The Thinking Machine", author: "Stephen Witt", year: "2026", rec: "X", genre: "Non-Fiction", subgenre: "" , coverUrl: "https://books.google.com/books/content?id=ywwCEQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api" },
@@ -271,8 +273,9 @@ var books = [
       }
 
       tr.appendChild(coverTd);
+      var amazonUrl = 'https://www.amazon.com/s?k=' + encodeURIComponent(b.title + ' ' + b.author) + '&i=stripbooks';
       tr.insertAdjacentHTML('beforeend',
-        '<td>' + b.title + '</td>' +
+        '<td><a class="book-title-link" href="' + amazonUrl + '" target="_blank" rel="noopener">' + b.title + '</a></td>' +
         '<td>' + b.genre + '</td>' +
         '<td>' + recLabel(b.rec) + '</td>' +
         '<td>' + b.year + '</td>');

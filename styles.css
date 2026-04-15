@@ -448,7 +448,7 @@ body {
 
 .reading-table .td-cover {
   width: 40px;
-  padding: 4px 10px 4px 0;
+  padding: 4px 40px 4px 0;
 }
 
 .book-cover {
@@ -460,6 +460,15 @@ body {
 
 .reading-table tbody tr:hover {
   background: #f9f9f9;
+}
+
+.book-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.book-title-link:hover {
+  text-decoration: underline;
 }
 
 .reading-count {
