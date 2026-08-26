@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.7881 -0.7635 1.5566 1.5566">
+  <!-- The first block of ADAM — the red "A" — at its resting pose, flattened.
+       Geometry is the cube's REST[0] orientation projected through the same
+       perspective (20 edge-lengths) the page uses, and every face carries the
+       colour that page's lighting model gives it, so the tab icon and the block
+       on the page agree. Regenerate from home-draft.html if either changes.
+       Painter's order: top, right, front. Hidden faces are omitted.
+       Each face is drawn twice — outer polygon is the border, inner is the
+       panel — which is how the block's inset frame is reproduced flat. -->
+
+  <!-- top face -->
+  <polygon points="-0.1567,-0.7408 0.7364,-0.3474 0.532,-0.1379 -0.4033,-0.5518" fill="rgb(132,49,41)"/>
+  <polygon points="-0.0879,-0.6805 0.6211,-0.3681 0.4561,-0.2043 -0.2791,-0.5296" fill="rgb(165,61,52)"/>
+
+  <!-- right face -->
+  <polygon points="0.532,-0.1379 0.7364,-0.3474 0.3815,0.522 0.163,0.7704" fill="rgb(95,35,30)"/>
+  <polygon points="0.5153,-0.0647 0.678,-0.2335 0.3965,0.4565 0.225,0.6496" fill="rgb(119,44,37)"/>
+
+  <!-- front face -->
+  <polygon points="-0.4033,-0.5518 0.532,-0.1379 0.163,0.7704 -0.7561,0.3567" fill="rgb(139,51,43)"/>
+  <polygon points="-0.3434,-0.412 0.3942,-0.085 0.104,0.6326 -0.6234,0.3058" fill="rgb(173,64,54)"/>
+
+  <!-- The A, mapped onto the front face by an affine fit to three of its
+       corners. This is the one place the icon departs from the page: the letter
+       there is a 0.80 step down from the panel, which measures 1.37:1 and
+       vanishes at tab size. Stepped to 0.32 here for 2.79:1, and set a little
+       larger on the face than the page's glyph, since at 16px the letter is
+       only about five pixels tall. The block itself is unchanged.
+       For exact page fidelity instead, use rgb(139,51,44). -->
+  <path transform="matrix(0.5425 0.2401 -0.2046 0.5269 -0.281 -0.2741)"
+        fill="rgb(56,20,17)" fill-rule="evenodd"
+        d="M.5 .04 L.98 .96 L.7 .96 L.615 .78 L.385 .78 L.3 .96 L.02 .96 Z
+           M.5 .28 L.425 .58 L.575 .58 Z"/>
+</svg>

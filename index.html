@@ -1,295 +1,790 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Adam Dawson</title>
-  <link rel="icon" type="image/png" href="acldxyz logo.png">
-  <link rel="stylesheet" href="styles.css">
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-S9B2L8ZZLW"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-S9B2L8ZZLW');
-  </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adam Dawson</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<!-- Carried over from the previous home page; every other page on the site
+     loads the same property, so dropping it here would silently blind it. -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S9B2L8ZZLW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-S9B2L8ZZLW');
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  :root {
+    /* --s is the cube edge; every other dimension is derived from it */
+    --s: clamp(32px, 8vw, 116px);
+    /* Centre-to-centre spacing, as a multiple of the edge. A cube tumbling
+       about any axis sweeps well past its own footprint — see SPACING in the
+       script for where 1.80 comes from. */
+    --gap: calc(var(--s) * 0.80);
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    touch-action: none;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%);
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    -webkit-font-smoothing: antialiased;
+    cursor: default;
+  }
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .line {
+    display: flex;
+    justify-content: center;
+    margin: calc(var(--gap) / 2) 0;
+  }
+
+  /* Static hit target, exactly the footprint of the block at rest — it never
+     transforms, so a block stays easy to hit however it has come to rest. */
+  .slot {
+    position: relative;
+    width: var(--s);
+    height: var(--s);
+    margin: 0 calc(var(--gap) / 2);
+    perspective: calc(var(--s) * 20);
+    perspective-origin: 50% 50%;
+  }
+
+  /* Contact shadow on the page plane. Sits before .cube in the DOM so it
+     paints underneath, and is offset down-right to agree with the light. Its
+     spread and density are driven from the block's live orientation. */
+  .shadow {
+    position: absolute;
+    left: calc(50% + var(--s) * 0.09);
+    top: calc(100% - var(--s) * 0.07);
+    width: var(--s);
+    height: calc(var(--s) * 0.34);
+    margin-left: calc(var(--s) / -2);
+    /* alphas carry the density outright now that reshadow() no longer scales
+       it — these are the old values times the ~0.82 it used to sit at */
+    background: radial-gradient(closest-side ellipse,
+      rgba(72, 57, 38, .28) 0%,
+      rgba(72, 57, 38, .12) 52%,
+      rgba(72, 57, 38, 0) 100%);
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  .cube {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    border-radius: calc(var(--s) * 0.07);
+    background-color: var(--c);
+    /* soft sheen, so the paint catches light near the top-left */
+    background-image:
+      linear-gradient(148deg, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, 0) 46%);
+    box-shadow:
+      inset 0 0 0 calc(var(--s) * 0.105) var(--d),          /* the border */
+      inset 0 0 calc(var(--s) * 0.10) rgba(0, 0, 0, .26);   /* soft inner bevel */
+  }
+
+  /* Where three rounded faces curve away from each other at a corner they leave
+     a hole straight through the block — that's the vacancy. These six panels
+     sit 2.5% behind each shell face (far enough back to never fight it for
+     depth) but are cut almost full width, so they interpenetrate into a solid
+     that plugs the corner. What shows through reads as the shadowed inside of
+     a routed edge rather than a patch. */
+  .core {
+    position: absolute;
+    inset: calc(var(--s) * 0.005);
+    background: var(--k);
+    backface-visibility: hidden;
+  }
+
+  .glyph {
+    font-size: calc(var(--s) * 0.62);
+    line-height: 1;
+    color: var(--d);
+    /* carved: a hairline of light sitting just under the cut */
+    text-shadow: 0 calc(var(--s) * 0.018) 0 rgba(255, 255, 255, .22);
+  }
+
+  /* Sits under the name, in the same register as the reset control so the two
+     read as one system. Wraps rather than shrinks on narrow screens. */
+  .menu {
+    position: relative;                /* anchors the writing submenu */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(2px, 0.6vw, 10px);
+    margin-top: clamp(26px, 6vh, 62px);
+    padding: 0 16px;
+  }
+
+  .menu a,
+  .writing-toggle {
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    font-size: clamp(10px, 1.05vw, 12px);
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: #6f665d;
+    text-decoration: none;
+    padding: .78em 1.2em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease,
+                opacity .25s ease;
+  }
+
+  .writing-toggle {
+    position: relative;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    font-size: clamp(10px, 1.05vw, 12px);
+    font-weight: 600;
+  }
+
+  .menu a:hover,
+  .writing-toggle:hover {
+    color: #2f2a24;
+    background: rgba(0, 0, 0, .05);
+    border-color: rgba(0, 0, 0, .14);
+  }
+
+  .menu a:focus-visible,
+  .writing-toggle:focus-visible { outline: 2px solid #3d7ba8; outline-offset: 2px; }
+
+  /* An open toggle holds the pressed treatment — same shading and border as
+     hover — so it stays visibly the thing the submenu belongs to even once the
+     pointer has moved down onto a child. */
+  .writing-toggle[aria-expanded="true"] {
+    color: #2f2a24;
+    background: rgba(0, 0, 0, .05);
+    border-color: rgba(0, 0, 0, .14);
+  }
+
+  /* Meanwhile the rest of the row steps back. Dimmed, not hidden: the menu
+     should still read as a whole, and hovering one brings it straight back. */
+  .menu.sub-open > a { opacity: .42; }
+  .menu.sub-open > a:hover,
+  .menu.sub-open > a:focus-visible { opacity: 1; }
+
+  /* ---- Writing submenu ---- */
+  /* Anchored to .menu rather than to the button, so when the row wraps on a
+     narrow screen the children drop below every item instead of landing on top
+     of the second row. JS sets `left` to the button's centre. */
+  .writing-sub {
+    position: absolute;
+    top: calc(100% + 2px);
+    display: flex;
+    gap: clamp(2px, 0.6vw, 10px);
+    transform: translateX(-50%);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .writing-sub.open { pointer-events: auto; }
+
+  /* .menu a already gives these the pill treatment; this only adds the reveal */
+  .writing-sub a {
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity .26s ease, transform .26s ease, color .2s ease,
+                background-color .2s ease, border-color .2s ease;
+  }
+
+  .writing-sub.open a {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .writing-sub.open a:nth-of-type(2) { transition-delay: .06s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .menu a, .writing-toggle, .writing-sub a { transition-duration: .01s; }
+    .writing-sub.open a:nth-of-type(2) { transition-delay: 0s; }
+  }
+
+  /* Quiet until it has something to undo: the page loads as just the name,
+     and the control fades in once a block has been knocked off its pose. */
+  .reset {
+    position: fixed;
+    right: clamp(16px, 3vw, 34px);
+    bottom: clamp(16px, 3vw, 34px);
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #8a8076;
+    background: rgba(0, 0, 0, .025);
+    border: 1px solid rgba(0, 0, 0, .12);
+    border-radius: 999px;
+    padding: .72em 1.3em;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .45s ease, color .2s ease,
+                background-color .2s ease, border-color .2s ease;
+  }
+
+  .reset.on { opacity: 1; pointer-events: auto; }
+
+  .reset:hover {
+    color: #2f2a24;
+    background: rgba(0, 0, 0, .06);
+    border-color: rgba(0, 0, 0, .26);
+  }
+
+  .reset:focus-visible { outline: 2px solid #3d7ba8; outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reset { transition: none; }
+  }
+
+  /* per-face lighting, driven from the block's live orientation */
+  .shade {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: #0b0805;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>
 </head>
+<body>
 
-<body class="home">
-
-<div class="layout">
-
-  <nav class="sidebar">
-    <a href="index.html" class="logo"><img src="acldxyz logo.png" alt="Adam Dawson"></a>
-    <span class="site-name">Adam Dawson</span>
-
-    <a href="about.html">About</a>
-
-    <div class="nav-item has-submenu">
-      <a class="parent-link" href="#">Writing</a>
-      <div class="submenu">
-        <a href="fatherhood.html">Fatherhood</a>
-        <a href="#">Research</a>
-      </div>
-    </div>
-
-    <a href="reading.html">Reading List</a>
-    <a href="links.html">Links</a>
-    <a href="mailto:adam@acld.xyz">Contact</a>
-  </nav>
-
-  <main class="content" onclick="window.location.href='about.html'" style="cursor: pointer;">
-    <canvas id="lewitt" style="pointer-events: none;"></canvas>
-  </main>
-
+<div class="stage" id="stage" aria-label="Adam Dawson">
+  <div class="line" data-word="ADAM"></div>
+  <div class="line" data-word="DAWSON"></div>
 </div>
 
+<nav class="menu" aria-label="Primary">
+  <a href="about.html">About</a>
+
+  <button class="writing-toggle" id="writing-toggle" type="button"
+          aria-expanded="false" aria-controls="writing-sub">
+    <span>Writing</span>
+  </button>
+
+  <a href="reading.html">Bookshelf</a>
+  <a href="links.html">Content Library</a>
+  <a href="mailto:adam@acld.xyz">Contact</a>
+
+  <!-- Thoughts belongs here too, but thoughts.html is still a draft and is not
+       deployed — the link would 404. Re-add it when that page ships. -->
+  <div class="writing-sub" id="writing-sub" inert>
+    <a href="fatherhood.html">Fatherhood</a>
+    <a href="research.html">Research</a>
+  </div>
+</nav>
+
+<button class="reset" id="reset" type="button" disabled>Reset</button>
+
 <script>
-(function() {
-  const canvas = document.getElementById('lewitt');
-  const ctx = canvas.getContext('2d');
+(function () {
+  'use strict';
 
-  // --- Grid config (responsive) ---
-  var COLS = 5;
-  var ROWS = 3;
+  // ---- look ----------------------------------------------------------------
+  // Classic four-colour block set. The letter and its border are the same hue
+  // stepped down in value, so a block is only ever one colour.
+  var PALETTE = [
+    [201,  74,  63],   // red
+    [ 92, 159,  82],   // green
+    [225, 182,  64],   // yellow
+    [ 74, 135, 185]    // blue
+  ];
+  var DARKEN = 0.80;   // letter + border: a gentle step down from the face colour
+  var CORE   = 0.62;   // inner cube glimpsed at the corners, where an edge is cut
 
-  function updateGrid() {
-    if (window.innerWidth < 768) {
-      COLS = 3;
-      ROWS = 5;
-    } else {
-      COLS = 5;
-      ROWS = 3;
-    }
+  // Light sitting up and to the left, in front of the blocks.
+  var LX = -0.40, LY = -0.55, LZ = 0.73;
+  var AMBIENT = 0.52;
+
+  // ---- feel ----------------------------------------------------------------
+  // A brisk pass is roughly 1-2 px/ms. At 260 that lands a block at 0.7-1.4
+  // turns a second — an unhurried tumble where every face is legible on its way
+  // past, rather than a flick that blurs. The ceiling matters as much as the
+  // rate: it's what a fast swipe actually hits, so it moves with it.
+  var SPIN_PER_SPEED = 260;  // deg/sec of spin per px/ms of pointer speed
+  var MAX_SPIN       = 700;  // deg/sec ceiling
+  var DECAY_MS       = 2200; // friction time constant — momentum runs out here
+  var REST_SPIN      = 2;    // deg/sec below which a block is considered still
+
+  // Kept well under the figures above, or the accessibility branch stops being
+  // meaningfully gentler than the default.
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) { SPIN_PER_SPEED = 90; MAX_SPIN = 160; DECAY_MS = 900; }
+
+  // Centre-to-centre spacing as a multiple of the cube edge, kept in sync with
+  // --gap in the stylesheet (--gap = (SPACING - 1) * --s).
+  //
+  // A cube of edge S rotated by R has a projected half-width of
+  //   max over corners c of  |(R·c)x| * d / (d - (R·c)z)
+  // which peaks just under 0.9S for d = 20S. 1.80 centre-to-centre therefore
+  // clears every reachable orientation. Verified by sampling in verify().
+  var SPACING = 1.80;
+
+  // faces, in local space: [normal, transform]
+  var FACES = [
+    [[0, 0, 1],  'translateZ(HALF)'],
+    [[0, 0, -1], 'rotateY(180deg) translateZ(HALF)'],
+    [[1, 0, 0],  'rotateY(90deg) translateZ(HALF)'],
+    [[-1, 0, 0], 'rotateY(-90deg) translateZ(HALF)'],
+    [[0, -1, 0], 'rotateX(90deg) translateZ(HALF)'],   // y points down in CSS
+    [[0, 1, 0],  'rotateX(-90deg) translateZ(HALF)']
+  ];
+
+  // scratch rotation matrix, reused by toMatrix / matrix3d / relight
+  var m = new Array(9);
+
+  function rgb(c, k) {
+    return 'rgb(' + Math.round(c[0] * k) + ',' + Math.round(c[1] * k) + ',' + Math.round(c[2] * k) + ')';
   }
 
-  // --- Animation timing ---
-  const CELL_DRAW_DURATION = 1200;
-  const CELL_STAGGER = 200;
-  const TOTAL_DURATION = CELL_STAGGER * 14 + CELL_DRAW_DURATION;
+  // ---- resting pose --------------------------------------------------------
+  // Where the blocks start, and where Reset puts them back. These orientations
+  // were lifted straight off a live tumble rather than generated from a rule —
+  // each block is off-axis by 17°-44° on its own mix of yaw, pitch and roll,
+  // which scatters in a way no tidy formula does. Order follows the letters.
+  //                w         x         y         z
+  var REST = [
+    [ 0.96723, -0.13201, -0.09336,  0.19575],   // A
+    [ 0.94796,  0.24464, -0.13600, -0.15174],   // D
+    [ 0.92604,  0.29569,  0.01054,  0.23431],   // A
+    [ 0.98505, -0.02771,  0.09215,  0.14289],   // M
+    [ 0.92920,  0.36893, -0.01617,  0.01460],   // D
+    [ 0.93137, -0.19189,  0.13890,  0.27645],   // A
+    [ 0.97454,  0.09472,  0.03059, -0.20093],   // W
+    [ 0.93960,  0.18770,  0.19605,  0.20851],   // S
+    [ 0.94107, -0.27655, -0.09690, -0.16887],   // O
+    [ 0.98870, -0.01179, -0.08995,  0.11937]    // N
+  ];
 
-  // --- Element types and combinations ---
-  const TYPES = ['arcs-corners', 'arcs-sides', 'straight', 'not-straight', 'broken'];
-  const combinations = [];
-  for (let i = 0; i < TYPES.length; i++) {
-    for (let j = i; j < TYPES.length; j++) {
-      combinations.push([TYPES[i], TYPES[j]]);
-    }
+  function restPose(i) {
+    var q = REST[i % REST.length];
+    return { w: q[0], x: q[1], y: q[2], z: q[3] };
   }
 
-  // --- Seeded PRNG for deterministic wavy lines ---
-  function mulberry32(a) {
-    return function() {
-      a |= 0; a = a + 0x6D2B79F5 | 0;
-      var t = Math.imul(a ^ a >>> 15, 1 | a);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  // ---- build the blocks ----------------------------------------------------
+  var blocks = [];
+  var n = 0;
+
+  Array.prototype.forEach.call(document.querySelectorAll('.line'), function (line) {
+    line.getAttribute('data-word').split('').forEach(function (ch) {
+      var base = PALETTE[n % PALETTE.length];
+      n++;
+
+      var slot = document.createElement('span');
+      slot.className = 'slot';
+
+      var shadow = document.createElement('span');
+      shadow.className = 'shadow';
+      slot.appendChild(shadow);          // before the cube, so it paints beneath
+
+      var cube = document.createElement('span');
+      cube.className = 'cube';
+      cube.style.setProperty('--c', rgb(base, 1));
+      cube.style.setProperty('--d', rgb(base, DARKEN));
+      cube.style.setProperty('--k', rgb(base, CORE));
+
+      // inner cube first, so the shell wins any depth tie at the edges
+      FACES.forEach(function (f) {
+        var core = document.createElement('span');
+        core.className = 'core';
+        core.style.transform = f[1].replace('HALF', 'calc(var(--s) * 0.475)');
+        cube.appendChild(core);
+      });
+
+      var shades = [];
+      FACES.forEach(function (f, i) {
+        var face = document.createElement('span');
+        face.className = 'face';
+        face.style.transform = f[1].replace('HALF', 'calc(var(--s) / 2)');
+
+        var glyph = document.createElement('span');
+        glyph.className = 'glyph';
+        glyph.textContent = ch;
+        if (i > 0) glyph.setAttribute('aria-hidden', 'true');
+
+        var shade = document.createElement('span');
+        shade.className = 'shade';
+
+        face.appendChild(glyph);
+        face.appendChild(shade);
+        cube.appendChild(face);
+        shades.push(shade);
+      });
+
+      slot.appendChild(cube);
+      line.appendChild(slot);
+
+      var q0 = restPose(blocks.length);
+      toMatrix(q0);
+      blocks.push({
+        slot: slot,
+        cube: cube,
+        shades: shades,
+        shadow: shadow,
+        rect: null,
+        // half-extents of the resting pose, in edge multiples — the tilted
+        // block overhangs its slot, and the hit area should match what's drawn
+        hw: (Math.abs(m[0]) + Math.abs(m[1]) + Math.abs(m[2])) / 2,
+        hh: (Math.abs(m[3]) + Math.abs(m[4]) + Math.abs(m[5])) / 2,
+        // orientation quaternion + angular velocity vector (deg/sec, world axes)
+        q: q0,
+        rest: q0,          // the designed pose, to fall back to on reset
+        from: q0,          // orientation at the moment reset was pressed
+        wx: 0, wy: 0, wz: 0
+      });
+    });
+  });
+
+  // ---- quaternion helpers --------------------------------------------------
+  function qmul(a, b) {
+    return {
+      w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+      x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+      y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+      z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w
     };
   }
 
-  function lerp(a, b, t) { return a + (b - a) * t; }
-
-  function easeInOutCubic(t) {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  function toMatrix(q) {
+    var x = q.x, y = q.y, z = q.z, w = q.w;
+    m[0] = 1 - 2 * (y * y + z * z); m[1] = 2 * (x * y - z * w);     m[2] = 2 * (x * z + y * w);
+    m[3] = 2 * (x * y + z * w);     m[4] = 1 - 2 * (x * x + z * z); m[5] = 2 * (y * z - x * w);
+    m[6] = 2 * (x * z - y * w);     m[7] = 2 * (y * z + x * w);     m[8] = 1 - 2 * (x * x + y * y);
   }
 
-  // --- Canvas sizing ---
-  let logicalW, logicalH;
+  // Shortest-arc interpolation between two orientations. Nothing else gets a
+  // block home along a natural path — component-wise blending would swing it
+  // through orientations it never passed on the way out.
+  function slerp(a, b, t) {
+    var d = a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z;
+    var bw = b.w, bx = b.x, by = b.y, bz = b.z;
+    if (d < 0) { d = -d; bw = -bw; bx = -bx; by = -by; bz = -bz; }  // take the near way round
 
-  function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    logicalW = rect.width;
-    logicalH = rect.height;
-  }
-
-  // --- Drawing functions (each draws ONE line/arc) ---
-
-  function drawArcFromCorner(ctx, x, y, w, h, progress, variant) {
-    var r = Math.min(w, h);
-    var arcs = [
-      { cx: x,     cy: y,     sa: 0,              ea: Math.PI / 2 },
-      { cx: x + w, cy: y,     sa: Math.PI / 2,    ea: Math.PI },
-      { cx: x + w, cy: y + h, sa: Math.PI,        ea: 3 * Math.PI / 2 },
-      { cx: x,     cy: y + h, sa: 3 * Math.PI / 2, ea: 2 * Math.PI },
-    ];
-    var a = arcs[variant % 4];
-    ctx.beginPath();
-    var sweep = a.ea - a.sa;
-    ctx.arc(a.cx, a.cy, r, a.sa, a.sa + sweep * progress);
-    ctx.stroke();
-  }
-
-  function drawArcFromSide(ctx, x, y, w, h, progress, variant) {
-    // Side arcs: semicircles centered on a side midpoint, radius = half that side's length
-    // Endpoints land on the two corners of that side
-    var sides = [
-      { cx: x + w / 2, cy: y,         r: w / 2, sa: 0,              ea: Math.PI },
-      { cx: x + w,     cy: y + h / 2, r: h / 2, sa: Math.PI / 2,    ea: 3 * Math.PI / 2 },
-      { cx: x + w / 2, cy: y + h,     r: w / 2, sa: Math.PI,        ea: 2 * Math.PI },
-      { cx: x,         cy: y + h / 2, r: h / 2, sa: 3 * Math.PI / 2, ea: 5 * Math.PI / 2 },
-    ];
-    var s = sides[variant % 4];
-    ctx.beginPath();
-    var sweep = s.ea - s.sa;
-    ctx.arc(s.cx, s.cy, s.r, s.sa, s.sa + sweep * progress);
-    ctx.stroke();
-  }
-
-  function drawStraightLine(ctx, x, y, w, h, progress, variant) {
-    var lines = [
-      [[x, y + h / 2], [x + w, y + h / 2]],
-      [[x + w / 2, y], [x + w / 2, y + h]],
-      [[x, y], [x + w, y + h]],
-      [[x + w, y], [x, y + h]],
-    ];
-    var l = lines[variant % 4];
-    ctx.beginPath();
-    ctx.moveTo(l[0][0], l[0][1]);
-    var dx = (l[1][0] - l[0][0]) * progress;
-    var dy = (l[1][1] - l[0][1]) * progress;
-    ctx.lineTo(l[0][0] + dx, l[0][1] + dy);
-    ctx.stroke();
-  }
-
-  function drawNotStraightLine(ctx, x, y, w, h, progress, variant, cellIndex) {
-    var amplitude = Math.min(w, h) * 0.07;
-    var segments = 10;
-    var rng = mulberry32(cellIndex * 77 + variant * 13 + 31);
-    var paths = [
-      { from: [x, y + h / 2], to: [x + w, y + h / 2], px: 0, py: 1 },
-      { from: [x + w / 2, y], to: [x + w / 2, y + h], px: 1, py: 0 },
-      { from: [x, y], to: [x + w, y + h], px: -0.707, py: 0.707 },
-      { from: [x + w, y], to: [x, y + h], px: 0.707, py: 0.707 },
-    ];
-    var path = paths[variant % 4];
-    ctx.beginPath();
-    ctx.moveTo(path.from[0], path.from[1]);
-    var activeSegs = Math.ceil(segments * progress);
-    for (var i = 0; i < activeSegs; i++) {
-      var t1 = i / segments;
-      var t2 = Math.min((i + 1) / segments, progress);
-      var midT = (t1 + t2) / 2;
-      var sign = (i % 2 === 0) ? 1 : -1;
-      var ampVar = amplitude * (0.6 + rng() * 0.8);
-      var cpx = lerp(path.from[0], path.to[0], midT) + path.px * ampVar * sign;
-      var cpy = lerp(path.from[1], path.to[1], midT) + path.py * ampVar * sign;
-      var ex = lerp(path.from[0], path.to[0], t2);
-      var ey = lerp(path.from[1], path.to[1], t2);
-      ctx.quadraticCurveTo(cpx, cpy, ex, ey);
+    var k0, k1;
+    if (d > 0.9995) {                     // all but coincident: lerp and renormalise
+      k0 = 1 - t; k1 = t;
+    } else {
+      var th0 = Math.acos(d), th = th0 * t, s0 = Math.sin(th0);
+      k0 = Math.sin(th0 - th) / s0;
+      k1 = Math.sin(th) / s0;
     }
-    ctx.stroke();
+    var q = { w: a.w * k0 + bw * k1, x: a.x * k0 + bx * k1,
+              y: a.y * k0 + by * k1, z: a.z * k0 + bz * k1 };
+    var len = Math.sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z) || 1;
+    return { w: q.w / len, x: q.x / len, y: q.y / len, z: q.z / len };
   }
 
-  function drawBrokenLine(ctx, x, y, w, h, progress, variant) {
-    ctx.save();
-    ctx.setLineDash([8, 6]);
-    drawStraightLine(ctx, x, y, w, h, progress, variant);
-    ctx.restore();
+  function matrix3d() {  // matrix3d is column-major
+    return 'matrix3d(' +
+      m[0].toFixed(6) + ',' + m[3].toFixed(6) + ',' + m[6].toFixed(6) + ',0,' +
+      m[1].toFixed(6) + ',' + m[4].toFixed(6) + ',' + m[7].toFixed(6) + ',0,' +
+      m[2].toFixed(6) + ',' + m[5].toFixed(6) + ',' + m[8].toFixed(6) + ',0,' +
+      '0,0,0,1)';
   }
 
-  function drawElement(ctx, type, x, y, w, h, progress, variant, cellIndex) {
-    switch (type) {
-      case 'arcs-corners':  drawArcFromCorner(ctx, x, y, w, h, progress, variant); break;
-      case 'arcs-sides':    drawArcFromSide(ctx, x, y, w, h, progress, variant); break;
-      case 'straight':      drawStraightLine(ctx, x, y, w, h, progress, variant); break;
-      case 'not-straight':  drawNotStraightLine(ctx, x, y, w, h, progress, variant, cellIndex); break;
-      case 'broken':        drawBrokenLine(ctx, x, y, w, h, progress, variant); break;
+  // Rotate each face normal into world space and shade it against the light.
+  function relight(B) {
+    for (var i = 0; i < 6; i++) {
+      var nrm = FACES[i][0];
+      var wx = m[0] * nrm[0] + m[1] * nrm[1] + m[2] * nrm[2];
+      var wy = m[3] * nrm[0] + m[4] * nrm[1] + m[5] * nrm[2];
+      var wz = m[6] * nrm[0] + m[7] * nrm[1] + m[8] * nrm[2];
+      var d = wx * LX + wy * LY + wz * LZ;
+      if (d < 0) d = 0;
+      var bright = AMBIENT + (1 - AMBIENT) * d;
+      B.shades[i].style.opacity = ((1 - bright) * 0.85).toFixed(3);
     }
   }
 
-  // --- Animation ---
-  var startTime = null;
-
-  function animate(timestamp) {
-    if (!startTime) startTime = timestamp;
-    var elapsed = timestamp - startTime;
-
-    ctx.clearRect(0, 0, logicalW, logicalH);
-
-    // Black background
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, logicalW, logicalH);
-
-    var cellW = logicalW / COLS;
-    var cellH = logicalH / ROWS;
-
-    // Faint grid lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([]);
-    for (var c = 1; c < COLS; c++) {
-      ctx.beginPath();
-      ctx.moveTo(c * cellW, 0);
-      ctx.lineTo(c * cellW, logicalH);
-      ctx.stroke();
-    }
-    for (var r = 1; r < ROWS; r++) {
-      ctx.beginPath();
-      ctx.moveTo(0, r * cellH);
-      ctx.lineTo(logicalW, r * cellH);
-      ctx.stroke();
-    }
-
-    // Draw cells
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 1.5;
-    ctx.lineCap = 'round';
-    ctx.setLineDash([]);
-
-    combinations.forEach(function(combo, index) {
-      var col = index % COLS;
-      var row = Math.floor(index / COLS);
-      var x = col * cellW;
-      var y = row * cellH;
-
-      var cellStart = index * CELL_STAGGER;
-      var cellElapsed = elapsed - cellStart;
-      var progress = Math.max(0, Math.min(1, cellElapsed / CELL_DRAW_DURATION));
-
-      if (progress > 0) {
-        var easedProgress = easeInOutCubic(progress);
-
-        ctx.save();
-        ctx.beginPath();
-        var pad = 0.5;
-        ctx.rect(x - pad, y - pad, cellW + pad * 2, cellH + pad * 2);
-        ctx.clip();
-
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 1.5;
-        ctx.lineCap = 'round';
-        ctx.setLineDash([]);
-
-        drawElement(ctx, combo[0], x, y, cellW, cellH, easedProgress, index, index);
-        drawElement(ctx, combo[1], x, y, cellW, cellH, easedProgress, index + 2, index);
-
-        ctx.restore();
-      }
-    });
-
-    if (elapsed < TOTAL_DURATION) {
-      requestAnimationFrame(animate);
-    }
+  // The cube's projected footprint runs 1.0 edge-lengths face-on to 1.73
+  // corner-on, so the shadow tracks that spread — fixed at one size it would
+  // sit visibly too small under a corner-on block. Density stays put: a cube
+  // never turns thin (1.0 is the floor), so there's nothing for it to answer
+  // to, and modulating it just reads as a pulse.
+  // Assumes toMatrix() has already been called for this block.
+  function reshadow(B) {
+    var hw = (Math.abs(m[0]) + Math.abs(m[1]) + Math.abs(m[2])) / 2;
+    var hh = (Math.abs(m[3]) + Math.abs(m[4]) + Math.abs(m[5])) / 2;
+    B.shadow.style.transform = 'scale(' + (hw * 2).toFixed(3) + ',' + (0.55 + hh).toFixed(3) + ')';
   }
 
-  function init() {
-    updateGrid();
-    resize();
-    startTime = null;
-    requestAnimationFrame(animate);
+  // ---- the flick -----------------------------------------------------------
+  // Rolling a ball: swipe right and the near face travels right, so the block
+  // turns about +Y; swipe down and it turns about -X. The impulse is added to
+  // whatever spin the block already has.
+  function kick(B, vx, vy) {
+    var ix = -vy * SPIN_PER_SPEED, iy = vx * SPIN_PER_SPEED;
+    // A pointer that arrives at a standstill — parked over a block on load, or
+    // easing in — imparts nothing, and shouldn't count as having touched it.
+    if (Math.abs(ix) + Math.abs(iy) < REST_SPIN) return;
+
+    resetAt = null;                  // a flick mid-reset takes over
+    B.wx += ix;
+    B.wy += iy;
+    var s = Math.sqrt(B.wx * B.wx + B.wy * B.wy + B.wz * B.wz);
+    if (s > MAX_SPIN) {
+      var k = MAX_SPIN / s;
+      B.wx *= k; B.wy *= k; B.wz *= k;
+    }
+    disturbed(true);
+    start();
   }
 
-  var resizeTimeout;
-  window.addEventListener('resize', function() {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(init, 150);
+  // ---- reset ---------------------------------------------------------------
+  var RESET_MS = reduced ? 260 : 850;
+  var resetAt = null;                // elapsed ms into the reset, or null
+  var resetBtn = document.getElementById('reset');
+
+  function disturbed(on) {
+    resetBtn.classList.toggle('on', on);
+    resetBtn.disabled = !on;
+  }
+
+  resetBtn.addEventListener('click', function () {
+    for (var i = 0; i < blocks.length; i++) {
+      var B = blocks[i];
+      B.wx = B.wy = B.wz = 0;        // drop any momentum still in flight
+      B.from = B.q;
+    }
+    resetAt = 0;
+    start();
   });
 
-  init();
+  // ---- pointer tracking ----------------------------------------------------
+  var px = 0, py = 0, pt = 0, seen = false;
+  var vx = 0, vy = 0;          // smoothed pointer velocity, px/ms
+  var over = -1;
+
+  function measure() {
+    for (var i = 0; i < blocks.length; i++) {
+      var B = blocks[i];
+      var r = B.slot.getBoundingClientRect();
+      var s = r.width;                                  // the slot is one edge square
+      var padX = (B.hw - 0.5) * s, padY = (B.hh - 0.5) * s;
+      B.rect = {
+        left: r.left - padX, right: r.right + padX,
+        top: r.top - padY, bottom: r.bottom + padY
+      };
+    }
+    over = -1;
+  }
+
+  function hit(x, y) {
+    for (var i = 0; i < blocks.length; i++) {
+      var r = blocks[i].rect;
+      if (r && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return i;
+    }
+    return -1;
+  }
+
+  function onMove(e) {
+    var now = performance.now();
+    if (seen) {
+      var dt = now - pt;
+      if (dt > 150) {
+        vx = vy = 0;                       // pointer was parked; start clean
+      } else if (dt >= 1) {
+        var rx = (e.clientX - px) / dt;
+        var ry = (e.clientY - py) / dt;
+        vx = vx * 0.45 + rx * 0.55;        // light smoothing kills sample spikes
+        vy = vy * 0.45 + ry * 0.55;
+      }
+    }
+    px = e.clientX; py = e.clientY; pt = now; seen = true;
+
+    var idx = hit(e.clientX, e.clientY);
+    if (idx !== over) {
+      if (idx >= 0) kick(blocks[idx], vx, vy);
+      over = idx;
+    }
+  }
+
+  window.addEventListener('pointermove', onMove, { passive: true });
+  window.addEventListener('pointerdown', onMove, { passive: true });
+  window.addEventListener('pointerleave', function () { seen = false; over = -1; });
+
+  // ---- integrate -----------------------------------------------------------
+  var raf = 0, last = 0;
+
+  function frame(now) {
+    var dt = Math.min(64, now - last);
+    last = now;
+    var alive = false;
+
+    if (resetAt !== null) {
+      resetAt += dt;
+      var t = Math.min(1, resetAt / RESET_MS);
+      var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      for (var j = 0; j < blocks.length; j++) {
+        var R = blocks[j];
+        R.q = slerp(R.from, R.rest, e);
+        toMatrix(R.q);
+        R.cube.style.transform = matrix3d();
+        relight(R);
+        reshadow(R);
+      }
+      if (t >= 1) { resetAt = null; disturbed(false); }
+      raf = requestAnimationFrame(frame);
+      return;
+    }
+
+    var decay = Math.exp(-dt / DECAY_MS);
+
+    for (var i = 0; i < blocks.length; i++) {
+      var B = blocks[i];
+      var speed = Math.sqrt(B.wx * B.wx + B.wy * B.wy + B.wz * B.wz);
+      if (speed < REST_SPIN) { B.wx = B.wy = B.wz = 0; continue; }
+
+      var rad = speed * (dt / 1000) * Math.PI / 180;
+      var half = rad / 2, s = Math.sin(half) / speed;
+      var dq = { w: Math.cos(half), x: B.wx * s, y: B.wy * s, z: B.wz * s };
+
+      // pre-multiply: the block turns about the world axis the mouse implied,
+      // not about its own already-tumbled axes
+      var q = qmul(dq, B.q);
+      var len = Math.sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z) || 1;
+      B.q = { w: q.w / len, x: q.x / len, y: q.y / len, z: q.z / len };
+
+      toMatrix(B.q);
+      B.cube.style.transform = matrix3d();
+      relight(B);
+      reshadow(B);
+
+      B.wx *= decay; B.wy *= decay; B.wz *= decay;
+      alive = true;
+    }
+
+    raf = alive ? requestAnimationFrame(frame) : 0;
+  }
+
+  function start() {
+    if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+  }
+
+  // ---- spacing check -------------------------------------------------------
+  // Brute-force the worst projected half-width over random orientations, so the
+  // no-overlap claim is measured rather than assumed. Returns edge multiples.
+  window.verify = function (samples) {
+    var d = 20, worst = 0;                 // d = perspective, in edge multiples
+    for (var i = 0; i < (samples || 200000); i++) {
+      var u1 = Math.random(), u2 = Math.random(), u3 = Math.random();
+      var q = { w: Math.sqrt(1 - u1) * Math.sin(2 * Math.PI * u2),
+                x: Math.sqrt(1 - u1) * Math.cos(2 * Math.PI * u2),
+                y: Math.sqrt(u1) * Math.sin(2 * Math.PI * u3),
+                z: Math.sqrt(u1) * Math.cos(2 * Math.PI * u3) };
+      toMatrix(q);
+      for (var c = 0; c < 8; c++) {
+        var cx = (c & 1 ? 0.5 : -0.5), cy = (c & 2 ? 0.5 : -0.5), cz = (c & 4 ? 0.5 : -0.5);
+        var X = m[0] * cx + m[1] * cy + m[2] * cz;
+        var Z = m[6] * cx + m[7] * cy + m[8] * cz;
+        var p = Math.abs(X) * d / (d - Z);
+        if (p > worst) worst = p;
+      }
+    }
+    return { worstHalfWidth: worst, neededSpacing: worst * 2, using: SPACING };
+  };
+
+  // strike the resting pose, then measure against it
+  for (var i = 0; i < blocks.length; i++) {
+    toMatrix(blocks[i].q);
+    blocks[i].cube.style.transform = matrix3d();
+    relight(blocks[i]);
+    reshadow(blocks[i]);
+  }
+
+  window.addEventListener('resize', measure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  measure();
+})();
+
+// ---- Writing: submenu -------------------------------------------------------
+// Two earlier passes at this button are shelved rather than deleted: the
+// pen-and-ink pine that sat above it is in pine-tree.html, and the animated
+// root system that grew from it is in home-draft.html.
+(function () {
+  'use strict';
+
+  var menu   = document.querySelector('.menu');
+  var toggle = document.getElementById('writing-toggle');
+  var sub    = document.getElementById('writing-sub');
+
+  // The submenu hangs off .menu rather than off the button, so that when the
+  // row wraps on a narrow screen it drops below every item instead of landing
+  // on top of the second row. Its x still tracks the Writing button.
+  function place() {
+    var m = menu.getBoundingClientRect();
+    var t = toggle.getBoundingClientRect();
+    var half = sub.offsetWidth / 2;
+    var centre = t.left + t.width / 2;
+
+    // Held inside the viewport, so a button near the edge doesn't push its
+    // children off screen.
+    var x = Math.max(half + 10, Math.min(window.innerWidth - half - 10, centre));
+    sub.style.left = (x - m.left) + 'px';
+  }
+
+  function setOpen(open) {
+    sub.classList.toggle('open', open);
+    menu.classList.toggle('sub-open', open);   // dims the siblings
+
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    sub.inert = !open;               // keeps the links out of the tab order when shut
+  }
+
+  toggle.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setOpen(!sub.classList.contains('open'));
+  });
+
+  document.addEventListener('click', function (e) {
+    if (sub.classList.contains('open') && !sub.contains(e.target)) setOpen(false);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && sub.classList.contains('open')) {
+      setOpen(false);
+      toggle.focus();
+    }
+  });
+
+  window.addEventListener('resize', place);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+  place();
 })();
 </script>
 
