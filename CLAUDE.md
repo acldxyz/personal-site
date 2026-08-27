@@ -179,7 +179,7 @@ code is broken. Editing the file usually forces a genuine reload.
 spelling ADAM / DAWSON, and a horizontal menu beneath them.
 
 Menu targets: About → `about.html`, Bookshelf → `reading.html`,
-CWR → `links.html`, Contact → `mailto:adam@acld.xyz`.
+Canon → `links.html`, Contact → `mailto:adam@acld.xyz`.
 **Writing is a `<button>`, not a link** — it toggles a submenu rather than
 navigating, and has no page of its own. Still open.
 
@@ -189,12 +189,12 @@ earlier version grew an animated root system down to three children; that was
 removed from the live page and survives only in `home-draft.html`. Thoughts is
 the third child and is commented out of the menu until `thoughts.html` ships.
 
-**Only the home page has moved to the new language.** About, Bookshelf and CWR
+**Only the home page has moved to the new language.** About, Bookshelf and Canon
 are still the old one, so the menu drops visitors into a different-looking site
 — a known transitional state, to be made uniform in a later pass. Naming
-diverges too: the home menu says CWR where `links.html` still calls itself
+diverges too: the home menu says Canon where `links.html` still calls itself
 Links, in its title, heading and sidebar. Bookshelf has already been made
-consistent everywhere; CWR has not.
+consistent everywhere; Canon has not.
 
 Deploying is `git push` to `main` — the live site tracks that branch. There is
 no CNAME, workflow or `gh-pages` branch in the repo, so the host is configured
