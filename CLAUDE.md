@@ -191,10 +191,14 @@ the third child and is commented out of the menu until `thoughts.html` ships.
 
 **Only the home page has moved to the new language.** About, Bookshelf and Canon
 are still the old one, so the menu drops visitors into a different-looking site
-— a known transitional state, to be made uniform in a later pass. Naming
-diverges too: the home menu says Canon where `links.html` still calls itself
-Links, in its title, heading and sidebar. Bookshelf has already been made
-consistent everywhere; Canon has not.
+— a known transitional state, to be made uniform in a later pass. Naming is
+consistent though: Reading List → Bookshelf and Links → Canon were both renamed
+everywhere, page and sidebars alike.
+
+Filenames were deliberately left alone — the pages are still `reading.html` and
+`links.html`, so existing links and bookmarks keep working. Note that
+`links.html` styles and scripts hang off `links-*` class names; those are not
+labels and must not be swept up in a rename.
 
 Deploying is `git push` to `main` — the live site tracks that branch. There is
 no CNAME, workflow or `gh-pages` branch in the repo, so the host is configured
