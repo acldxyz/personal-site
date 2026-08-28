@@ -120,8 +120,39 @@
   .wordmark:hover { opacity: 1; }
   .wordmark:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
+  /* Navigation, not a control: same pill as the filters so it belongs to the
+     page, with a hairline under it so the two groups do not read as one long
+     list of options. */
+  .site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    margin: 12px 0 0;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(0,0,0,.08);
+  }
+  .site-nav a {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink);
+    text-decoration: none;
+    padding: .52em .9em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+  }
+  .site-nav a:hover {
+    color: var(--ink-strong);
+    background: rgba(0,0,0,.05);
+    border-color: rgba(0,0,0,.14);
+  }
+  .site-nav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
   .page-label {
-    margin: 10px 0 28px;
+    margin: 16px 0 24px;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
@@ -497,6 +528,18 @@
         <span></span><span></span><span></span>
       </button>
     </div>
+
+    <!-- The same destinations as the home page's menu, in the same order.
+         Writing is a disclosure there because it has no page of its own; in a
+         column there is room to just list what it holds. Bookshelf is left out
+         because the label below already says where you are. -->
+    <nav class="site-nav" aria-label="Primary">
+      <a href="about.html">About</a>
+      <a href="fatherhood.html">Fatherhood</a>
+      <a href="research.html">Research</a>
+      <a href="links.html">Canon</a>
+      <a href="mailto:adam@acld.xyz">Contact</a>
+    </nav>
 
     <h1 class="page-label">Bookshelf</h1>
 
