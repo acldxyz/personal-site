@@ -55,55 +55,29 @@
        that much — which showed up as a scrollbar along the bottom of the
        menu. */
     overflow-x: hidden;
-    padding: clamp(26px, 3.4vw, 44px) 0 40px clamp(22px, 2.8vw, 40px);
+    padding: clamp(18px, 2.2vw, 28px) 0 18px clamp(22px, 2.8vw, 40px);
     scrollbar-width: thin;
     scrollbar-color: rgba(0,0,0,.16) transparent;
   }
   .rail::-webkit-scrollbar { width: 6px; }
   .rail::-webkit-scrollbar-thumb { background: rgba(0,0,0,.16); border-radius: 3px; }
 
-  .rail-head {
+  /* ------------------------------------------------------------- topbar */
+
+  /* Spans the page rather than sitting inside the rail, so the links read as
+     the site's navigation and the rail below reads as this page's controls.
+     The wordmark lines up with the rail's left padding and the last link with
+     the chart's right padding, so the bar shares the page's margins. */
+  .topbar {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  /* Hidden outright on a wide screen — the filters are simply on show there,
-     so there is nothing for it to toggle. The narrow media query at the foot
-     is the only place it appears. */
-  .burger {
-    display: none;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
-    width: 38px;
-    height: 38px;
-    flex: 0 0 auto;
-    background: none;
-    border: 1px solid transparent;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: background-color .2s ease, border-color .2s ease;
+    justify-content: space-between;
+    gap: 20px;
+    /* Kept shallow on purpose: every pixel the bar takes is a pixel off the
+       six rows below it, which fitHeight() divides between them. */
+    padding: clamp(14px, 1.6vw, 20px) clamp(22px, 2.8vw, 40px);
+    border-bottom: 1px solid rgba(0,0,0,.08);
   }
-  .burger span {
-    display: block;
-    width: 17px;
-    height: 1.5px;
-    border-radius: 1px;
-    background: var(--ink);
-    transition: transform .3s ease, opacity .2s ease, background-color .2s ease;
-  }
-  .burger:hover { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.14); }
-  .burger:hover span { background: var(--ink-strong); }
-  .burger:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-
-  /* The bars fold into a cross rather than being swapped for a different
-     glyph, so the control reads as the same object in both states. */
-  .burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
-  .burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
-  .burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
 
   .wordmark {
     display: inline-block;
@@ -126,10 +100,14 @@
   .site-nav {
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 1px;
-    margin: 12px 0 0;
-    padding-bottom: 14px;
-    border-bottom: 1px solid rgba(0,0,0,.08);
+    /* The pills are borderless until hovered, so the row is optically flush
+       with the page margin only once its own padding is pulled back. Set here
+       as well as on the links, or the em resolves against the inherited size
+       and the pull overshoots the .9em of padding it is cancelling. */
+    font-size: 11px;
+    margin-right: -.9em;
   }
   .site-nav a {
     font-size: 11px;
@@ -152,7 +130,7 @@
   .site-nav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
   .page-label {
-    margin: 16px 0 24px;
+    margin: 0 0 24px;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
@@ -161,7 +139,7 @@
   }
 
   .readout {
-    margin-top: 26px;
+    margin-top: 14px;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
@@ -172,6 +150,7 @@
   .readout b { font-weight: 600; color: var(--ink-strong); }
 
   .group { border: 0; margin-bottom: 26px; }
+  .group:last-child { margin-bottom: 8px; }
 
   .group-name {
     display: block;
@@ -214,7 +193,12 @@
 
   .opt[disabled] { opacity: .34; cursor: default; pointer-events: none; }
 
-  .opts.dots { gap: 7px; padding: .3em .2em; }
+  /* The dots divide the column rather than each claiming a fixed width. At a
+     fixed 17px they added up to 209px, which fits the 219px column — until the
+     padding reaches its 40px maximum on a wide window, or a scrollbar takes
+     10px, and the ninth wraps. Sharing the space means nine on one line at any
+     width. */
+  .opts.dots { gap: 6px; padding: .3em .2em; }
 
   /* Qualified with .opt so the pill hover and pressed backgrounds do not
      paint over the one thing a dot exists to show. */
@@ -224,8 +208,11 @@
      the dot exists to show. */
   .opt.dot {
     position: relative;
-    width: 17px;
-    height: 17px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 20px;
+    height: auto;
+    aspect-ratio: 1;
     padding: 0;
     border-radius: 50%;
     background-color: var(--sw);
@@ -241,7 +228,7 @@
   .opt.dot::after {
     content: '';
     position: absolute;
-    inset: -3px;
+    inset: -2px;
     border-radius: 50%;
   }
   /* Lifts a little when pointed at. */
@@ -301,37 +288,56 @@
      rather than anything drawn around it. */
   .spectrum i.lit { box-shadow: inset 0 0 0 1px rgba(20, 16, 12, .75); }
 
-  /* Quieter than the filters until pointed at — it is an aside to the page,
-     not another control in the set. */
-  .opt.rec {
-    margin-top: 10px;
-    color: var(--ink-quiet);
-    text-decoration: none;
-  }
-  .opt.rec:hover { color: var(--ink-strong); }
-
-  .opt.reset {
+  /* A link, not another pill: it leaves the page rather than filtering it, so
+     it is set flush with the labels and the count instead of carrying the
+     pill's inset. The rule is held back until hover, the same way the pills
+     hold back their border — at rest the rail is all text and no chrome. */
+  .rec {
+    display: inline-block;
     margin-top: 12px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .45s ease, color .2s ease, background-color .2s ease, border-color .2s ease;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-quiet);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    /* Low enough to clear the caps. */
+    text-underline-offset: 3px;
+    /* Transparent rather than none, so the rule fades in where a switch from
+       none would pop, and the line box never shifts. */
+    text-decoration-color: transparent;
+    transition: color .2s ease, text-decoration-color .2s ease;
   }
-  .opt.reset.shown { opacity: 1; pointer-events: auto; }
+  .rec:hover {
+    color: var(--ink-strong);
+    text-decoration-color: currentColor;
+  }
+  .rec:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
 
   /* --------------------------------------------------------------- chart */
 
   .chart-wrap {
     flex: 1 1 auto;
     min-width: 0;
-    padding: clamp(26px, 3.4vw, 44px) clamp(22px, 2.8vw, 40px) clamp(20px, 2.5vw, 40px);
+    /* The top matches the rail's, so the first row and the first filter start
+       together under the bar. The foot is only breathing room, so it is the
+       half that gives way when the six rows want more height. */
+    padding: clamp(18px, 2.2vw, 28px) clamp(22px, 2.8vw, 40px) clamp(12px, 1.5vw, 22px);
   }
 
+  /* The gap between years is kept tight on purpose: every pixel taken out of
+     it is handed to the spines by fitHeight(), which divides what is left of
+     the window between the six rows. The last row's margin buys nothing —
+     .chart-wrap's own padding already sits under it. */
   .year {
     display: flex;
     align-items: flex-end;
     gap: 14px;
-    margin-bottom: clamp(20px, 2.4vw, 34px);
+    margin-bottom: clamp(8px, 0.95vw, 14px);
   }
+  .year:last-child { margin-bottom: 0; }
   .year[hidden] { display: none; }
 
   .year-label {
@@ -423,7 +429,12 @@
        itself. A short title still sets on one line — the box only grows to
        the second when the first cannot hold it. */
     max-width: min(100%, calc(var(--ts) * 2.5));
-    overflow-wrap: break-word;
+    /* Words are never broken. A title too long for its spine is set smaller
+       by fitTitles() until it fits whole; letting it hyphenate instead would
+       strand HYPERI above ON when a resize shortens the row. */
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
     overflow: hidden;
     color: var(--t);
     pointer-events: none;
@@ -475,35 +486,22 @@
       overflow: visible;
       padding: 26px 20px 4px;
     }
+    /* Five links and the wordmark will not share a line at this width, so the
+       bar stacks and the row runs left from the same margin. */
+    .topbar {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 22px 20px 16px;
+    }
+    .site-nav { justify-content: flex-start; margin: 0 0 0 -.9em; }
     .group { margin-bottom: 18px; }
     .chart-wrap { width: 100%; padding: 18px 20px 60px; }
     :root { --mark-h: clamp(70px, 22vw, 104px); --label-w: 40px; }
+    /* The rows scroll here and the mark height is fixed, so a tight gap would
+       crowd the years without buying any spine. */
+    .year { margin-bottom: 22px; }
 
-    .burger { display: inline-flex; }
-
-    /* Folded away by default here: the rail sits above the chart on a narrow
-       screen, and four groups of filters push the books off the bottom before
-       a visitor has seen any of them. max-height is generous rather than
-       measured — it only has to exceed the panel, and the transition eases
-       either way. */
-    .filter-panel {
-      overflow: hidden;
-      max-height: 0;
-      opacity: 0;
-      /* visibility, not the inert attribute, does the work of taking the
-         folded controls out of the tab order. Both would, but visibility
-         lives inside this media query — so the wide layout cannot inherit a
-         collapsed state from script. A missed breakpoint event would
-         otherwise leave the panel looking open and being dead. */
-      visibility: hidden;
-      transition: max-height .45s ease, opacity .3s ease, visibility 0s linear .45s;
-    }
-    .filter-panel.open {
-      max-height: 720px;
-      opacity: 1;
-      visibility: visible;
-      transition: max-height .45s ease, opacity .3s ease, visibility 0s;
-    }
     .readout { margin-top: 14px; }
   }
 
@@ -518,44 +516,34 @@
 
 <body>
 
+<!-- The same destinations as the home page's menu, in the same order. Writing
+     is a disclosure there because it has no page of its own; across a bar there
+     is room to just list what it holds. Bookshelf is left out because the label
+     in the rail already says where you are. -->
+<header class="topbar">
+  <a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
+  <nav class="site-nav" aria-label="Primary">
+    <a href="about.html">About</a>
+    <a href="fatherhood.html">Fatherhood</a>
+    <a href="research.html">Research</a>
+    <a href="links.html">Canon</a>
+    <a href="mailto:adam@acld.xyz">Contact</a>
+  </nav>
+</header>
+
 <div class="shell">
 
   <aside class="rail">
-    <div class="rail-head">
-      <a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
-      <button class="burger" id="burger" type="button"
-              aria-expanded="false" aria-controls="filter-panel" aria-label="Filters">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-
-    <!-- The same destinations as the home page's menu, in the same order.
-         Writing is a disclosure there because it has no page of its own; in a
-         column there is room to just list what it holds. Bookshelf is left out
-         because the label below already says where you are. -->
-    <nav class="site-nav" aria-label="Primary">
-      <a href="about.html">About</a>
-      <a href="fatherhood.html">Fatherhood</a>
-      <a href="research.html">Research</a>
-      <a href="links.html">Canon</a>
-      <a href="mailto:adam@acld.xyz">Contact</a>
-    </nav>
-
     <h1 class="page-label">Bookshelf</h1>
 
-    <div class="filter-panel" id="filter-panel">
-      <div id="filters"></div>
-      <button class="opt reset" id="reset" type="button">Reset</button>
-    </div>
+    <div id="filters"></div>
 
-    <!-- Outside the collapsible panel deliberately: it is the answer the
-         filters produce, so it stays legible on a narrow screen even with
-         them folded away. -->
+    <!-- The count answers the filters above it, so it reads as their result
+         rather than as another one of them. -->
     <p class="readout" id="readout" aria-live="polite"></p>
 
-    <!-- Outside the collapsible panel, like the count: it is an invitation
-         rather than a filter, and should not fold away with them. -->
-    <a class="opt rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Have a rec?</a>
+    <!-- An invitation, not a filter — hence a link rather than a pill. -->
+    <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send me a rec</a>
   </aside>
 
   <main class="chart-wrap">
@@ -700,7 +688,6 @@ var books = [
   var yearsEl = document.getElementById('years');
   var readout = document.getElementById('readout');
   var empty = document.getElementById('empty');
-  var resetBtn = document.getElementById('reset');
   var buttons = {};
   var rows = {};        // year -> { el, row, marks: [] }
   var spectrum;
@@ -793,11 +780,6 @@ var books = [
     frag.appendChild(fs);
   });
   document.getElementById('filters').appendChild(frag);
-
-  resetBtn.addEventListener('click', function () {
-    GROUPS.forEach(function (grp) { active[grp.key] = 'all'; });
-    render();
-  });
 
   /* ---- marks ---- */
 
@@ -959,7 +941,7 @@ var books = [
      window between the six of them, rather than a figure derived from the
      window's width. Kept off on narrow screens, where the rail sits above the
      chart and dividing what is left over six would leave slivers. */
-  var ROW_MIN = 40, ROW_MAX = 138;
+  var ROW_MIN = 40, ROW_MAX = 150;
 
   function fitHeight() {
     var root = document.documentElement;
@@ -972,7 +954,12 @@ var books = [
     var gaps = YEARS.reduce(function (t, y) {
       return t + parseFloat(getComputedStyle(rows[y].el).marginBottom);
     }, 0);
-    var room = innerHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - gaps;
+    // Measured rather than assumed: the bar wraps to two lines on a narrow
+    // window, and the rows have to give up the difference either way. Taken
+    // from its height, not its position, so a scrolled page reads the same.
+    var bar = document.querySelector('.topbar');
+    var room = innerHeight - (bar ? bar.getBoundingClientRect().height : 0)
+             - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - gaps;
     var h = Math.max(ROW_MIN, Math.min(ROW_MAX, Math.floor(room / YEARS.length)));
     root.style.setProperty('--mark-h', h + 'px');
   }
@@ -1047,18 +1034,26 @@ var books = [
       var over = [];
       for (var i = 0; i < live.length; i++) {          // read phase
         var el = live[i].titleEl;
-        // vertical-rl puts the block axis across the spine: too many lines
-        // shows up as width overflow, not height. Both figures are integers
-        // over a fractional box, so a title can sit a rounded pixel proud of
-        // its spine — hence the 0.985 nudge below rather than an exact fit.
-        if (el.scrollWidth > el.clientWidth) {
-          over.push([live[i], el.clientWidth / el.scrollWidth]);
-        }
+        // vertical-rl puts the block axis across the spine, so the two ways a
+        // title can fail to fit land on different axes: too many lines is
+        // width overflow, and a word longer than the spine is tall is height
+        // overflow. Both figures are integers over a fractional box, so a
+        // title can sit a rounded pixel proud of its spine — hence the 0.985
+        // nudge below rather than an exact fit.
+        var wr = el.scrollWidth > el.clientWidth ? el.clientWidth / el.scrollWidth : 1;
+        var hr = el.scrollHeight > el.clientHeight ? el.clientHeight / el.scrollHeight : 1;
+        if (wr < 1 || hr < 1) over.push([live[i], wr, hr]);
       }
       if (!over.length) return;
       for (var j = 0; j < over.length; j++) {          // write phase
         var b = over[j][0];
-        var next = Math.max(MIN_TS, b.ts * Math.max(0.55, Math.sqrt(over[j][1]) * 0.985));
+        // The two overflows correct differently. Halving the size roughly
+        // quarters the area a wrapped title needs, so lines take the square
+        // root; a word that will not fit only halves in length, so it takes
+        // the ratio raw.
+        var byLines = over[j][1] < 1 ? b.ts * Math.max(0.55, Math.sqrt(over[j][1]) * 0.985) : b.ts;
+        var byWord = over[j][2] < 1 ? b.ts * Math.max(0.55, over[j][2] * 0.985) : b.ts;
+        var next = Math.max(MIN_TS, Math.min(byLines, byWord));
         if (next >= b.ts - 0.05) next = Math.max(MIN_TS, b.ts - 0.4);   // always make progress
         b.ts = next;
         b.el.style.setProperty('--ts', next.toFixed(2) + 'px');
@@ -1144,16 +1139,42 @@ var books = [
     paintSpectrum();
     readout.innerHTML = '<b>' + visible.length + '</b> out of <b>' + books.length + '</b>';
     empty.hidden = visible.length > 0;
-
-    var touched = GROUPS.some(function (grp) { return active[grp.key] !== 'all'; });
-    resetBtn.classList.toggle('shown', touched);
-    resetBtn.disabled = !touched;
   }
 
-  // Runs as a single fall in value: white, out through the spectrum, then
-  // brown as the bridge, then black. Within each family it is light to dark
-  // too, so the whole band descends rather than sawtoothing at every join.
-  var FAM_ORDER = ['White', 'Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Brown', 'Black'];
+  function hueSat(hex) {
+    var r = parseInt(hex.substr(1, 2), 16) / 255,
+        g = parseInt(hex.substr(3, 2), 16) / 255,
+        b = parseInt(hex.substr(5, 2), 16) / 255;
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, hu = 0;
+    if (d) {
+      if (mx === r) hu = 60 * (((g - b) / d) % 6);
+      else if (mx === g) hu = 60 * ((b - r) / d + 2);
+      else hu = 60 * ((r - g) / d + 4);
+    }
+    if (hu < 0) hu += 360;
+    return { h: hu, s: mx ? d / mx : 0 };
+  }
+
+  /* Two halves. 0 is anything with a hue worth reading; 1 is everything the
+     eye takes as a neutral — too grey to carry a hue, or so dark that it
+     reads as black whatever its hue.
+
+     Judged on the cover's own colour rather than on which filter bucket it
+     was filed under. Grouping by filter family put brown after purple simply
+     because Brown is the eighth dot; but brown is dark orange, and on a ramp
+     it belongs with the oranges. The band is a gradient, not a legend for the
+     dots above it. */
+  function rampGroup(hex) {
+    var c = hueSat(hex), L = lum(hex);
+    return (L < 0.035 || c.s < 0.22) ? 1 : 0;
+  }
+
+  /* Red straddles hue zero — a scarlet can measure 355 and a pillar-box 3 —
+     so raw hue throws half the reds to the far end of the band. Cutting the
+     circle at 350 instead puts the whole red family together at the head and
+     leaves the seam among the magentas, which is where the spectrum wants to
+     wrap anyway. */
+  function rampHue(hex) { return (hueSat(hex).h + 10) % 360; }
 
   // Always on: with no colour chosen it is the whole collection sorted by hue
   // and then by shade, so the band is a map of the shelf rather than a
@@ -1169,10 +1190,21 @@ var books = [
 
     var shades = visible.slice(), label;
     if (active.c === 'all') {
-      shades.sort(function (a, b) {
-        return (FAM_ORDER.indexOf(a.c) - FAM_ORDER.indexOf(b.c)) || (lum(b.k) - lum(a.k));
+      shades.forEach(function (b) {
+        b._g = rampGroup(b.k);
+        b._h = rampHue(b.k);
+        b._l = lum(b.k);
       });
-      label = shades.length + ' covers, white through the spectrum to black';
+      shades.sort(function (a, b) {
+        if (a._g !== b._g) return a._g - b._g;              // colours, then neutrals
+        if (a._g === 0) {
+          // the spectrum, red first
+          if (Math.abs(a._h - b._h) > 0.5) return a._h - b._h;
+          return b._l - a._l;
+        }
+        return a._l - b._l;                                  // black, greys, white
+      });
+      label = shades.length + ' covers, red through the spectrum, then black to white';
     } else {
       shades.sort(function (a, b) { return lum(b.k) - lum(a.k); });
       label = shades.length + ' ' + active.c.toLowerCase() + ' covers, lightest to darkest';
@@ -1220,7 +1252,6 @@ var books = [
   addEventListener('resize', function () {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
-      syncPanel();                 // the breakpoint may have just been crossed
       var w = chartWidth();
       if (w === lastW && innerHeight === lastH) return;
       lastW = w;
@@ -1228,37 +1259,6 @@ var books = [
       relayout();
     }, 140);
   });
-
-  /* ---- the filter panel ----
-     Wide, the panel is always open and the toggle is not rendered; the folding
-     rules live inside the narrow media query, so the wide layout is not
-     governed by script at all. Narrow, it starts folded and the toggle runs
-     it. */
-  var burger = document.getElementById('burger');
-  var panel = document.getElementById('filter-panel');
-  var panelOpen = false;
-
-  function syncPanel() {
-    var narrow = matchMedia('(max-width: 860px)').matches;
-    var open = narrow ? panelOpen : true;
-    panel.classList.toggle('open', open);
-    burger.setAttribute('aria-expanded', String(open));
-  }
-
-  burger.addEventListener('click', function () {
-    panelOpen = !panelOpen;
-    syncPanel();
-  });
-
-  // Listen to the breakpoint itself rather than only to resize. Crossing it is
-  // the event that actually matters here, and hanging the panel's state off a
-  // debounced resize handler leaves one bad outcome available: shut on a narrow
-  // screen, widened, and now inert with no toggle rendered to reopen it.
-  var narrowMQ = matchMedia('(max-width: 860px)');
-  if (narrowMQ.addEventListener) narrowMQ.addEventListener('change', syncPanel);
-  else narrowMQ.addListener(syncPanel);            // older Safari
-
-  syncPanel();
 
   YEARS.forEach(function (y) { bindRow(rows[y]); });
   bindSpectrum();
