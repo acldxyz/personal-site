@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Interview — Adam Dawson</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<!-- Draft, not deployed: Projects has no live menu entry yet, so nothing on
+     the site links here. No analytics tag for the same reason thoughts.html
+     carries none — a page nobody can reach shouldn't count against traffic. -->
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%);
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    color: #2f2a24;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .home {
+    position: fixed;
+    left: clamp(16px, 3vw, 34px);
+    top: clamp(16px, 3vw, 34px);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #6f665d;
+    text-decoration: none;
+    padding: .78em 1.2em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+  }
+
+  .home:hover { color: #2f2a24; background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.14); }
+  .home:focus-visible { outline: 2px solid #3d7ba8; outline-offset: 2px; }
+
+  main {
+    width: min(560px, calc(100% - 48px));
+    text-align: center;
+  }
+
+  .eyebrow {
+    font-size: clamp(10px, 1.05vw, 12px);
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #8a8076;
+    margin-bottom: .9em;
+  }
+
+  h1 {
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 44px);
+    letter-spacing: -.01em;
+    color: #2f2a24;
+    margin-bottom: .6em;
+  }
+
+  .draft-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #8a8076;
+    background: rgba(0,0,0,.035);
+    border: 1px solid rgba(0,0,0,.12);
+    border-radius: 999px;
+    padding: .5em 1em;
+    margin-bottom: 1.6em;
+  }
+
+  p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #6f665d;
+    margin-bottom: 1.1em;
+  }
+
+  .roadmap {
+    text-align: left;
+    margin-top: 2em;
+    padding-top: 1.6em;
+    border-top: 1px solid rgba(0,0,0,.1);
+  }
+
+  .roadmap-item {
+    margin-bottom: 1.1em;
+  }
+
+  .roadmap-item:last-child { margin-bottom: 0; }
+
+  .roadmap-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #8a8076;
+    margin-bottom: .35em;
+  }
+
+  .roadmap-item p { margin-bottom: 0; }
+</style>
+</head>
+<body>
+
+<a class="home" href="index.html">Adam Dawson</a>
+
+<main>
+  <p class="eyebrow">Projects</p>
+  <h1>The Interview</h1>
+  <span class="draft-tag">Placeholder — not shipped</span>
+
+  <p>A tool for the other side of the table: the person walking in to be asked
+     questions, not asking them.</p>
+
+  <div class="roadmap">
+    <div class="roadmap-item">
+      <span class="roadmap-label">v1</span>
+      <p>A collected list of questions and prompts worth preparing for.</p>
+    </div>
+    <div class="roadmap-item">
+      <span class="roadmap-label">v2</span>
+      <p>A dynamic tool people can use to prep for an interview.</p>
+    </div>
+  </div>
+</main>
+
+</body>
+</html>

@@ -26,6 +26,7 @@ When redesigning a page, target the new language unless told otherwise.
 | `index.html` | **Live home page, and the style reference for the new language.** Self-contained apart from the favicon and the analytics tag. |
 | `home-draft.html` | The draft `index.html` was promoted from. Now **stale**: it still carries the animated root system under Writing, and a third child. Kept because the root animation lives nowhere else. |
 | `thoughts.html` | Writing → Thoughts. Entries drift in and out of focus; the field in the foreground catches the ones that match. New language. Entries are placeholder. **Draft — deliberately not deployed**, so its link is held out of the live menu; re-add when it ships. Also the only page carrying no analytics tag. |
+| `the-interview.html` | Projects → The Interview. First child of a not-yet-built Projects toggle (mirrors Writing: button, no page of its own). New language. Content is placeholder — v1 is a collected list of interview questions/prompts, v2 a dynamic prep tool, neither built yet. **Draft — deliberately not deployed**, held out of the live menu; carries no analytics tag, same reasoning as `thoughts.html`. |
 | `favicon-block.svg` | Tab icon: the red "A" block, flattened from its live pose. |
 | `pine-tree.html` | Illustration library — six versions of a pine tree icon, none in use. Shelved, not dead. |
 | `reading-v2.html` | An earlier reading-list redesign attempt that didn't land. Decide whether to build on it or replace it before starting. |
