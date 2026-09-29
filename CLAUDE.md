@@ -100,6 +100,26 @@ AMBIENT = 0.52             // faces turned away keep this much colour
 shade opacity = (1 - brightness) * 0.85
 ```
 
+Each face is built like a real alphabet block: the panel is routed down, and
+the frame and letter stand at the original surface. That relief — rim bevel,
+sunken panel, raised letter with a short cast shadow — is drawn with
+`box-shadow` and `text-shadow` whose offsets read `--lu` / `--lv`, the light's
+direction across that face in its own axes. `relight()` rewrites them every
+frame, so the relief stays true to the light as a block tumbles instead of
+being painted on one way. The relief is also what lets the letter read at
+`DARKEN = 0.80`; don't raise the colour contrast to compensate for it.
+
+A satin sheen (`.gloss`, above `.shade`) peaks as a face turns toward the
+halfway vector between light and viewer. It sits out toward the lit corner —
+centred, it lands on the letter and reads as haze.
+
+**Corners.** The face corner radius is kept at `0.025` of the edge. Each face
+rounds in its own plane, so neighbouring faces' curves don't meet at a cube
+corner; the step scales with the radius and was visible at `0.07`. The inner
+`.core` box that fills the corner hole must stay inside the rounded outline —
+it's `0.93` of the edge for that reason. Enlarge either and the corners go
+lumpy again.
+
 ---
 
 ## Component patterns

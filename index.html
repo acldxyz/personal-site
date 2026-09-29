@@ -96,32 +96,57 @@
     will-change: transform;
   }
 
+  /* Built like a real alphabet block: the panel is routed down, leaving the
+     frame and the letter standing at the original surface. All three read
+     their shadows off --lu / --lv, the direction the light falls across this
+     face in its own axes, which relight() rewrites as the block turns — so the
+     relief stays true to the light instead of being painted on one way. The
+     defaults are what a face-on block sees. */
   .face {
+    --lu: -0.40;
+    --lv: -0.55;
+    --b: calc(var(--s) * 0.105);            /* frame width */
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     backface-visibility: hidden;
-    border-radius: calc(var(--s) * 0.07);
+    /* Kept tight on purpose. Each face rounds its corners in its own plane, so
+       at a cube corner the neighbouring faces' curves foreshorten differently
+       and don't meet — a step whose size scales with this radius. At 0.07 it
+       read as lumpy corners; at 0.025 it's under a pixel at working size, and
+       the rim bevel below does the softening instead. */
+    border-radius: calc(var(--s) * 0.025);
     background-color: var(--c);
-    /* soft sheen, so the paint catches light near the top-left */
-    background-image:
-      linear-gradient(148deg, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, 0) 46%);
     box-shadow:
-      inset 0 0 0 calc(var(--s) * 0.105) var(--d),          /* the border */
-      inset 0 0 calc(var(--s) * 0.10) rgba(0, 0, 0, .26);   /* soft inner bevel */
+      /* rounded outer edge: catches light on the near side, falls off on the far */
+      inset calc(var(--s) * -.026 * var(--lu)) calc(var(--s) * -.026 * var(--lv)) 0
+            rgba(255, 255, 255, .17),
+      inset calc(var(--s) *  .026 * var(--lu)) calc(var(--s) *  .026 * var(--lv)) 0
+            rgba(0, 0, 0, .16),
+      /* the frame */
+      inset 0 0 0 var(--b) var(--d),
+      /* the panel floor: the wall on the lit side shades it, the far wall is lit */
+      inset calc(var(--s) * -.065 * var(--lu)) calc(var(--s) * -.065 * var(--lv))
+            calc(var(--s) * .04) var(--b) rgba(0, 0, 0, .30),
+      inset calc(var(--s) *  .026 * var(--lu)) calc(var(--s) *  .026 * var(--lv))
+            calc(var(--s) * .014) var(--b) rgba(255, 255, 255, .2);
   }
 
   /* Where three rounded faces curve away from each other at a corner they leave
-     a hole straight through the block — that's the vacancy. These six panels
-     sit 2.5% behind each shell face (far enough back to never fight it for
-     depth) but are cut almost full width, so they interpenetrate into a solid
-     that plugs the corner. What shows through reads as the shadowed inside of
-     a routed edge rather than a patch. */
+     a hole straight through the block. These six panels close it: a solid box
+     inside the shell that the eye lands on instead of the page.
+
+     The box is 0.93 of the edge, and that number is doing two jobs. Big enough
+     that a corner seen end-on is filled. Small enough that it never reaches
+     past the rounded outline — a face's corner radius of 0.025 pulls its
+     diagonal in to 0.493 of the edge, and the box's corner sits at 0.465.
+     Cut the panels nearly full width, as they once were, and a square tooth
+     of core pokes out wherever a corner lands on the silhouette. */
   .core {
     position: absolute;
-    inset: calc(var(--s) * 0.005);
+    inset: calc(var(--s) * 0.035);
     background: var(--k);
     backface-visibility: hidden;
   }
@@ -130,8 +155,14 @@
     font-size: calc(var(--s) * 0.62);
     line-height: 1;
     color: var(--d);
-    /* carved: a hairline of light sitting just under the cut */
-    text-shadow: 0 calc(var(--s) * 0.018) 0 rgba(255, 255, 255, .22);
+    /* Stands at frame height out of the sunken panel: the near edge catches
+       the light, and it drops a short soft shadow away from it. This is what
+       lets the letter read with the colour contrast kept as low as it is. */
+    text-shadow:
+      calc(var(--s) * .02 * var(--lu)) calc(var(--s) * .02 * var(--lv)) 0
+        rgba(255, 255, 255, .3),
+      calc(var(--s) * -.032 * var(--lu)) calc(var(--s) * -.032 * var(--lv))
+        calc(var(--s) * .024) rgba(0, 0, 0, .32);
   }
 
   /* Sits under the name, in the same register as the reset control so the two
@@ -280,6 +311,23 @@
     opacity: 0;
     pointer-events: none;
   }
+
+  /* Satin paint. A soft highlight on the lit side of the face that swells as
+     the face turns toward the angle that bounces the light back at you, so a
+     tumbling block flashes as it passes through. Sits above .shade: a sheen is
+     reflected light, and doesn't dim with the diffuse shading underneath. */
+  .gloss {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    /* pushed well out toward the lit corner: centred, it sits on the letter
+       and reads as haze rather than satin */
+    background: radial-gradient(circle at calc(50% + var(--lu) * 80%)
+                                          calc(50% + var(--lv) * 80%),
+      rgba(255, 255, 255, .55) 0%, rgba(255, 255, 255, 0) 55%);
+    opacity: 0;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
@@ -365,6 +413,17 @@
     [[0, 1, 0],  'rotateX(-90deg) translateZ(HALF)']
   ];
 
+  // Each face's own across / down axes in cube space — what its CSS transform
+  // does to (1,0,0) and (0,1,0). Same order as FACES; across × down = normal.
+  var AXES = [
+    [[1, 0, 0],  [0, 1, 0]],
+    [[-1, 0, 0], [0, 1, 0]],
+    [[0, 0, -1], [0, 1, 0]],
+    [[0, 0, 1],  [0, 1, 0]],
+    [[1, 0, 0],  [0, 0, 1]],
+    [[1, 0, 0],  [0, 0, -1]]
+  ];
+
   // scratch rotation matrix, reused by toMatrix / matrix3d / relight
   var m = new Array(9);
 
@@ -422,11 +481,12 @@
       FACES.forEach(function (f) {
         var core = document.createElement('span');
         core.className = 'core';
-        core.style.transform = f[1].replace('HALF', 'calc(var(--s) * 0.475)');
+        // half of the panel's 0.93 width, so the six close into a true box
+        core.style.transform = f[1].replace('HALF', 'calc(var(--s) * 0.465)');
         cube.appendChild(core);
       });
 
-      var shades = [];
+      var faces = [], shades = [], glosses = [];
       FACES.forEach(function (f, i) {
         var face = document.createElement('span');
         face.className = 'face';
@@ -440,10 +500,16 @@
         var shade = document.createElement('span');
         shade.className = 'shade';
 
+        var gloss = document.createElement('span');
+        gloss.className = 'gloss';
+
         face.appendChild(glyph);
         face.appendChild(shade);
+        face.appendChild(gloss);
         cube.appendChild(face);
+        faces.push(face);
         shades.push(shade);
+        glosses.push(gloss);
       });
 
       slot.appendChild(cube);
@@ -454,7 +520,9 @@
       blocks.push({
         slot: slot,
         cube: cube,
+        faces: faces,
         shades: shades,
+        glosses: glosses,
         shadow: shadow,
         rect: null,
         // half-extents of the resting pose, in edge multiples — the tilted
@@ -517,17 +585,34 @@
       '0,0,0,1)';
   }
 
-  // Rotate each face normal into world space and shade it against the light.
+  // Halfway between the light and the viewer: a face whose normal points
+  // here bounces the light straight back, which is where the sheen peaks.
+  var HL = Math.sqrt(LX * LX + LY * LY + (LZ + 1) * (LZ + 1));
+  var HX = LX / HL, HY = LY / HL, HZ = (LZ + 1) / HL;
+  var SHEEN = 0.3, SHEEN_TIGHT = 14;      // peak strength, and how narrow it is
+
+  // world-space dot of a local vector with (x, y, z)
+  function wdot(v, x, y, z) {
+    return (m[0] * v[0] + m[1] * v[1] + m[2] * v[2]) * x +
+           (m[3] * v[0] + m[4] * v[1] + m[5] * v[2]) * y +
+           (m[6] * v[0] + m[7] * v[1] + m[8] * v[2]) * z;
+  }
+
+  // Per face: diffuse shading from the normal, the light's direction across
+  // the face for the relief, and the sheen from the halfway vector.
+  // Assumes toMatrix() has already been called for this block.
   function relight(B) {
     for (var i = 0; i < 6; i++) {
-      var nrm = FACES[i][0];
-      var wx = m[0] * nrm[0] + m[1] * nrm[1] + m[2] * nrm[2];
-      var wy = m[3] * nrm[0] + m[4] * nrm[1] + m[5] * nrm[2];
-      var wz = m[6] * nrm[0] + m[7] * nrm[1] + m[8] * nrm[2];
-      var d = wx * LX + wy * LY + wz * LZ;
-      if (d < 0) d = 0;
-      var bright = AMBIENT + (1 - AMBIENT) * d;
+      var d = wdot(FACES[i][0], LX, LY, LZ);
+      var bright = AMBIENT + (1 - AMBIENT) * Math.max(0, d);
       B.shades[i].style.opacity = ((1 - bright) * 0.85).toFixed(3);
+
+      var face = B.faces[i];
+      face.style.setProperty('--lu', wdot(AXES[i][0], LX, LY, LZ).toFixed(3));
+      face.style.setProperty('--lv', wdot(AXES[i][1], LX, LY, LZ).toFixed(3));
+
+      var h = Math.max(0, wdot(FACES[i][0], HX, HY, HZ));
+      B.glosses[i].style.opacity = (SHEEN * Math.pow(h, SHEEN_TIGHT)).toFixed(3);
     }
   }
 
