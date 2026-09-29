@@ -9,13 +9,14 @@ is a single self-contained file with its CSS in a `<style>` block and its JS in 
 The site is mid-redesign, so there are two visual languages side by side. Check
 which one the file you're editing belongs to before matching anything.
 
-**Old (most existing pages)** — `index.html`, `about.html`, `reading.html`,
-`links.html`, `fatherhood.html`. Dark sidebar nav, `'Crimson Pro', Georgia, serif`,
-shared `styles.css`.
+**Old** — `about.html`, `links.html`, `fatherhood.html`, `research.html` and the
+Heirlloom posts under `heirlloom/`. Dark sidebar nav, `'Crimson Pro', Georgia,
+serif`, shared `styles.css`.
 
-**New (`home-draft.html`)** — warm paper background, wooden alphabet blocks, quiet
-uppercase controls. Self-contained, does not use `styles.css`. **This file is the
-reference for the new direction, and the tokens below are taken from it.**
+**New** — `index.html` and `bookshelf.html`. Warm paper background, wooden
+alphabet blocks, quiet uppercase controls. Self-contained, does not use
+`styles.css`. **`index.html` is the reference for the new direction, and the
+tokens below are taken from it.**
 
 When redesigning a page, target the new language unless told otherwise.
 
@@ -24,12 +25,27 @@ When redesigning a page, target the new language unless told otherwise.
 | File | What it is |
 |---|---|
 | `index.html` | **Live home page, and the style reference for the new language.** Self-contained apart from the favicon and the analytics tag. |
-| `home-draft.html` | The draft `index.html` was promoted from. Now **stale**: it still carries the animated root system under Writing, and a third child. Kept because the root animation lives nowhere else. |
-| `thoughts.html` | Writing → Thoughts. Entries drift in and out of focus; the field in the foreground catches the ones that match. New language. Entries are placeholder. **Draft — deliberately not deployed**, so its link is held out of the live menu; re-add when it ships. Also the only page carrying no analytics tag. |
+| `bookshelf.html` | The reading list. New language. Book data is the `books` array near the end, one object per book; the comment above it names the fields. |
+| `reading.html` | Redirect stub to `bookshelf.html`, kept because the old address was linked and bookmarked. Don't add books here. |
 | `favicon-block.svg` | Tab icon: the red "A" block, flattened from its live pose. |
-| `pine-tree.html` | Illustration library — six versions of a pine tree icon, none in use. Shelved, not dead. |
-| `reading-v2.html` | An earlier reading-list redesign attempt that didn't land. Decide whether to build on it or replace it before starting. |
 | `styles.css` | Old design language only. |
+
+### Drafts live elsewhere
+
+Draft and shelved pages are not in this folder. They're on the `drafts` branch,
+checked out as a git worktree at `../personal-site-drafts` and pushed to the
+private repo `acldxyz/personal-site-drafts` (remote `drafts`). That branch never
+deploys; only `main` reaches acld.xyz. It holds:
+
+| File | What it is |
+|---|---|
+| `home-draft.html` | The draft `index.html` was promoted from. Now **stale**: it still carries the animated root system under Writing, and a third child. Kept because the root animation lives nowhere else. |
+| `thoughts.html` | Writing → Thoughts. Entries drift in and out of focus; the field in the foreground catches the ones that match. New language. Entries are placeholder. Its link is held out of the live menu; re-add when it ships. Also the only page carrying no analytics tag. |
+| `pine-tree.html` | Illustration library — six versions of a pine tree icon, none in use. Shelved, not dead. |
+| `reading-v2.html`, `reading-v3.html`, `reading-tesseract.html` | Earlier reading-list redesign attempts, superseded by `bookshelf.html`. |
+| `fatherhood-v2.html`, `fatherhood-panorama.html`, `index-v2.html`, `golden-eagle.html`, `lightning-test.html`, `wordmark-lines.html` | Other drafts and experiments. |
+
+To ship a draft, bring the file onto `main` in this folder and push from here.
 
 ---
 
@@ -198,7 +214,7 @@ code is broken. Editing the file usually forces a genuine reload.
 `index.html` is live at acld.xyz in the new language: ten tumbling blocks
 spelling ADAM / DAWSON, and a horizontal menu beneath them.
 
-Menu targets: About → `about.html`, Bookshelf → `reading.html`,
+Menu targets: About → `about.html`, Bookshelf → `bookshelf.html`,
 Canon → `links.html`, Contact → `mailto:adam@acld.xyz`.
 **Writing is a `<button>`, not a link** — it toggles a submenu rather than
 navigating, and has no page of its own. Still open.
@@ -206,21 +222,21 @@ navigating, and has no page of its own. Still open.
 Writing's children are Fatherhood → `fatherhood.html` and Research →
 `research.html`, revealed as a plain row that fades up under the button. An
 earlier version grew an animated root system down to three children; that was
-removed from the live page and survives only in `home-draft.html`. Thoughts is
-the third child and is commented out of the menu until `thoughts.html` ships.
+removed from the live page and survives only in `home-draft.html` on the
+`drafts` branch. Thoughts is the third child and is commented out of the menu
+until `thoughts.html` ships.
 
-**Only the home page has moved to the new language.** About, Bookshelf and Canon
-are still the old one, so the menu drops visitors into a different-looking site
-— a known transitional state, to be made uniform in a later pass. Naming is
+**The home page and Bookshelf are in the new language.** About and Canon are
+still the old one, so the menu drops visitors into a different-looking site —
+a known transitional state, to be made uniform in a later pass. Naming is
 consistent though: Reading List → Bookshelf and Links → Canon were both renamed
 everywhere, page and sidebars alike.
 
-Filenames were deliberately left alone — the pages are still `reading.html` and
-`links.html`, so existing links and bookmarks keep working. Note that
-`links.html` styles and scripts hang off `links-*` class names; those are not
-labels and must not be swept up in a rename.
+The Bookshelf moved to `bookshelf.html`, with `reading.html` left as a redirect
+so old links keep working. `links.html` kept its filename. Note that its styles
+and scripts hang off `links-*` class names; those are not labels and must not be
+swept up in a rename.
 
 Deploying is `git push` to `main` — the live site tracks that branch. There is
 no CNAME, workflow or `gh-pages` branch in the repo, so the host is configured
-outside it. Drafts and experiments live untracked in the working tree on
-purpose; keep them out of deploy commits.
+outside it. Drafts belong on the `drafts` branch (see above), never on `main`.
