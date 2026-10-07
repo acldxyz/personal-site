@@ -99,7 +99,7 @@ yellow [225, 182,  64]
 blue   [ 74, 135, 185]
 
 DARKEN = 0.80   // letter + border: a gentle step down from the face
-CORE   = 0.62   // inner cube glimpsed at the corners
+CORE   = 0.62   // backing card, glimpsed at the corners and seams
 ```
 
 `DARKEN` is deliberately subtle — it was tuned down from 0.48 on request. Letter
@@ -129,12 +129,25 @@ A satin sheen (`.gloss`, above `.shade`) peaks as a face turns toward the
 halfway vector between light and viewer. It sits out toward the lit corner —
 centred, it lands on the letter and reads as haze.
 
-**Corners.** The face corner radius is kept at `0.025` of the edge. Each face
-rounds in its own plane, so neighbouring faces' curves don't meet at a cube
-corner; the step scales with the radius and was visible at `0.07`. The inner
-`.core` box that fills the corner hole must stay inside the rounded outline —
-it's `0.93` of the edge for that reason. Enlarge either and the corners go
-lumpy again.
+**Corners and edges.** Faces round their corners at `0.025` of the edge
+(rounded is the preferred look; square was tried and rejected). A face can only
+round in its own plane, so three rounded faces leave a gap at every cube
+corner: a notch where the corner lands on the silhouette, and a hole straight
+through where it faces you. Separately, where two faces share an edge, their
+antialiased edges are each only part opaque, so the seam shows a light
+hairline of page, worst when one face is nearly edge-on.
+
+Both are closed by `.backing`: a flat card behind each block, painted in
+`CORE`, which `backfill()` cuts every frame to the block's true outline. The
+solid the faces imply has a patch of sphere at each corner (centred `ROUND` in
+from the corner on all three axes, radius `ROUND·√2`), so the outline is the
+convex hull of those eight patches, projected with the slot's perspective.
+Anything the faces leave uncovered shows the card, never the page. It replaced
+an inner six-panel core box, which only ever filled the end-on case.
+
+The card fills flat, so the radius stays tight. `ROUND` in the script must
+match the `.face` `border-radius`, and `EYE` must match the `.slot`
+perspective; if either drifts, the card stops matching the faces.
 
 ---
 
