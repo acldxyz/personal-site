@@ -112,11 +112,13 @@
     align-items: center;
     justify-content: center;
     backface-visibility: hidden;
-    /* Kept tight on purpose. Each face rounds its corners in its own plane, so
-       at a cube corner the neighbouring faces' curves foreshorten differently
-       and don't meet — a step whose size scales with this radius. At 0.07 it
-       read as lumpy corners; at 0.025 it's under a pixel at working size, and
-       the rim bevel below does the softening instead. */
+    /* A face can only round its corners in its own plane, so where three meet
+       they leave a gap: a notch where a corner lands on the silhouette, a hole
+       straight through where a corner faces you. The backing card behind the
+       block is cut to the true rounded outline and fills both — see
+       backfill(). It fills them flat, though, so the radius stays tight: at
+       0.025 the patch it shows is a few pixels. Shared with ROUND in the
+       script; change both together. */
     border-radius: calc(var(--s) * 0.025);
     background-color: var(--c);
     box-shadow:
@@ -134,21 +136,17 @@
             calc(var(--s) * .014) var(--b) rgba(255, 255, 255, .2);
   }
 
-  /* Where three rounded faces curve away from each other at a corner they leave
-     a hole straight through the block. These six panels close it: a solid box
-     inside the shell that the eye lands on instead of the page.
-
-     The box is 0.93 of the edge, and that number is doing two jobs. Big enough
-     that a corner seen end-on is filled. Small enough that it never reaches
-     past the rounded outline — a face's corner radius of 0.025 pulls its
-     diagonal in to 0.493 of the edge, and the box's corner sits at 0.465.
-     Cut the panels nearly full width, as they once were, and a square tooth
-     of core pokes out wherever a corner lands on the silhouette. */
-  .core {
+  /* A flat card behind the block, cut each frame to the block's outline, so
+     whatever the faces leave uncovered shows the block's inner colour rather
+     than the page: the rounded corners, and the antialiased seam where two
+     faces meet, which otherwise reads as a light hairline down the edge.
+     Sits before .cube in the DOM, so it paints underneath the whole block.
+     Two edges on a side, which clears any pose. */
+  .backing {
     position: absolute;
-    inset: calc(var(--s) * 0.035);
+    inset: calc(var(--s) * -0.5);
     background: var(--k);
-    backface-visibility: hidden;
+    pointer-events: none;
   }
 
   .glyph {
@@ -373,7 +371,7 @@
     [ 74, 135, 185]    // blue
   ];
   var DARKEN = 0.80;   // letter + border: a gentle step down from the face colour
-  var CORE   = 0.62;   // inner cube glimpsed at the corners, where an edge is cut
+  var CORE   = 0.62;   // the backing card, glimpsed at the corners and seams
 
   // Light sitting up and to the left, in front of the blocks.
   var LX = -0.40, LY = -0.55, LZ = 0.73;
@@ -466,25 +464,22 @@
 
       var slot = document.createElement('span');
       slot.className = 'slot';
+      // on the slot, so the backing card and the cube both see them
+      slot.style.setProperty('--c', rgb(base, 1));
+      slot.style.setProperty('--d', rgb(base, DARKEN));
+      slot.style.setProperty('--k', rgb(base, CORE));
 
+      // both before the cube, so they paint beneath it
       var shadow = document.createElement('span');
       shadow.className = 'shadow';
-      slot.appendChild(shadow);          // before the cube, so it paints beneath
+      slot.appendChild(shadow);
+
+      var backing = document.createElement('span');
+      backing.className = 'backing';
+      slot.appendChild(backing);
 
       var cube = document.createElement('span');
       cube.className = 'cube';
-      cube.style.setProperty('--c', rgb(base, 1));
-      cube.style.setProperty('--d', rgb(base, DARKEN));
-      cube.style.setProperty('--k', rgb(base, CORE));
-
-      // inner cube first, so the shell wins any depth tie at the edges
-      FACES.forEach(function (f) {
-        var core = document.createElement('span');
-        core.className = 'core';
-        // half of the panel's 0.93 width, so the six close into a true box
-        core.style.transform = f[1].replace('HALF', 'calc(var(--s) * 0.465)');
-        cube.appendChild(core);
-      });
 
       var faces = [], shades = [], glosses = [];
       FACES.forEach(function (f, i) {
@@ -524,6 +519,7 @@
         shades: shades,
         glosses: glosses,
         shadow: shadow,
+        backing: backing,
         rect: null,
         // half-extents of the resting pose, in edge multiples — the tilted
         // block overhangs its slot, and the hit area should match what's drawn
@@ -626,6 +622,70 @@
     var hw = (Math.abs(m[0]) + Math.abs(m[1]) + Math.abs(m[2])) / 2;
     var hh = (Math.abs(m[3]) + Math.abs(m[4]) + Math.abs(m[5])) / 2;
     B.shadow.style.transform = 'scale(' + (hw * 2).toFixed(3) + ',' + (0.55 + hh).toFixed(3) + ')';
+  }
+
+  // The faces round their corners but keep their edges sharp, and the solid
+  // that implies closes each corner with a patch of sphere: centred ROUND in
+  // from the corner along all three axes, radius ROUND·√2, so it meets each
+  // face exactly along that face's rounded corner. Nothing draws the patch;
+  // the backing card stands in for it. The block is convex, so its outline is
+  // the hull of the eight patches, and PATCH holds points spread across them.
+  var ROUND = 0.025;   // face corner radius, in edges — matches .face
+  var EYE   = 20;      // perspective distance, in edges — matches .slot
+  var PATCH = [];
+  (function () {
+    var r = ROUND, G = 8, offs = [];
+    // Offsets from the sphere's centre for the +x +y +z corner. Each component
+    // runs 0..r and |o| = r√2, which bounds the patch by the three arcs where
+    // a component reaches r — the faces' own rounded corners.
+    for (var i = 0; i <= G; i++) {
+      var t = i / G * Math.PI / 2;
+      offs.push([r * Math.cos(t), r * Math.sin(t), r]);
+      for (var j = 0; j <= G; j++) {
+        var a = r * i / G, b = r * j / G, cc = 2 * r * r - a * a - b * b;
+        if (cc <= r * r) offs.push([a, b, Math.sqrt(cc)]);
+      }
+    }
+    for (var k = 0; k < 8; k++) {
+      var sx = k & 1 ? 1 : -1, sy = k & 2 ? 1 : -1, sz = k & 4 ? 1 : -1;
+      offs.forEach(function (o) {
+        PATCH.push(sx * (0.5 - r + o[0]), sy * (0.5 - r + o[1]), sz * (0.5 - r + o[2]));
+      });
+    }
+  })();
+
+  function cross(o, a, b) {
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  }
+
+  function hull(p) {                     // Andrew's monotone chain
+    p.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    function chain(list) {
+      var out = [];
+      for (var i = 0; i < list.length; i++) {
+        while (out.length > 1 && cross(out[out.length - 2], out[out.length - 1], list[i]) <= 0) out.pop();
+        out.push(list[i]);
+      }
+      out.pop();
+      return out;
+    }
+    return chain(p).concat(chain(p.slice().reverse()));
+  }
+
+  // Cuts the backing card to the block's projected outline.
+  // Assumes toMatrix() has already been called for this block.
+  function backfill(B) {
+    var p = [];
+    for (var k = 0; k < PATCH.length; k += 3) {
+      var x = PATCH[k], y = PATCH[k + 1], z = PATCH[k + 2];
+      var f = EYE / (EYE - (m[6] * x + m[7] * y + m[8] * z));
+      p.push([(m[0] * x + m[1] * y + m[2] * z) * f, (m[3] * x + m[4] * y + m[5] * z) * f]);
+    }
+    var h = hull(p), pts = [];
+    for (var i = 0; i < h.length; i++) {   // the card spans -1..1 edges
+      pts.push(((h[i][0] + 1) * 50).toFixed(2) + '% ' + ((h[i][1] + 1) * 50).toFixed(2) + '%');
+    }
+    B.backing.style.clipPath = 'polygon(' + pts.join(',') + ')';
   }
 
   // ---- the flick -----------------------------------------------------------
@@ -742,6 +802,7 @@
         R.cube.style.transform = matrix3d();
         relight(R);
         reshadow(R);
+        backfill(R);
       }
       if (t >= 1) { resetAt = null; disturbed(false); }
       raf = requestAnimationFrame(frame);
@@ -769,6 +830,7 @@
       B.cube.style.transform = matrix3d();
       relight(B);
       reshadow(B);
+      backfill(B);
 
       B.wx *= decay; B.wy *= decay; B.wz *= decay;
       alive = true;
@@ -810,6 +872,7 @@
     blocks[i].cube.style.transform = matrix3d();
     relight(blocks[i]);
     reshadow(blocks[i]);
+    backfill(blocks[i]);
   }
 
   window.addEventListener('resize', measure);
