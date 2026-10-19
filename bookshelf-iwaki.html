@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookshelf — Adam Dawson</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<!-- Draft: no analytics tag until it ships, so browsing it does not count as
+     visits to the live Bookshelf. -->
+<style>
+  /* After Tadao Ando's Picture Book Museum in Iwaki, where the books are not
+     shelved spine-out but stood face-out on long ledges up a concrete wall, so
+     a child chooses by cover the way you choose a painting. Here each year is
+     a bay of that wall, and the covers are the whole display: no spines, no
+     list, nothing to read until you go up to one. */
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    /* --h is the cover height and the one number the wall is built from: the
+       ledge, the pitch between ledges and the cover widths all follow it. */
+    --h: clamp(92px, 10.5vw, 148px);
+    --ledge: 7px;
+    --rise: clamp(26px, 2.6vw, 38px);   /* air between a ledge and the covers above */
+    --pitch: calc(var(--h) + var(--ledge) + var(--rise));
+    --cover-gap: clamp(10px, 1.1vw, 16px);
+    --margin: clamp(22px, 2.8vw, 40px);
+
+    --ink: #6f665d;
+    --ink-strong: #2f2a24;
+    --ink-quiet: #8a8076;
+    --focus: #3d7ba8;
+  }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%)
+      fixed;
+    color: var(--ink);
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ------------------------------------------------------------- topbar */
+
+  /* The same bar as bookshelf.html, so the draft can be swapped in without
+     the rest of the site noticing. */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: clamp(14px, 1.6vw, 20px) var(--margin);
+    border-bottom: 1px solid rgba(0,0,0,.08);
+  }
+
+  .wordmark {
+    display: inline-block;
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: -.01em;
+    line-height: 1.15;
+    color: var(--ink-strong);
+    text-decoration: none;
+    opacity: .82;
+    transition: opacity .2s ease;
+  }
+  .wordmark:hover { opacity: 1; }
+  .wordmark:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  .site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 1px;
+    font-size: 11px;
+    margin-right: -.9em;
+  }
+
+  .site-nav a, .opt {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink);
+    text-decoration: none;
+    background: none;
+    padding: .52em .9em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+  }
+  .site-nav a:hover, .opt:hover {
+    color: var(--ink-strong);
+    background: rgba(0,0,0,.05);
+    border-color: rgba(0,0,0,.14);
+  }
+  .site-nav a:focus-visible, .opt:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  /* -------------------------------------------------------------- lobby */
+
+  /* The filters stand across the top like the museum's entrance hall rather
+     than down a rail: the wall below is the room, and it gets the full width. */
+  .lobby {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px 28px;
+    padding: clamp(22px, 2.6vw, 34px) var(--margin) 0;
+  }
+
+  .page-label, .readout, .bay-label, .bay-caption, .rec {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+  .page-label { color: var(--ink-strong); margin-right: 8px; }
+
+  .group { display: flex; align-items: center; gap: 1px; border: 0; }
+  .group legend {
+    float: left;
+    margin-right: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #a49a8e;
+  }
+  .opt[aria-pressed="true"] {
+    color: var(--ink-strong);
+    background: rgba(0,0,0,.07);
+    border-color: rgba(0,0,0,.16);
+  }
+
+  .readout {
+    margin-left: auto;
+    color: var(--ink-quiet);
+    font-variant-numeric: tabular-nums;
+  }
+  .readout b { font-weight: 600; color: var(--ink-strong); }
+
+  /* --------------------------------------------------------------- wall */
+
+  /* Ando's concrete is read by its formwork: panels a shaku by two, each with
+     six tie holes left by the bolts. Drawn here at the faintest it can be and
+     still register, it is what makes the paper read as a wall rather than as
+     a page, without asking the covers to compete with it. The panel is sized
+     off --pitch so the wall's grain scales with the covers. */
+  .wall {
+    --panel-w: calc(var(--pitch) * 0.5);
+    position: relative;
+    margin-top: clamp(18px, 2vw, 28px);
+    padding: var(--rise) var(--margin) 80px;
+    background:
+      radial-gradient(circle, rgba(70,58,44,.10) 0 1.5px, transparent 2.2px)
+        calc(var(--panel-w) * .25) calc(var(--pitch) / 6) / calc(var(--panel-w) * .5) calc(var(--pitch) / 3),
+      linear-gradient(90deg, rgba(70,58,44,.07) 1px, transparent 1px)
+        0 0 / var(--panel-w) 100%,
+      linear-gradient(rgba(70,58,44,.07) 1px, transparent 1px)
+        0 0 / 100% var(--pitch);
+    border-top: 1px solid rgba(0,0,0,.08);
+  }
+
+  /* Iwaki's reading room has the Pacific along one side, and the light off it
+     rakes across the wall. Same side as the site's light, upper left. */
+  .wall::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(100deg, rgba(255,253,247,.55) 0%, rgba(255,253,247,0) 38%);
+  }
+
+  .bay { position: relative; margin-bottom: calc(var(--rise) * 1.4); }
+  .bay[hidden] { display: none; }
+
+  .bay-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    height: 14px;
+    margin-bottom: 18px;
+  }
+  .bay-label { color: var(--ink-strong); font-variant-numeric: tabular-nums; }
+  .bay-caption {
+    color: var(--ink-quiet);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    transition: color .2s ease;
+  }
+  .bay-caption.on { color: var(--ink); }
+  .bay-caption em { font-style: normal; color: var(--ink-quiet); }
+
+  /* Every line of covers stands on a ledge, and the ledges are drawn as one
+     repeating background on the bay rather than as elements, so a bay that
+     wraps to three lines gets three ledges and the last one still runs the
+     full width of the wall, as a real ledge would past its last book. The
+     row gap is exactly the --rise the gradient leaves, which keeps the two in
+     register. */
+  .ledges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    column-gap: var(--cover-gap);
+    row-gap: calc(var(--ledge) + var(--rise));
+    padding-bottom: var(--ledge);
+    background: repeating-linear-gradient(to bottom,
+      transparent 0 var(--h),
+      #e2cfae var(--h) calc(var(--h) + 2px),                 /* top, catching the light */
+      #b8946a calc(var(--h) + 2px) calc(var(--h) + var(--ledge)),   /* front edge */
+      rgba(60,45,28,.16) calc(var(--h) + var(--ledge)),      /* cast onto the wall */
+      transparent calc(var(--h) + var(--ledge) + 9px),
+      transparent var(--pitch));
+  }
+
+  /* One book, face out. It leans back against the wall a few degrees from its
+     foot, as anything stood on a picture ledge does — which is also why the
+     cover's top edge is a shade darker than its foot. */
+  .cover {
+    position: relative;
+    flex: 0 0 auto;
+    display: block;
+    height: var(--h);
+    width: calc(var(--h) * var(--s));
+    border-radius: 1.5px 2.5px 2.5px 1.5px;
+    background: var(--k);
+    transform-origin: 50% 100%;
+    transform: perspective(900px) rotateX(5deg);
+    box-shadow:
+      inset 0 0 0 1px rgba(60,48,32,.14),
+      3px 5px 8px -3px rgba(40,30,20,.32),
+      1px 2px 2px rgba(40,30,20,.14);
+    transition: transform .3s ease-out, box-shadow .3s ease-out, opacity .3s ease, visibility 0s;
+    outline-offset: 4px;
+  }
+  .cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+  }
+  /* The hinge down the left edge and the lean's falloff, in black and white
+     only so no cover's colour shifts. */
+  .cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(0,0,0,.20) 0, rgba(255,255,255,.14) 3px, rgba(0,0,0,0) 7px),
+      linear-gradient(to bottom, rgba(0,0,0,.08), rgba(0,0,0,0) 40%);
+  }
+
+  /* No cover image to be had: set the title on the book's own colour, the way
+     the spines are set on the live shelf. */
+  .cover .fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10%;
+    overflow: hidden;
+    text-align: center;
+    /* follows the cover, or a phone-sized cover loses the ends of its words */
+    font-size: clamp(6px, calc(var(--h) * .068), 9px);
+    font-weight: 600;
+    letter-spacing: .05em;
+    line-height: 1.25;
+    text-transform: uppercase;
+    color: var(--t);
+  }
+
+  /* Taken down off the ledge to look at: it comes upright and forward, and its
+     shadow falls further onto the wall because it is further from it. */
+  .cover:hover, .cover:focus-visible {
+    transform: perspective(900px) translateY(-3px) rotateX(0deg) scale(1.04);
+    box-shadow:
+      inset 0 0 0 1px rgba(60,48,32,.14),
+      8px 14px 22px -6px rgba(40,30,20,.36),
+      2px 4px 6px rgba(40,30,20,.14);
+    z-index: 2;
+  }
+  .cover:focus-visible { outline: 2px solid var(--focus); }
+
+  /* Filtered out but left standing in its place, so the books that remain do
+     not slide along the ledge and the wall keeps its shape. visibility takes
+     it off the tab order and the accessibility tree as well. */
+  .cover.off {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .3s ease, visibility 0s linear .3s;
+  }
+
+  /* All-time favourites get the one thing a child's library would give them:
+     a small paper tag on the ledge below. */
+  .cover.fav::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--ledge) * -1 + 1px);
+    width: 9px;
+    height: 5px;
+    margin-left: -4.5px;
+    background: #c94a3f;
+    border-radius: 1px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.2);
+    transform: translateZ(0);
+  }
+
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 0 var(--margin) 40px;
+  }
+  .rec {
+    color: var(--ink-quiet);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-color: transparent;
+    transition: color .2s ease, text-decoration-color .2s ease;
+  }
+  .rec:hover { color: var(--ink-strong); text-decoration-color: currentColor; }
+  .rec:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .legend-fav { color: var(--ink-quiet); font-size: 10px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+  .legend-fav::before {
+    content: '';
+    display: inline-block;
+    width: 9px; height: 5px;
+    margin-right: 8px;
+    vertical-align: middle;
+    background: #c94a3f;
+    border-radius: 1px;
+  }
+
+  .empty {
+    padding: 40px var(--margin);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-quiet);
+  }
+
+  @media (max-width: 860px) {
+    :root { --h: clamp(78px, 21vw, 104px); --cover-gap: 9px; --margin: 20px; }
+    .topbar { flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px 20px 16px; }
+    .site-nav { justify-content: flex-start; margin: 0 0 0 -.9em; }
+    .readout { margin-left: 0; width: 100%; }
+    .lobby { gap: 8px 18px; }
+    .group { flex-wrap: wrap; }
+    .group legend { width: 100%; margin: 4px 0 2px .9em; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01s !important;
+      transition-duration: .01s !important;
+      transition-delay: 0s !important;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+  <a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
+  <nav class="site-nav" aria-label="Primary">
+    <a href="about.html">About</a>
+    <a href="fatherhood.html">Fatherhood</a>
+    <a href="research.html">Research</a>
+    <a href="links.html">Canon</a>
+    <a href="mailto:adam@acld.xyz">Contact</a>
+  </nav>
+</header>
+
+<div class="lobby">
+  <h1 class="page-label">Bookshelf</h1>
+  <div id="filters" style="display:contents"></div>
+  <p class="readout" id="readout" aria-live="polite"></p>
+</div>
+
+<main class="wall" id="wall">
+  <p class="empty" id="empty" hidden>Nothing on that wall</p>
+</main>
+
+<footer class="foot">
+  <span class="legend-fav">All-time</span>
+  <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send me a rec</a>
+</footer>
+
+<script>
+/* t title · a author · y year · r recommendation · g genre · c colour family
+   k dominant hex · s cover aspect (w/h) · p pages · u cover */
+var books = [
+  { t: "The Tao of Fundraising", a: "John Kim", y: "2026", r: "X", g: "Non-Fiction", c: "White", k: "#e8e4da", s: 0.667, p: 256, u: "https://m.media-amazon.com/images/P/163763496X.01.L.jpg" },
+  { t: "The Enneagram: Nine Gateways to Presence", a: "Russ Hudson", y: "2026", r: "A", g: "Non-Fiction", c: "Purple", k: "#5b4a7a", s: 1, p: 400, u: "https://m.media-amazon.com/images/P/1683645790.01.L.jpg" },
+  { t: "Echopraxia", a: "Peter Watts", y: "2026", r: "X", g: "Sci-Fi", c: "Orange", k: "#ce9045", s: 0.668, p: 384, u: "https://covers.openlibrary.org/b/id/8457790-L.jpg" },
+  { t: "How to Make a Few Billion Dollars", a: "Brad Jacobs", y: "2026", r: "X", g: "Non-Fiction", c: "Black", k: "#000000", s: 0.662, p: 272, u: "https://covers.openlibrary.org/b/id/15104244-L.jpg" },
+  { t: "Roadside Picnic", a: "Arkady and Boris Strugatsky", y: "2026", r: "", g: "Sci-Fi", c: "Black", k: "#030406", s: 0.648, p: 224, u: "https://covers.openlibrary.org/b/id/8093841-L.jpg" },
+  { t: "The Eye of the Bedlam Bride", a: "Matt Dinniman", y: "2026", r: "X", g: "Sci-Fi", c: "Orange", k: "#fd7c03", s: 0.666, p: 832, u: "https://m.media-amazon.com/images/P/059395601X.01.L.jpg" },
+  { t: "Ubik", a: "Philip K. Dick", y: "2026", r: "", g: "Sci-Fi", c: "Orange", k: "#eca71e", s: 0.654, p: 224, u: "https://covers.openlibrary.org/b/id/8756979-L.jpg" },
+  { t: "The Road", a: "Cormac McCarthy", y: "2026", r: "X", g: "Novel", c: "White", k: "#b9c1cb", s: 0.628, p: 256, u: "https://covers.openlibrary.org/b/id/198120-L.jpg" },
+  { t: "The Butcher's Masquerade", a: "Matt Dinniman", y: "2026", r: "X", g: "Sci-Fi", c: "Green", k: "#00ff03", s: 0.681, p: 720, u: "https://m.media-amazon.com/images/P/0593955994.01.L.jpg" },
+  { t: "The Raw and the Cooked", a: "Jim Harrison", y: "2026", r: "A", g: "Non-Fiction", c: "Yellow", k: "#e1c856", s: 0.661, p: 288, u: "https://covers.openlibrary.org/b/id/569222-L.jpg" },
+  { t: "Blood, Sweat, and Pixels", a: "Jason Schreier", y: "2026", r: "", g: "Non-Fiction", c: "Blue", k: "#1584af", s: 0.692, p: 304, u: "https://covers.openlibrary.org/b/id/10216136-L.jpg" },
+  { t: "How to Change Your Mind", a: "Michael Pollan", y: "2026", r: "X", g: "Non-Fiction", c: "Blue", k: "#5288ad", s: 0.636, p: 480, u: "https://covers.openlibrary.org/b/id/8805168-L.jpg" },
+  { t: "The Art of Learning", a: "Josh Waitzkin", y: "2026", r: "X", g: "Non-Fiction", c: "Orange", k: "#d24514", s: 0.662, p: 288, u: "https://covers.openlibrary.org/b/id/475008-L.jpg" },
+  { t: "Blood Music", a: "Greg Bear", y: "2026", r: "X", g: "Sci-Fi", c: "White", k: "#ffffff", s: 0.616, p: 320, u: "https://covers.openlibrary.org/b/id/477227-L.jpg" },
+  { t: "Concrete Island", a: "J.G. Ballard", y: "2026", r: "", g: "Novel", c: "Black", k: "#191014", s: 0.656, p: 176, u: "https://books.google.com/books/content?id=8azfAAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Who: The A Method for Hiring", a: "Geoff Smart", y: "2026", r: "", g: "Non-Fiction", c: "White", k: "#ffffff", s: 0.734, p: 208, u: "https://books.google.com/books/content?id=38lvDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Gate of the Feral Gods", a: "Matt Dinniman", y: "2026", r: "X", g: "Sci-Fi", c: "Black", k: "#000003", s: 0.665, p: 608, u: "https://books.google.com/books/content?id=tuYrEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Among Friends", a: "Hal Ebbott", y: "2026", r: "X", g: "Novel", c: "Brown", k: "#854113", s: 0.663, p: 352, u: "https://books.google.com/books/content?id=QGgwEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "There Is No Antimemetics Division", a: "qntm", y: "2026", r: "", g: "Sci-Fi", c: "Orange", k: "#e38962", s: 0.6, p: 234, u: "https://covers.openlibrary.org/b/id/11457905-L.jpg" },
+  { t: "Trail Wise, Path Ways", a: "John Illig", y: "2026", r: "", g: "Non-Fiction", c: "White", k: "#fcfdfd", s: 0.625, p: 184, u: "https://covers.openlibrary.org/b/id/3793932-L.jpg" },
+  { t: "Breakneck", a: "Dan Wang", y: "2026", r: "S", g: "Non-Fiction", c: "Brown", k: "#726847", s: 0.712, p: 224, u: "https://covers.openlibrary.org/b/id/15121652-L.jpg" },
+  { t: "Permutation City", a: "Greg Egan", y: "2026", r: "X", g: "Sci-Fi", c: "White", k: "#a8a489", s: 0.65, p: 377, u: "https://books.google.com/books/content?id=_37NGwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Thinking Machine", a: "Stephen Witt", y: "2026", r: "X", g: "Non-Fiction", c: "Green", k: "#2fd42f", s: 0.642, p: 272, u: "https://books.google.com/books/content?id=ywwCEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Food Rules: An Eater's Manual", a: "Michael Pollan", y: "2026", r: "", g: "Non-Fiction", c: "White", k: "#ffffff", s: 0.579, p: 160, u: "https://books.google.com/books/content?id=1ZuJDQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Metamorphosis of Prime Intellect", a: "Roger Williams", y: "2026", r: "X", g: "Sci-Fi", c: "White", k: "#ffffff", s: 0.616, p: 176, u: "https://books.google.com/books/content?id=JgccBdnUHT8C&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Never Let Me Go", a: "Kazuo Ishiguro", y: "2026", r: "", g: "Sci-Fi", c: "White", k: "#cfc8be", s: 0.707, p: 304, u: "https://books.google.com/books/content?id=qLfZf7f5_pkC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Ministry of Time", a: "Kaliane Bradley", y: "2026", r: "", g: "Sci-Fi", c: "Black", k: "#000000", s: 0.661, p: 339, u: "https://books.google.com/books/content?id=x8f0EAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Blindsight", a: "Peter Watts", y: "2026", r: "X", g: "Sci-Fi", c: "Green", k: "#c1f014", s: 0.665, p: 384, u: "https://books.google.com/books/content?id=FVMzz-xINLsC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Into Thin Air", a: "Jon Krakauer", y: "2025", r: "X", g: "Non-Fiction", c: "White", k: "#fefefe", s: 0.696, p: 320, u: "https://books.google.com/books/content?id=3FONDQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Sense of an Ending", a: "Julian Barnes", y: "2025", r: "S", g: "Novel", c: "Black", k: "#191b32", s: 0.628, p: 160, u: "https://books.google.com/books/content?id=IHhD0QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Ocean at the End of the Lane", a: "Neil Gaiman", y: "2025", r: "X", g: "Fantasy", c: "Blue", k: "#557b8a", s: 0.694, p: 224, u: "https://covers.openlibrary.org/b/id/7258156-L.jpg" },
+  { t: "Einstein's Dreams", a: "Alan Lightman", y: "2025", r: "A", g: "Novel", c: "Orange", k: "#b67240", s: 0.67, p: 179, u: "https://books.google.com/books/content?id=RZVNCVpyuIcC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Contact", a: "Carl Sagan", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#555756", s: 0.644, p: 384, u: "https://covers.openlibrary.org/b/id/8798315-L.jpg" },
+  { t: "The Fall of Hyperion", a: "Dan Simmons", y: "2025", r: "X", g: "Sci-Fi", c: "Blue", k: "#637888", s: 0.637, p: 528, u: "https://books.google.com/books/content?id=F4P4DwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "A Short Stay in Hell", a: "Steven L. Peck", y: "2025", r: "", g: "Fantasy", c: "Brown", k: "#5c5649", s: 0.667, p: 102, u: "https://books.google.com/books/content?id=V282uQAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Orbital", a: "Samantha Harvey", y: "2025", r: "S", g: "Novel", c: "Orange", k: "#cf7758", s: 0.692, p: 193, u: "https://books.google.com/books/content?id=3QPkEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Semiosis", a: "Sue Burke", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#040304", s: 0.688, p: 333, u: "https://books.google.com/books/content?id=8TdCDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Dungeon Anarchist's Cookbook", a: "Matt Dinniman", y: "2025", r: "X", g: "Sci-Fi", c: "Red", k: "#f94444", s: 0.711, p: 784, u: "https://books.google.com/books/content?id=0rhmEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Solaris", a: "Stanislaw Lem", y: "2025", r: "", g: "Sci-Fi", c: "White", k: "#fcfbfe", s: 0.646, p: 234, u: "https://books.google.com/books/content?id=w6-kOwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Carl's Doomsday Scenario", a: "Matt Dinniman", y: "2025", r: "X", g: "Sci-Fi", c: "Purple", k: "#fd01db", s: 0.642, p: 384, u: "https://books.google.com/books/content?id=COoCEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Dungeon Crawler Carl", a: "Matt Dinniman", y: "2025", r: "A", g: "Sci-Fi", c: "Orange", k: "#f9bf1b", s: 0.669, p: 480, u: "https://books.google.com/books/content?id=506EEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Murderbot: Exit Strategy", a: "Martha Wells", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#122427", s: 0.653, p: 336, u: "https://books.google.com/books/content?id=n48hEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "I, Robot", a: "Isaac Asimov", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#060002", s: 0.663, p: 304, u: "https://books.google.com/books/content?id=2vnbMzYXBQsC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Jurassic Park", a: "Michael Crichton", y: "2025", r: "S", g: "Sci-Fi", c: "White", k: "#ffffff", s: 0.582, p: 464, u: "https://books.google.com/books/content?id=MNeEFe9qU3cC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Project Hail Mary", a: "Andy Weir", y: "2025", r: "S", g: "Sci-Fi", c: "Blue", k: "#03353d", s: 0.65, p: 496, u: "https://books.google.com/books/content?id=-Ff2DwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Upgrade", a: "Blake Crouch", y: "2025", r: "", g: "Sci-Fi", c: "Blue", k: "#0452b4", s: 0.65, p: 352, u: "https://books.google.com/books/content?id=Gj9JEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Annie Bot", a: "Sierra Greer", y: "2025", r: "", g: "Sci-Fi", c: "Red", k: "#d36585", s: 0.656, p: 240, u: "https://books.google.com/books/content?id=4---EAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Golden Son", a: "Pierce Brown", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#000000", s: 0.667, p: 464, u: "https://books.google.com/books/content?id=B4zIAgAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Left Hand of Darkness", a: "Ursula K. Le Guin", y: "2025", r: "", g: "Sci-Fi", c: "Blue", k: "#63c9dc", s: 0.637, p: 320, u: "https://books.google.com/books/content?id=zhERCgAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Chapterhouse Dune", a: "Frank Herbert", y: "2025", r: "", g: "Sci-Fi", c: "Black", k: "#0c0c02", s: 0.558, p: 624, u: "https://covers.openlibrary.org/b/id/8580276-L.jpg" },
+  { t: "Counter-Intelligence", a: "Robert Hannigan", y: "2025", r: "", g: "Non-Fiction", c: "Brown", k: "#654d46", s: 0.665, p: 336, u: "https://books.google.com/books/content?id=e2fXEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Murderbot: Rogue Protocol", a: "Martha Wells", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#212121", s: 0.627, p: 160, u: "https://books.google.com/books/content?id=JvAyDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Murderbot: Artificial Condition", a: "Martha Wells", y: "2025", r: "X", g: "Sci-Fi", c: "Brown", k: "#332a20", s: 0.627, p: 176, u: "https://books.google.com/books/content?id=oTU0DwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Hyperion", a: "Dan Simmons", y: "2024", r: "X", g: "Sci-Fi", c: "Orange", k: "#cc7452", s: 0.653, p: 496, u: "https://books.google.com/books/content?id=8nsmEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Return of the King", a: "J.R.R. Tolkien", y: "2024", r: "X", g: "Fantasy", c: "Black", k: "#000000", s: 0.636, p: 401, u: "https://covers.openlibrary.org/b/id/8461498-L.jpg" },
+  { t: "The Two Towers", a: "J.R.R. Tolkien", y: "2024", r: "", g: "Fantasy", c: "Green", k: "#737562", s: 0.638, p: 464, u: "https://covers.openlibrary.org/b/id/12617859-L.jpg" },
+  { t: "The Fellowship of the Ring", a: "J.R.R. Tolkien", y: "2024", r: "", g: "Fantasy", c: "Black", k: "#000000", s: 0.639, p: 539, u: "https://covers.openlibrary.org/b/id/15173637-L.jpg" },
+  { t: "A River Runs Through It", a: "Norman Maclean", y: "2024", r: "", g: "Novel", c: "White", k: "#ffffff", s: 0.65, p: 161, u: "https://books.google.com/books/content?id=otrz-KkRIBEC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Murderbot: All Systems Red", a: "Martha Wells", y: "2024", r: "X", g: "Sci-Fi", c: "Black", k: "#312f28", s: 0.634, p: 144, u: "https://books.google.com/books/content?id=ZSu2DQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Hobbit", a: "J.R.R. Tolkien", y: "2024", r: "", g: "Fantasy", c: "Black", k: "#393a3e", s: 0.699, p: 320, u: "https://books.google.com/books/content?id=U799AY3yfqcC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Do Androids Dream of Electric Sheep", a: "Philip K. Dick", y: "2024", r: "X", g: "Sci-Fi", c: "White", k: "#a9adb3", s: 0.715, p: 256, u: "https://books.google.com/books/content?id=jUX8N9kiCiQC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Man Who Solved the Market", a: "Gregory Zuckerman", y: "2023", r: "X", g: "Non-Fiction", c: "Black", k: "#222222", s: 0.663, p: 384, u: "https://books.google.com/books/content?id=YUmHDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Sounds of Life", a: "Karen Bakker", y: "2023", r: "X", g: "Non-Fiction", c: "Black", k: "#010101", s: 0.656, p: 368, u: "https://books.google.com/books/content?id=DldsEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Hidden Life of Trees", a: "Peter Wohlleben", y: "2023", r: "S", g: "Non-Fiction", c: "White", k: "#f7f6e4", s: 0.652, p: 288, u: "https://books.google.com/books/content?id=WEn4DAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Billion Dollar Whale", a: "Tom Wright", y: "2023", r: "", g: "Non-Fiction", c: "White", k: "#dfedf6", s: 0.66, p: 400, u: "https://books.google.com/books/content?id=CVWYDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Kill Chain", a: "Christian Brose", y: "2023", r: "", g: "Non-Fiction", c: "Black", k: "#050505", s: 0.667, p: 320, u: "https://books.google.com/books/content?id=CW-nDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Heretics of Dune", a: "Frank Herbert", y: "2023", r: "X", g: "Sci-Fi", c: "Black", k: "#020202", s: 0.558, p: 688, u: "https://covers.openlibrary.org/b/id/8597984-L.jpg" },
+  { t: "The Three Body Problem", a: "Liu Cixin", y: "2023", r: "X", g: "Sci-Fi", c: "Blue", k: "#3070ac", s: 0.656, p: 399, u: "https://books.google.com/books/content?id=QxbFBAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Red Rising", a: "Pierce Brown", y: "2023", r: "X", g: "Sci-Fi", c: "Red", k: "#b72a2a", s: 0.667, p: 416, u: "https://covers.openlibrary.org/b/id/8185003-L.jpg" },
+  { t: "Troy", a: "Stephen Fry", y: "2023", r: "X", g: "Novel", c: "Black", k: "#171817", s: 0.626, p: 413, u: "https://books.google.com/books/content?id=lRsszgEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Speaker for the Dead", a: "Orson Scott Card", y: "2023", r: "X", g: "Sci-Fi", c: "Black", k: "#19181b", s: 0.637, p: 336, u: "https://books.google.com/books/content?id=s_VYLwEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Ender's Game", a: "Orson Scott Card", y: "2023", r: "A", g: "Sci-Fi", c: "Black", k: "#252828", s: 0.608, p: 357, u: "https://covers.openlibrary.org/b/id/8185355-L.jpg" },
+  { t: "A View from the Bridge", a: "Arthur Miller", y: "2023", r: "A", g: "Play", c: "Green", k: "#429539", s: 0.642, p: 96, u: "https://books.google.com/books/content?id=4mdNnDqkU8EC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Paper Menagerie and Other Stories", a: "Ken Liu", y: "2023", r: "X", g: "Sci-Fi", c: "White", k: "#f4f3f1", s: 0.667, p: 450, u: "https://books.google.com/books/content?id=Y3QmDQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Creative Act: A Way of Being", a: "Rick Rubin", y: "2023", r: "", g: "Non-Fiction", c: "White", k: "#cacec6", s: 0.681, p: 432, u: "https://books.google.com/books/content?id=l3dtEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "God Emperor of Dune", a: "Frank Herbert", y: "2023", r: "A", g: "Sci-Fi", c: "Green", k: "#215e42", s: 0.666, p: 496, u: "https://covers.openlibrary.org/b/id/10226364-L.jpg" },
+  { t: "The Age of A.I. and our Human Future", a: "Henry Kissinger", y: "2023", r: "", g: "Non-Fiction", c: "Blue", k: "#8cb9cf", s: 0.715, p: 254, u: "https://books.google.com/books/content?id=PrEhzgEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Rocket Men", a: "Robert Kurson", y: "2023", r: "X", g: "Non-Fiction", c: "White", k: "#a9c3c2", s: 0.67, p: 384, u: "https://books.google.com/books/content?id=ivdQDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Ghost Wars", a: "Steve Coll", y: "2023", r: "X", g: "Non-Fiction", c: "Black", k: "#000000", s: 0.656, p: 695, u: "https://books.google.com/books/content?id=ToYxFL5wmBIC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Moon is a Harsh Mistress", a: "Robert A. Heinlein", y: "2023", r: "", g: "Sci-Fi", c: "Black", k: "#010101", s: 0.656, p: 382, u: "https://books.google.com/books/content?id=HtuRSsAb2fEC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Barbarian Days: A Surfing Life", a: "William Finnegan", y: "2022", r: "A", g: "Non-Fiction", c: "White", k: "#afa48a", s: 0.653, p: 384, u: "https://books.google.com/books/content?id=r7IMAwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Psychology of Money", a: "Morgan Housel", y: "2022", r: "X", g: "Non-Fiction", c: "White", k: "#ffffff", s: 0.646, p: 256, u: "https://books.google.com/books/content?id=TnrrDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Neuromancer", a: "William Gibson", y: "2022", r: "X", g: "Sci-Fi", c: "Green", k: "#01692e", s: 0.636, p: 304, u: "https://books.google.com/books/content?id=pNQiDQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Damascus Station", a: "David McCloskey", y: "2022", r: "X", g: "Novel", c: "Black", k: "#1a242a", s: 0.656, p: 432, u: "https://books.google.com/books/content?id=7bROzwEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Foundation and the Empire", a: "Isaac Asimov", y: "2022", r: "", g: "Sci-Fi", c: "Brown", k: "#9a946c", s: 0.598, p: 256, u: "https://covers.openlibrary.org/b/id/9300695-L.jpg" },
+  { t: "Ardennes 1944", a: "Antony Beevor", y: "2022", r: "S", g: "Non-Fiction", c: "Black", k: "#2a2115", s: 0.692, p: 451, u: "https://books.google.com/books/content?id=3LXZCwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Ringworld", a: "Larry Niven", y: "2022", r: "", g: "Sci-Fi", c: "Blue", k: "#0089d5", s: 0.643, p: 288, u: "https://books.google.com/books/content?id=tUppPgAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Snow Crash", a: "Neal Stephenson", y: "2022", r: "A", g: "Sci-Fi", c: "Black", k: "#242729", s: 0.67, p: 454, u: "https://books.google.com/books/content?id=SXyqPwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Kitchen Confidential", a: "Anthony Bourdain", y: "2022", r: "A", g: "Non-Fiction", c: "Black", k: "#0c0e11", s: 0.711, p: 320, u: "https://books.google.com/books/content?id=cocVLbFkgyQC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Beginner's Mind", a: "Shunryu Suzuki", y: "2022", r: "X", g: "Non-Fiction", c: "White", k: "#7a7e7d", s: 0.624, p: 208, u: "https://books.google.com/books/content?id=g8GGrFCFS8kC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Merchants of Debt", a: "George Anders", y: "2022", r: "X", g: "Non-Fiction", c: "Black", k: "#000000", s: 0.646, p: 334, u: "https://covers.openlibrary.org/b/id/6538879-L.jpg" },
+  { t: "Weed the People", a: "Bruce Barcott", y: "2022", r: "", g: "Non-Fiction", c: "Red", k: "#ee1c25", s: 0.657, p: 336, u: "https://books.google.com/books/content?id=tTQrBwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Bad Blood", a: "John Carreyrou", y: "2022", r: "X", g: "Non-Fiction", c: "Red", k: "#cb1721", s: 0.65, p: 352, u: "https://books.google.com/books/content?id=zIJcDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Children of Dune", a: "Frank Herbert", y: "2022", r: "", g: "Sci-Fi", c: "Red", k: "#953b67", s: 0.666, p: 496, u: "https://covers.openlibrary.org/b/id/10226359-L.jpg" },
+  { t: "Stories of Your Life and Others", a: "Ted Chiang", y: "2022", r: "A", g: "Sci-Fi", c: "White", k: "#f3f2f2", s: 0.674, p: 333, u: "https://books.google.com/books/content?id=xa_wbcnyKXMC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Macbeth", a: "William Shakespeare", y: "2022", r: "A", g: "Play", c: "Purple", k: "#2d1052", s: 0.681, p: 280, u: "https://books.google.com/books/content?id=dvn3uent7VcC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Hard Thing About Hard Things", a: "Ben Horowitz", y: "2022", r: "", g: "Non-Fiction", c: "Black", k: "#140e0e", s: 0.551, p: 304, u: "https://books.google.com/books/content?id=620pAgAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "My Life at the Limit", a: "Reinhold Messner", y: "2022", r: "", g: "Non-Fiction", c: "Brown", k: "#6f665d", s: 0.663, p: 251, u: "https://books.google.com/books/content?id=OzYVCgAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Cold Start Problem", a: "Andrew Chen", y: "2022", r: "", g: "Non-Fiction", c: "Blue", k: "#111bc8", s: 0.696, p: 304, u: "https://books.google.com/books/content?id=duj8DwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Super Pumped", a: "Mike Isaac", y: "2022", r: "X", g: "Non-Fiction", c: "Red", k: "#ca1424", s: 0.688, p: 420, u: "https://books.google.com/books/content?id=ql6NEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Martian", a: "Andy Weir", y: "2022", r: "A", g: "Sci-Fi", c: "Orange", k: "#e19947", s: 0.723, p: 384, u: "https://books.google.com/books/content?id=oGGMDQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Exhalation", a: "Ted Chiang", y: "2022", r: "A", g: "Sci-Fi", c: "Black", k: "#000d10", s: 0.642, p: 368, u: "https://books.google.com/books/content?id=SGOPEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Dune Messiah", a: "Frank Herbert", y: "2022", r: "X", g: "Sci-Fi", c: "Blue", k: "#184378", s: 0.561, p: 352, u: "https://covers.openlibrary.org/b/id/14322962-L.jpg" },
+  { t: "Boys in the Boat", a: "Daniel James Brown", y: "2022", r: "A", g: "Non-Fiction", c: "Orange", k: "#c0aa7a", s: 0.66, p: 432, u: "https://books.google.com/books/content?id=tHfWEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Dune", a: "Frank Herbert", y: "2022", r: "A", g: "Sci-Fi", c: "Red", k: "#c8352c", s: 0.558, p: 896, u: "https://covers.openlibrary.org/b/id/15110282-L.jpg" },
+  { t: "Foundation", a: "Isaac Asimov", y: "2022", r: "X", g: "Sci-Fi", c: "White", k: "#e2d7be", s: 0.592, p: 200, u: "https://covers.openlibrary.org/b/id/13440809-L.jpg" },
+  { t: "A Little Life", a: "Hanya Yanagihara", y: "≤ 2021", r: "S", g: "Novel", c: "White", k: "#a9a9a9", s: 0.65, p: 832, u: "https://books.google.com/books/content?id=sL_ZCwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Corrections", a: "Jonathan Franzen", y: "≤ 2021", r: "", g: "Novel", c: "Black", k: "#04171d", s: 0.667, p: 567, u: "https://books.google.com/books/content?id=3SETVDEO45AC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Freedom", a: "Jonathan Franzen", y: "≤ 2021", r: "X", g: "Novel", c: "Blue", k: "#6891a9", s: 0.688, p: 562, u: "https://covers.openlibrary.org/b/id/15205666-L.jpg" },
+  { t: "Curious Case of the Dog in the Nighttime", a: "Mark Haddon", y: "≤ 2021", r: "S", g: "Novel", c: "Red", k: "#ef4b32", s: 0.6, p: 240, u: "https://books.google.com/books/content?id=Thc32eB1Kx4C&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Sol Lewitt 100 Views", a: "Sol LeWitt", y: "≤ 2021", r: "A", g: "Non-Fiction", c: "Black", k: "#484848", s: 0.871, p: 271, u: "https://books.google.com/books/content?id=PIo0AQAAIAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+];
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  var GROUPS = [
+    { key: 'g', name: 'Genre', values: ['Sci-Fi', 'Non-Fiction', 'Novel', 'Fantasy', 'Play'] },
+    { key: 'r', name: 'Recommended', values: ['A', 'Y'], labels: { A: 'All-Time', Y: 'Yes' } }
+  ];
+  var YEARS = ['2026', '2025', '2024', '2023', '2022', '≤ 2021'];
+
+  // 'S' and 'X' were two passes at the same verdict; both mean yes.
+  books.forEach(function (b) { b.r = b.r === 'A' ? 'A' : (b.r ? 'Y' : ''); });
+
+  var active = { g: 'all', r: 'all' };
+  var buttons = [];
+  var bays = {};
+  var wall = document.getElementById('wall');
+
+  function lum(hex) {
+    var c = [1, 3, 5].map(function (i) {
+      var v = parseInt(hex.substr(i, 2), 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+  // Same choice as the live shelf: whichever ink contrasts more, measured.
+  function inkOn(hex) {
+    var L = lum(hex);
+    var dark = (L + 0.05) / (lum('#171310') + 0.05);
+    var light = (lum('#fffcf6') + 0.05) / (L + 0.05);
+    return dark >= light ? '#171310' : '#fffcf6';
+  }
+
+  // 'Yes' is a floor, not a tier: the all-time books were recommended too.
+  function matches(b) {
+    return (active.g === 'all' || b.g === active.g) &&
+           (active.r === 'all' || (active.r === 'Y' ? b.r !== '' : b.r === active.r));
+  }
+
+  /* ---- lobby ---- */
+
+  var filters = document.getElementById('filters');
+  GROUPS.forEach(function (grp) {
+    var fs = document.createElement('fieldset');
+    fs.className = 'group';
+    var lg = document.createElement('legend');
+    lg.textContent = grp.name;
+    fs.appendChild(lg);
+    ['all'].concat(grp.values).forEach(function (v) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'opt';
+      btn.textContent = v === 'all' ? 'All' : (grp.labels ? grp.labels[v] : v);
+      btn.dataset.group = grp.key;
+      btn.dataset.value = v;
+      btn.addEventListener('click', function () {
+        active[grp.key] = active[grp.key] === v ? 'all' : v;
+        render();
+      });
+      fs.appendChild(btn);
+      buttons.push(btn);
+    });
+    filters.appendChild(fs);
+  });
+
+  /* ---- wall ---- */
+
+  YEARS.forEach(function (y) {
+    var bay = document.createElement('section');
+    bay.className = 'bay';
+    bay.setAttribute('aria-label', y);
+
+    var head = document.createElement('div');
+    head.className = 'bay-head';
+    var label = document.createElement('h2');
+    label.className = 'bay-label';
+    label.textContent = y;
+    // A sighted reader's caption for whichever cover is in hand. The covers
+    // carry their own names for a screen reader, so this is kept from it.
+    var cap = document.createElement('p');
+    cap.className = 'bay-caption';
+    cap.setAttribute('aria-hidden', 'true');
+    head.appendChild(label);
+    head.appendChild(cap);
+
+    var ledges = document.createElement('div');
+    ledges.className = 'ledges';
+
+    bay.appendChild(head);
+    bay.appendChild(ledges);
+    wall.insertBefore(bay, document.getElementById('empty'));
+    bays[y] = { el: bay, ledges: ledges, cap: cap, books: [] };
+  });
+
+  function rest(bay) {
+    var n = bay.books.filter(function (b) { return !b.el.classList.contains('off'); }).length;
+    bay.cap.textContent = n + (n === 1 ? ' book' : ' books');
+    bay.cap.classList.remove('on');
+  }
+
+  function show(bay, b) {
+    bay.cap.innerHTML = '';
+    bay.cap.appendChild(document.createTextNode(b.t + '  '));
+    var em = document.createElement('em');
+    em.textContent = '· ' + b.a;
+    bay.cap.appendChild(em);
+    bay.cap.classList.add('on');
+  }
+
+  books.forEach(function (b) {
+    var bay = bays[b.y];
+    var a = document.createElement('a');
+    a.className = 'cover' + (b.r === 'A' ? ' fav' : '');
+    a.href = 'https://www.amazon.com/s?k=' + encodeURIComponent(b.t + ' ' + b.a) + '&i=stripbooks';
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.style.setProperty('--k', b.k);
+    a.style.setProperty('--t', inkOn(b.k));
+    a.style.setProperty('--s', b.s);
+
+    var img = document.createElement('img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = b.t + ' by ' + b.a;
+    img.src = b.u;
+    // Some cover hosts answer a missing book with a 1px placeholder rather
+    // than an error, so a suspiciously small image is treated as no image.
+    function noCover() {
+      img.remove();
+      var f = document.createElement('span');
+      f.className = 'fallback';
+      f.textContent = b.t;
+      a.setAttribute('aria-label', b.t + ' by ' + b.a);
+      a.appendChild(f);
+    }
+    img.addEventListener('error', noCover);
+    img.addEventListener('load', function () { if (img.naturalWidth < 8) noCover(); });
+    a.appendChild(img);
+
+    a.addEventListener('pointerenter', function () { show(bay, b); });
+    a.addEventListener('focus', function () { show(bay, b); });
+    a.addEventListener('pointerleave', function () { rest(bay); });
+    a.addEventListener('blur', function () { rest(bay); });
+
+    b.el = a;
+    bay.books.push(b);
+    bay.ledges.appendChild(a);
+  });
+
+  function render() {
+    buttons.forEach(function (btn) {
+      btn.setAttribute('aria-pressed', active[btn.dataset.group] === btn.dataset.value);
+    });
+    var shown = 0;
+    YEARS.forEach(function (y) {
+      var bay = bays[y], n = 0;
+      bay.books.forEach(function (b) {
+        var on = matches(b);
+        b.el.classList.toggle('off', !on);
+        if (on) n++;
+      });
+      // A bay with nothing left on it is taken down altogether; within a bay
+      // the gaps are kept, so the survivors stay where they were.
+      bay.el.hidden = n === 0;
+      shown += n;
+      rest(bay);
+    });
+    document.getElementById('empty').hidden = shown > 0;
+    document.getElementById('readout').innerHTML =
+      '<b>' + shown + '</b> of ' + books.length + ' books';
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
