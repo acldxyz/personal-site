@@ -9,9 +9,10 @@
      visits to the live Bookshelf. -->
 <style>
   /* After Tadao Ando's Picture Book Museum in Iwaki, where the books are not
-     shelved spine-out but stood face-out on long ledges up a concrete wall, so
+     shelved spine-out but stood face-out up a concrete wall, so
      a child chooses by cover the way you choose a painting. Here every book
-     is on the one wall, newest at the top left, and the cover art is the
+     has a niche of its own in one wall, newest at the top left, and the
+     cover art is the
      whole display: no spines, no list, nothing to read until you go up to
      one. */
 
@@ -19,12 +20,15 @@
 
   :root {
     /* --h is the cover height and the one number the wall is built from: the
-       ledge, the pitch between ledges and the cover widths all follow it. */
+       niche, the wall between niches and the cover widths all follow it. */
     --h: clamp(92px, 10.5vw, 148px);
-    --ledge: 7px;
-    --rise: clamp(26px, 2.6vw, 38px);   /* air between a ledge and the covers above */
-    --pitch: calc(var(--h) + var(--ledge) + var(--rise));
-    --cover-gap: clamp(10px, 1.1vw, 16px);
+    --pad: calc(var(--h) * .13);       /* air round a book inside its niche */
+    /* Wide enough for an ordinary 2:3 cover with air either side. A squarer
+       cover is narrowed to fit and comes out shorter, as it would on a real
+       wall; the niche does not grow for it, or the grid would lose its rhythm. */
+    --niche-w: calc(var(--h) * .72 + 2 * var(--pad));
+    --niche-h: calc(var(--h) + var(--pad) * 2.2);
+    --cover-gap: calc(var(--h) * .16);
     --margin: clamp(22px, 2.8vw, 40px);
 
     --ink: #6f665d;
@@ -152,24 +156,11 @@
 
   /* --------------------------------------------------------------- wall */
 
-  /* Ando's concrete is read by its formwork: panels a shaku by two, each with
-     six tie holes left by the bolts. Drawn here at the faintest it can be and
-     still register, it is what makes the paper read as a wall rather than as
-     a page, without asking the covers to compete with it. The panel is sized
-     off --pitch so the wall's grain scales with the covers. */
   .wall {
-    --panel-w: calc(var(--pitch) * 0.5);
     position: relative;
     flex: 1 0 auto;
     margin-top: clamp(18px, 2vw, 28px);
-    padding: var(--rise) var(--margin) 80px;
-    background:
-      radial-gradient(circle, rgba(70,58,44,.10) 0 1.5px, transparent 2.2px)
-        calc(var(--panel-w) * .25) calc(var(--pitch) / 6) / calc(var(--panel-w) * .5) calc(var(--pitch) / 3),
-      linear-gradient(90deg, rgba(70,58,44,.07) 1px, transparent 1px)
-        0 0 / var(--panel-w) 100%,
-      linear-gradient(rgba(70,58,44,.07) 1px, transparent 1px)
-        0 0 / 100% var(--pitch);
+    padding: calc(var(--cover-gap) * 1.6) var(--margin) 80px;
     border-top: 1px solid rgba(0,0,0,.08);
   }
 
@@ -210,46 +201,72 @@
   .plaque.on { opacity: 1; transform: none; }
   .plaque em { font-style: normal; color: var(--ink-quiet); }
 
-  /* Every line of covers stands on a ledge, and the ledges are drawn as one
-     repeating background on the wall rather than as elements, so however
-     many lines the covers wrap to, each gets a ledge, and the last one still
-     runs the full width, as a real ledge would past its last book. The
-     row gap is exactly the --rise the gradient leaves, which keeps the two in
-     register. */
-  .ledges {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    column-gap: var(--cover-gap);
-    row-gap: calc(var(--ledge) + var(--rise));
-    padding-bottom: var(--ledge);
-    background: repeating-linear-gradient(to bottom,
-      transparent 0 var(--h),
-      #e2cfae var(--h) calc(var(--h) + 2px),                 /* top, catching the light */
-      #b8946a calc(var(--h) + 2px) calc(var(--h) + var(--ledge)),   /* front edge */
-      rgba(60,45,28,.16) calc(var(--h) + var(--ledge)),      /* cast onto the wall */
-      transparent calc(var(--h) + var(--ledge) + 9px),
-      transparent var(--pitch));
+  /* The niches are Ando's formwork grid turned into the shelving: one panel,
+     one book. The grid is filled from the left and stops where the books do,
+     so a filtered wall still starts in the same place. auto-fill keeps the
+     empty tracks, which is what lets the grid centre without a short row
+     drifting to the middle. */
+  .niches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, var(--niche-w));
+    gap: var(--cover-gap);
+    justify-content: center;
   }
 
-  /* One book, face out. It leans back against the wall a few degrees from its
-     foot, as anything stood on a picture ledge does — which is also why the
-     cover's top edge is a shade darker than its foot. */
+  /* Cut into the wall rather than built onto it. Light from the upper left
+     puts the top and left inner walls in shadow and catches the lower right
+     lip, which is the whole of what makes a flat box read as a recess. Each
+     niche keeps a pair of tie holes in the wall above it, so the concrete is
+     still there between them. */
+  .niche {
+    position: relative;
+    height: var(--niche-h);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: var(--pad) var(--pad) calc(var(--pad) * 1.2);
+    border-radius: 2px;
+    background:
+      linear-gradient(to bottom, rgba(70,58,44,.075), rgba(70,58,44,.03) 55%, rgba(70,58,44,.05));
+    box-shadow:
+      inset 4px 5px 9px -2px rgba(50,38,24,.22),
+      inset 1px 1px 0 rgba(50,38,24,.16),
+      inset -1px -1px 0 rgba(255,255,255,.7),
+      0 0 0 1px rgba(70,58,44,.05);
+  }
+  .niche::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--cover-gap) * -.5 - 1.5px);
+    left: 22%;
+    right: 22%;
+    height: 3px;
+    background:
+      radial-gradient(circle, rgba(70,58,44,.16) 0 1.4px, transparent 1.9px) left center / 3px 3px no-repeat,
+      radial-gradient(circle, rgba(70,58,44,.16) 0 1.4px, transparent 1.9px) right center / 3px 3px no-repeat;
+  }
+  /* Filtered out, a book's niche goes with it and the rest close up: on one
+     wall, empty niches held in place would leave a filtered view as a few
+     books scattered through a hundred holes. */
+  .niche.off { display: none; }
+
+  /* One book, face out, stood on the floor of its niche and leaning back a
+     few degrees against the rear wall — which is also why the cover's top
+     edge is a shade darker than its foot. */
   .cover {
     position: relative;
-    flex: 0 0 auto;
     display: block;
-    height: var(--h);
-    width: calc(var(--h) * var(--s));
+    width: min(calc(var(--h) * var(--s)), 100%);
+    aspect-ratio: var(--s);
     border-radius: 1.5px 2.5px 2.5px 1.5px;
     background: var(--k);
     transform-origin: 50% 100%;
-    transform: perspective(900px) rotateX(5deg);
+    transform: perspective(900px) rotateX(4deg);
     box-shadow:
       inset 0 0 0 1px rgba(60,48,32,.14),
-      3px 5px 8px -3px rgba(40,30,20,.32),
+      3px 4px 7px -3px rgba(40,30,20,.34),
       1px 2px 2px rgba(40,30,20,.14);
-    transition: transform .3s ease-out, box-shadow .3s ease-out, opacity .3s ease, visibility 0s;
+    transition: transform .3s ease-out, box-shadow .3s ease-out;
     outline-offset: 4px;
   }
   .cover img {
@@ -276,37 +293,31 @@
      art, which the background above already paints. The name is on the link
      for a screen reader either way. */
 
-  /* Taken down off the ledge to look at: it comes upright and forward, and its
-     shadow falls further onto the wall because it is further from it. */
+  /* Taken out to look at: it comes upright and forward out of the niche, and
+     its shadow falls further because it is further from the wall. */
   .cover:hover, .cover:focus-visible {
-    transform: perspective(900px) translateY(-3px) rotateX(0deg) scale(1.04);
+    transform: perspective(900px) rotateX(0deg) scale(1.08);
     box-shadow:
       inset 0 0 0 1px rgba(60,48,32,.14),
-      8px 14px 22px -6px rgba(40,30,20,.36),
+      8px 12px 20px -6px rgba(40,30,20,.38),
       2px 4px 6px rgba(40,30,20,.14);
     z-index: 2;
   }
   .cover:focus-visible { outline: 2px solid var(--focus); }
 
-  /* Filtered out, the book comes off the wall and the rest close up. With
-     one wall instead of a bay per year, holding the gaps would leave a
-     filtered view as a few covers scattered across a hundred empty places. */
-  .cover.off { display: none; }
-
   /* All-time favourites get the one thing a child's library would give them:
-     a small paper tag on the ledge below. */
-  .cover.fav::before {
+     a small paper tag on the floor of the niche. */
+  .niche.fav::after {
     content: '';
     position: absolute;
     left: 50%;
-    bottom: calc(var(--ledge) * -1 + 1px);
+    bottom: calc(var(--pad) * .45);
     width: 9px;
-    height: 5px;
+    height: 4px;
     margin-left: -4.5px;
     background: #c94a3f;
     border-radius: 1px;
     box-shadow: 0 1px 1px rgba(0,0,0,.2);
-    transform: translateZ(0);
   }
 
   .foot {
@@ -385,7 +396,7 @@
 </div>
 
 <main class="wall" id="wall">
-  <div class="ledges" id="ledges"></div>
+  <div class="niches" id="niches"></div>
   <p class="empty" id="empty" hidden>Nothing on that wall</p>
 </main>
 
@@ -529,7 +540,7 @@ var books = [
 
   var active = { g: 'all', y: 'all', r: 'all' };
   var buttons = [];
-  var ledges = document.getElementById('ledges');
+  var niches = document.getElementById('niches');
   var plaque = document.getElementById('plaque');
 
   // 'Yes' is a floor, not a tier: the all-time books were recommended too.
@@ -577,8 +588,10 @@ var books = [
   function rest() { plaque.classList.remove('on'); }
 
   books.forEach(function (b) {
+    var niche = document.createElement('div');
+    niche.className = 'niche' + (b.r === 'A' ? ' fav' : '');
     var a = document.createElement('a');
-    a.className = 'cover' + (b.r === 'A' ? ' fav' : '');
+    a.className = 'cover';
     a.href = 'https://www.amazon.com/s?k=' + encodeURIComponent(b.t + ' ' + b.a) + '&i=stripbooks';
     a.target = '_blank';
     a.rel = 'noopener';
@@ -603,8 +616,9 @@ var books = [
     a.addEventListener('pointerleave', function () { rest(); });
     a.addEventListener('blur', function () { rest(); });
 
-    b.el = a;
-    ledges.appendChild(a);
+    niche.appendChild(a);
+    b.el = niche;
+    niches.appendChild(niche);
   });
 
   function render() {
