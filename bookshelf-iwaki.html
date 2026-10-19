@@ -506,7 +506,7 @@
 
   /* On a phone the side walls would be foreshortened past reading, so the
      room is unfolded: the three walls stand one after another, flat, and
-     only the books are shown. layout() sets .flat to match this query. */
+     only the books are shown. layout() sets .flat below 520px. */
   .flat .empty { position: static; text-align: left; }
   .room.flat { height: auto; perspective: none; overflow: visible; padding: 18px var(--margin) 60px; }
   .flat .space { position: static; }
@@ -842,7 +842,7 @@ var books = [
   }
 
   function layout() {
-    var flat = matchMedia('(max-width: 860px)').matches;
+    var flat = matchMedia('(max-width: 520px)').matches;
     room.classList.toggle('flat', flat);
     var st = room.style;
     var place = [];
@@ -871,19 +871,31 @@ var books = [
       st.setProperty('--D', D + 'px');
       st.setProperty('--P', (W * LENS) + 'px');
 
-      // Fill the walls to capacity, books first; what is left over stands
-      // empty at the end of the walk, by the right wall's front.
+      // Books are shared between the walls in proportion to the room each
+      // has, still in walking order, and each wall is made up to capacity
+      // with empty niches after its last book. Filled strictly in order, any
+      // slack all landed on the right wall, which on a narrow window could be
+      // left with nothing on it at all.
       var caps = [rows * cs, rows * cb, rows * cs];
-      var spare = caps[0] + caps[1] + caps[2] - niches.length;
+      var total = caps[0] + caps[1] + caps[2];
+      var take = caps.map(function (c) { return Math.floor(niches.length * c / total); });
+      take[1] = niches.length - take[0] - take[2];    // the back wall absorbs the rounding
+      var spare = total - niches.length;
       while (blanks.length < spare) {
         var e = document.createElement('div');
         e.className = 'niche blank';
         board(e, niches.length + blanks.length);
         blanks.push(e);
       }
-      var all = niches.concat(blanks.slice(0, spare));
       blanks.slice(spare).forEach(function (e) { e.remove(); });
-      place = [all.slice(0, caps[0]), all.slice(caps[0], caps[0] + caps[1]), all.slice(caps[0] + caps[1])];
+      var from = 0, used = 0;
+      place = caps.map(function (c, k) {
+        var list = niches.slice(from, from + take[k]);
+        from += take[k];
+        var pad = blanks.slice(used, used + c - take[k]);
+        used += pad.length;
+        return list.concat(pad);
+      });
     }
 
     place.forEach(function (list, i) {
