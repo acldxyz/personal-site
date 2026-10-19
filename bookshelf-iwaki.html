@@ -11,10 +11,10 @@
   /* After Tadao Ando's Picture Book Museum in Iwaki, where the books are not
      shelved spine-out but stood face-out up a concrete wall, so
      a child chooses by cover the way you choose a painting. Here every book
-     has a niche of its own in one wall, newest at the top left, and the
-     cover art is the
-     whole display: no spines, no list, nothing to read until you go up to
-     one. */
+     has a niche of its own, and you stand at the back of the room looking
+     in: walls of niches to the left, ahead and to the right. The cover art
+     is the whole display: no spines, no list, nothing to read until you go
+     up to one. */
 
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -22,13 +22,6 @@
     /* --h is the cover height and the one number the wall is built from: the
        niche, the wall between niches and the cover widths all follow it. */
     --h: clamp(92px, 10.5vw, 148px);
-    --pad: calc(var(--h) * .13);       /* air round a book inside its niche */
-    /* Wide enough for an ordinary 2:3 cover with air either side. A squarer
-       cover is narrowed to fit and comes out shorter, as it would on a real
-       wall; the niche does not grow for it, or the grid would lose its rhythm. */
-    --niche-w: calc(var(--h) * .72 + 2 * var(--pad));
-    --niche-h: calc(var(--h) + var(--pad) * 2.2);
-    --cover-gap: calc(var(--h) * .16);
     --margin: clamp(22px, 2.8vw, 40px);
 
     --ink: #6f665d;
@@ -39,6 +32,20 @@
 
   /* A column, so the wall can take whatever height the window has left: a
      filter down to two books still stands them on a wall, not in a box. */
+  /* Declared again on the room, which sets its own --h: a custom property
+     resolves where it is declared, so these would otherwise keep the root's
+     --h however the room was sized. The proportions are mirrored in
+     layout(). */
+  :root, .room {
+    --pad: calc(var(--h) * .13);       /* air round a book inside its niche */
+    /* Wide enough for an ordinary 2:3 cover with air either side. A squarer
+       cover is narrowed to fit and comes out shorter, as it would on a real
+       wall; the niche does not grow for it, or the grid would lose its rhythm. */
+    --niche-w: calc(var(--h) * .72 + 2 * var(--pad));
+    --niche-h: calc(var(--h) + var(--pad) * 2.2);
+    --cover-gap: calc(var(--h) * .16);
+  }
+
   body {
     display: flex;
     flex-direction: column;
@@ -123,7 +130,7 @@
     padding: clamp(22px, 2.6vw, 34px) var(--margin) 0;
   }
 
-  .page-label, .readout, .plaque, .rec {
+  .page-label, .readout, .plaque p, .rec {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
@@ -156,61 +163,155 @@
 
   /* --------------------------------------------------------------- wall */
 
-  .wall {
+  /* The room is a CSS box seen from its open end. The stage's own rectangle
+     is the mouth of the room, the perspective origin is where the eye is,
+     and every surface is hinged on one edge of that rectangle and swung back
+     into the screen, so the walls meet the window's edges and run away to
+     the same vanishing point. Sizes come from layout(): --D is the depth,
+     and --h, the cover height, is whatever lets every book fit. */
+  .room {
     position: relative;
     flex: 1 0 auto;
-    margin-top: clamp(18px, 2vw, 28px);
-    padding: calc(var(--cover-gap) * 1.6) var(--margin) 80px;
+    height: var(--room-h, 640px);
+    margin-top: clamp(14px, 1.6vw, 22px);
+    overflow: hidden;
+    perspective: var(--P, 1200px);
+    perspective-origin: var(--vx, 50%) var(--vy, 46%);
+    /* The eye drifts with the pointer, as a head does, but slowly enough to
+       read as a lean rather than a camera move. */
+    transition: perspective-origin .62s ease-out;
     border-top: 1px solid rgba(0,0,0,.08);
   }
+  /* The space is an empty plane at the mouth of the room, in front of every
+     wall, and in 3D it is hit-tested like one: left to take the pointer, it
+     would swallow every hover and click on the books behind it. */
+  .space { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
+  /* The niche takes the pointer rather than the book: a book that is out
+     of its niche has moved from under the pointer, and if it held the hover
+     itself it would drop it, go back, take it again, and flicker. */
+  .niche { pointer-events: auto; }
 
-  /* Iwaki's reading room has the Pacific along one side, and the light off it
-     rakes across the wall. Same side as the site's light, upper left. */
-  .wall::before {
+  .surface, .wall-face {
+    position: absolute;
+    top: 0;
+    transform-style: preserve-3d;
+  }
+  .back  { left: 0; width: 100%; height: 100%; transform: translateZ(calc(var(--D) * -1)); }
+  .left  { left: 0;  width: var(--D); height: 100%; transform-origin: 0 50%;    transform: rotateY(90deg); }
+  .right { right: 0; width: var(--D); height: 100%; transform-origin: 100% 50%; transform: rotateY(-90deg); }
+  .floor   { left: 0; top: auto; bottom: 0; width: 100%; height: var(--D); transform-origin: 50% 100%; transform: rotateX(90deg); }
+  .ceiling { left: 0; width: 100%; height: var(--D); transform-origin: 50% 0;   transform: rotateX(-90deg); }
+
+  /* Ando's concrete: the formwork joints and the tie holes they leave, at
+     the faintest they still register. Panel size follows --h so the wall's
+     grain stays in scale with the niches.
+
+     Painted on a layer set a pixel behind the wall rather than on the wall
+     itself. The niches stand in the wall's plane, and the compositor, given
+     two surfaces in one plane, dropped rectangles of the wall's paint. */
+  .wall-face { --panel: calc(var(--h) * 1.3); }
+  .wall-face::before {
     content: '';
     position: absolute;
     inset: 0;
+    transform: translateZ(-1px);
     pointer-events: none;
-    background: linear-gradient(100deg, rgba(255,253,247,.55) 0%, rgba(255,253,247,0) 38%);
+    background:
+      var(--light, none),
+      radial-gradient(circle, rgba(70,58,44,.12) 0 1.4px, transparent 2px)
+        calc(var(--panel) * .25) calc(var(--panel) / 3) / calc(var(--panel) * .5) calc(var(--panel) * 2 / 3),
+      linear-gradient(90deg, rgba(70,58,44,.06) 1px, transparent 1px) 0 0 / var(--panel) 100%,
+      linear-gradient(rgba(70,58,44,.06) 1px, transparent 1px) 0 0 / 100% calc(var(--panel) * 2),
+      #ebe5d9;
+  }
+  /* Each wall gets its own light. The window runs down the left, so the
+     right wall takes the most of it and the left the least; the back wall,
+     furthest from it, is a step down; and both side walls dim toward the
+     back of the room. */
+  .left  { --light: linear-gradient(90deg,  rgba(60,44,26,.06), rgba(60,44,26,.20)); }
+  .right { --light: linear-gradient(270deg, rgba(255,250,238,.18), rgba(60,44,26,.10)); }
+  .back  { --light: linear-gradient(rgba(60,44,26,.10), rgba(60,44,26,.10)); }
+  .wall-face > .niches { position: relative; }
+
+  /* Pale boards running away from you, darkening toward the back. */
+  .floor {
+    background:
+      linear-gradient(to bottom, rgba(60,40,20,.28), rgba(60,40,20,0) 70%),
+      repeating-linear-gradient(90deg,
+        rgba(80,52,24,.0) 0 calc(var(--h) * .9 - 1px),
+        rgba(80,52,24,.22) calc(var(--h) * .9 - 1px) calc(var(--h) * .9)),
+      #cfb38a;
+  }
+  /* Ando lights his rooms from slots more than windows. One runs the length
+     of the ceiling, and its glow is what the walls are lit by. */
+  .ceiling {
+    background:
+      linear-gradient(90deg, transparent 46%, rgba(255,253,246,.9) 48.5% 51.5%, transparent 54%),
+      linear-gradient(to top, rgba(60,44,26,.16), rgba(60,44,26,0) 70%),
+      #e6e0d4;
   }
 
-  /* The museum labels a picture on the wall beside it, not under a heading
-     a screen away. With one wall running the length of the page, the label
-     is pinned to the window instead, so it is in view wherever the covers
-     being looked at are. It holds nothing at rest. */
+  /* The museum labels a picture on the wall beside it. Here the label is
+     pinned to the window instead, so it is in view wherever in the room the
+     book is, and it carries the cover again at reading size: across the room
+     a cover is half size or less, and the label is where it can be seen
+     properly. It holds nothing at rest. */
   .plaque {
     position: fixed;
     left: var(--margin);
     bottom: 18px;
     z-index: 5;
-    max-width: calc(100vw - 2 * var(--margin));
-    padding: .78em 1.2em;
-    border-radius: 999px;
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    max-width: min(520px, calc(100vw - 2 * var(--margin)));
+    padding: 10px 18px 10px 10px;
+    border-radius: 6px;
     border: 1px solid rgba(0,0,0,.10);
-    background: rgba(250,248,243,.92);
-    box-shadow: 0 6px 18px -8px rgba(40,30,20,.28);
+    background: rgba(250,248,243,.94);
+    box-shadow: 0 10px 28px -10px rgba(40,30,20,.36);
     color: var(--ink-strong);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     opacity: 0;
     transform: translateY(6px);
     pointer-events: none;
     transition: opacity .3s ease-out, transform .3s ease-out;
   }
   .plaque.on { opacity: 1; transform: none; }
-  .plaque em { font-style: normal; color: var(--ink-quiet); }
+  /* Held on the far side from the book it names, which it would otherwise
+     cover whenever that book was low on the left wall. */
+  .plaque.east { left: auto; right: var(--margin); }
+  .plaque img, .plaque .swatch {
+    flex: none;
+    height: 132px;
+    width: auto;
+    border-radius: 1.5px 2.5px 2.5px 1.5px;
+    box-shadow: 3px 4px 8px -3px rgba(40,30,20,.36), inset 0 0 0 1px rgba(60,48,32,.14);
+  }
+  .plaque .swatch { width: calc(132px * var(--s)); background: var(--k); }
+  .plaque p { min-width: 0; padding-bottom: 2px; line-height: 1.7; }
+  .plaque b, .plaque em { display: block; font-weight: 600; font-style: normal; }
+  .plaque em { color: var(--ink-quiet); }
+  @media (max-width: 860px) {
+    .plaque img, .plaque .swatch { height: 96px; }
+    .plaque .swatch { width: calc(96px * var(--s)); }
+  }
+
 
   /* The niches are Ando's formwork grid turned into the shelving: one panel,
-     one book. The grid is filled from the left and stops where the books do,
-     so a filtered wall still starts in the same place. auto-fill keeps the
-     empty tracks, which is what lets the grid centre without a short row
-     drifting to the middle. */
+     one book. */
+  /* In the room, each wall fills column by column, so the books walk round
+     it in one line: down the left wall from the front, across the back, and
+     up the right wall to the front again. */
   .niches {
     display: grid;
-    grid-template-columns: repeat(auto-fill, var(--niche-w));
+    grid-auto-flow: column;
+    grid-template-rows: repeat(var(--rows, 4), var(--niche-h));
+    grid-auto-columns: var(--niche-w);
     gap: var(--cover-gap);
     justify-content: center;
+    align-content: center;
+    height: 100%;
+    transform-style: preserve-3d;
   }
 
   /* Each niche is a small wooden box set into the wall: a pale frame that
@@ -224,6 +325,7 @@
   .niche {
     --frame: calc(var(--pad) * .42);
     position: relative;
+    transform-style: preserve-3d;
     height: var(--niche-h);
     display: flex;
     align-items: flex-end;
@@ -266,16 +368,19 @@
       inset -1px -1px 0 rgba(255,236,200,.22);
   }
   .niche > .cover { z-index: 1; }
-  .niche > .cover:hover, .niche > .cover:focus-visible { z-index: 2; }
+  .niche:hover > .cover, .niche > .cover:focus-visible { z-index: 2; }
 
-  /* Filtered out, a book's niche goes with it and the rest close up: on one
-     wall, empty niches held in place would leave a filtered view as a few
-     books scattered through a hundred holes. */
-  .niche.off { display: none; }
+  /* In the room a filtered-out book is taken down and its niche left empty:
+     the walls are architecture, and do not rearrange themselves. */
+  .niche.off > .cover { visibility: hidden; }
+  .niche.off::after { display: none; }
 
   /* One book, face out, stood on the floor of its niche and leaning back a
      few degrees against the rear wall — which is also why the cover's top
-     edge is a shade darker than its foot. */
+     edge is a shade darker than its foot. It stands a little proud of the
+     back panel: in the room everything is sorted by depth, and a lean that
+     tipped its top behind the panel's plane would put the cover out of
+     sight. */
   .cover {
     position: relative;
     display: block;
@@ -284,7 +389,7 @@
     border-radius: 1.5px 2.5px 2.5px 1.5px;
     background: var(--k);
     transform-origin: 50% 100%;
-    transform: perspective(900px) rotateX(4deg);
+    transform: translateZ(calc(var(--h) * .09)) rotateX(4deg);
     box-shadow:
       inset 0 0 0 1px rgba(60,48,32,.14),
       3px 4px 7px -3px rgba(40,30,20,.34),
@@ -318,8 +423,10 @@
 
   /* Taken out to look at: it comes upright and forward out of the niche, and
      its shadow falls further because it is further from the wall. */
-  .cover:hover, .cover:focus-visible {
-    transform: perspective(900px) rotateX(0deg) scale(1.08);
+  /* Comes off the wall and out into the room, far enough that a book on the
+     back wall, at half size from here, is near full size when picked out. */
+  .niche:hover > .cover, .cover:focus-visible {
+    transform: translateZ(calc(var(--h) * 2.6)) rotateX(0deg) scale(1.15);
     box-shadow:
       inset 0 0 0 1px rgba(60,48,32,.14),
       8px 12px 20px -6px rgba(40,30,20,.38),
@@ -327,6 +434,19 @@
     z-index: 2;
   }
   .cover:focus-visible { outline: 2px solid var(--focus); }
+  /* Off a side wall it turns as it comes out, hinged on its far edge, to
+     face you rather than the opposite wall — straight out, it would be seen
+     edge-on from the back of the room. */
+  .left .niche:hover > .cover, .left .cover:focus-visible {
+    transform-origin: 100% 50%;
+    transform: translateZ(calc(var(--h) * .9)) rotateY(-62deg) scale(1.15);
+  }
+  .right .niche:hover > .cover, .right .cover:focus-visible {
+    transform-origin: 0 50%;
+    transform: translateZ(calc(var(--h) * .9)) rotateY(62deg) scale(1.15);
+  }
+  .flat .left .niche:hover > .cover, .flat .left .cover:focus-visible,
+  .flat .right .niche:hover > .cover, .flat .right .cover:focus-visible { transform-origin: 50% 100%; }
 
   /* All-time favourites get the one thing a child's library would give them:
      a small paper tag on the floor of the niche. */
@@ -372,13 +492,36 @@
   }
 
   .empty {
-    padding: 40px var(--margin);
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 45%;
+    text-align: center;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
     text-transform: uppercase;
     color: var(--ink-quiet);
   }
+
+  /* On a phone the side walls would be foreshortened past reading, so the
+     room is unfolded: the three walls stand one after another, flat, and
+     only the books are shown. layout() sets .flat to match this query. */
+  .flat .empty { position: static; text-align: left; }
+  .room.flat { height: auto; perspective: none; overflow: visible; padding: 18px var(--margin) 60px; }
+  .flat .space { position: static; }
+  .flat .surface, .flat .niche.blank, .flat .niche.off { display: none; }
+  .flat .wall-face { position: static; transform: none; width: auto; height: auto; }
+  .flat .wall-face::before { display: none; }
+  .flat .niches {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fill, var(--niche-w));
+    grid-template-rows: none;
+    grid-auto-rows: var(--niche-h);
+    height: auto;
+    margin-bottom: var(--cover-gap);
+  }
+  .flat .niche:hover > .cover, .flat .cover:focus-visible { transform: scale(1.08); }
 
   @media (max-width: 860px) {
     :root { --h: clamp(78px, 21vw, 104px); --cover-gap: 9px; --margin: 20px; }
@@ -391,6 +534,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .room { transition: none; }
     *, *::before, *::after {
       animation-duration: .01s !important;
       transition-duration: .01s !important;
@@ -419,12 +563,18 @@
   <p class="readout" id="readout" aria-live="polite"></p>
 </div>
 
-<main class="wall" id="wall">
-  <div class="niches" id="niches"></div>
-  <p class="empty" id="empty" hidden>Nothing on that wall</p>
+<main class="room" id="room">
+  <div class="space">
+    <div class="surface ceiling"></div>
+    <div class="surface floor"></div>
+    <section class="wall-face left" aria-label="Left wall"><div class="niches"></div></section>
+    <section class="wall-face back" aria-label="Back wall"><div class="niches"></div></section>
+    <section class="wall-face right" aria-label="Right wall"><div class="niches"></div></section>
+  </div>
+  <p class="empty" id="empty" hidden>Nothing on these walls</p>
 </main>
 
-<p class="plaque" id="plaque" aria-hidden="true"></p>
+<div class="plaque" id="plaque" aria-hidden="true"></div>
 
 <footer class="foot">
   <span class="legend-fav">All-time</span>
@@ -564,7 +714,12 @@ var books = [
 
   var active = { g: 'all', y: 'all', r: 'all' };
   var buttons = [];
-  var niches = document.getElementById('niches');
+  var room = document.getElementById('room');
+  var walls = ['left', 'back', 'right'].map(function (w) {
+    return room.querySelector('.' + w + ' .niches');
+  });
+  var niches = [];    // one per book, in walking order
+  var blanks = [];    // empty niches that fill out the walls
   var plaque = document.getElementById('plaque');
 
   // 'Yes' is a floor, not a tier: the all-time books were recommended too.
@@ -602,11 +757,36 @@ var books = [
 
   /* ---- wall ---- */
 
+  // A fixed scatter rather than Math.random, so a niche keeps its board
+  // between visits. Kept inside one tile: the largest niche is under 160 by
+  // 200, so these ranges never bring a tile's edge into view, where the noise
+  // would seam.
+  function board(el, n) {
+    el.style.setProperty('--gx', -((n * 97) % 200) + 'px');
+    el.style.setProperty('--gy', -((n * 53) % 40) + 'px');
+  }
+
   function show(b) {
-    plaque.textContent = b.t + '  ';
+    plaque.textContent = '';
+    var r = b.el.getBoundingClientRect();
+    plaque.classList.toggle('east', r.left + r.width / 2 < innerWidth / 2);
+    // The book's own image, which has already loaded by the time it can be
+    // pointed at; where it failed, the book's colour in the cover's shape.
+    var art = b.img.isConnected ? b.img.cloneNode() : document.createElement('span');
+    if (!b.img.isConnected) {
+      art.className = 'swatch';
+      art.style.setProperty('--k', b.k);
+      art.style.setProperty('--s', b.s);
+    }
+    var p = document.createElement('p');
+    var t = document.createElement('b');
+    t.textContent = b.t;
     var em = document.createElement('em');
-    em.textContent = '· ' + b.a + ' · ' + b.y;
-    plaque.appendChild(em);
+    em.textContent = b.a + ' · ' + b.y;
+    p.appendChild(t);
+    p.appendChild(em);
+    plaque.appendChild(art);
+    plaque.appendChild(p);
     plaque.classList.add('on');
   }
   function rest() { plaque.classList.remove('on'); }
@@ -614,13 +794,7 @@ var books = [
   books.forEach(function (b) {
     var niche = document.createElement('div');
     niche.className = 'niche' + (b.r === 'A' ? ' fav' : '');
-    // A fixed scatter rather than Math.random, so a niche keeps its board
-    // between visits.
-    // Kept inside one tile: the largest niche is under 160 by 200, so these
-    // ranges never bring a tile's edge into view, where the noise would seam.
-    var n = books.indexOf(b);
-    niche.style.setProperty('--gx', -((n * 97) % 200) + 'px');
-    niche.style.setProperty('--gy', -((n * 53) % 40) + 'px');
+    board(niche, books.indexOf(b));
     var a = document.createElement('a');
     a.className = 'cover';
     a.href = 'https://www.amazon.com/s?k=' + encodeURIComponent(b.t + ' ' + b.a) + '&i=stripbooks';
@@ -641,16 +815,106 @@ var books = [
     img.addEventListener('error', noCover);
     img.addEventListener('load', function () { if (img.naturalWidth < 8) noCover(); });
     a.appendChild(img);
+    b.img = img;
 
-    a.addEventListener('pointerenter', function () { show(b); });
+    niche.addEventListener('pointerenter', function () { show(b); });
     a.addEventListener('focus', function () { show(b); });
-    a.addEventListener('pointerleave', function () { rest(); });
+    niche.addEventListener('pointerleave', function () { rest(); });
     a.addEventListener('blur', function () { rest(); });
 
     niche.appendChild(a);
     b.el = niche;
-    niches.appendChild(niche);
+    niches.push(niche);
   });
+
+  /* ---- room ----
+     The depth and the lens are fixed proportions of the stage, so the room
+     keeps its shape at any window size; what gives is the size of the books.
+     Rows are added until all three walls together hold every book, and the
+     cover height is whatever fits that many rows into the wall's height. */
+
+  var DEPTH = 0.9, LENS = 0.9;    // the back wall shows at about half size
+  // Niche proportions from :root, in units of --h: height, width, gap.
+  var NH = 1.286, NW = 0.98, GAP = 0.16, MARGIN = 0.8;
+
+  function cols(len, h) {
+    return Math.max(0, Math.floor((len - MARGIN * h + GAP * h) / ((NW + GAP) * h)));
+  }
+
+  function layout() {
+    var flat = matchMedia('(max-width: 860px)').matches;
+    room.classList.toggle('flat', flat);
+    var st = room.style;
+    var place = [];
+
+    if (flat) {
+      ['--h', '--rows', '--D', '--P', '--room-h'].forEach(function (v) { st.removeProperty(v); });
+      // Unfolded, the walls still split the books in walking order, a third each.
+      var third = Math.ceil(niches.length / 3);
+      place = [niches.slice(0, third), niches.slice(third, 2 * third), niches.slice(2 * third)];
+    } else {
+      // Measured from the page's top, not the window's, so a page that loads
+      // scrolled still gets a room that fills the window below the filters.
+      var top = room.getBoundingClientRect().top + scrollY;
+      var H = Math.max(460, innerHeight - top);
+      var W = room.clientWidth, D = W * DEPTH;
+      var rows, h, cb, cs;
+      for (rows = 3; rows < 12; rows++) {
+        h = Math.min(140, H / (rows * NH + (rows - 1) * GAP + MARGIN));
+        cb = cols(W, h);
+        cs = cols(D, h);
+        if (rows * (cb + 2 * cs) >= niches.length) break;
+      }
+      st.setProperty('--room-h', H + 'px');
+      st.setProperty('--h', h.toFixed(2) + 'px');
+      st.setProperty('--rows', rows);
+      st.setProperty('--D', D + 'px');
+      st.setProperty('--P', (W * LENS) + 'px');
+
+      // Fill the walls to capacity, books first; what is left over stands
+      // empty at the end of the walk, by the right wall's front.
+      var caps = [rows * cs, rows * cb, rows * cs];
+      var spare = caps[0] + caps[1] + caps[2] - niches.length;
+      while (blanks.length < spare) {
+        var e = document.createElement('div');
+        e.className = 'niche blank';
+        board(e, niches.length + blanks.length);
+        blanks.push(e);
+      }
+      var all = niches.concat(blanks.slice(0, spare));
+      blanks.slice(spare).forEach(function (e) { e.remove(); });
+      place = [all.slice(0, caps[0]), all.slice(caps[0], caps[0] + caps[1]), all.slice(caps[0] + caps[1])];
+    }
+
+    place.forEach(function (list, i) {
+      var frag = document.createDocumentFragment();
+      list.forEach(function (el) { frag.appendChild(el); });
+      walls[i].appendChild(frag);
+    });
+  }
+
+  // Leaning toward what you are looking at: the eye follows the pointer a
+  // little way, which is enough for the walls to answer it.
+  var still = matchMedia('(prefers-reduced-motion: reduce)');
+  room.addEventListener('pointermove', function (e) {
+    if (still.matches || room.classList.contains('flat')) return;
+    var r = room.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width - 0.5;
+    var y = (e.clientY - r.top) / r.height - 0.5;
+    room.style.setProperty('--vx', (50 + x * 14).toFixed(2) + '%');
+    room.style.setProperty('--vy', (46 + y * 8).toFixed(2) + '%');
+  });
+  room.addEventListener('pointerleave', function () {
+    room.style.removeProperty('--vx');
+    room.style.removeProperty('--vy');
+  });
+
+  var pending = 0;
+  addEventListener('resize', function () {
+    cancelAnimationFrame(pending);
+    pending = requestAnimationFrame(layout);
+  });
+  layout();
 
   function render() {
     buttons.forEach(function (btn) {
