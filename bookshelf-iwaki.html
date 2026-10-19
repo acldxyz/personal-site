@@ -10,9 +10,10 @@
 <style>
   /* After Tadao Ando's Picture Book Museum in Iwaki, where the books are not
      shelved spine-out but stood face-out on long ledges up a concrete wall, so
-     a child chooses by cover the way you choose a painting. Here each year is
-     a bay of that wall, and the covers are the whole display: no spines, no
-     list, nothing to read until you go up to one. */
+     a child chooses by cover the way you choose a painting. Here every book
+     is on the one wall, newest at the top left, and the cover art is the
+     whole display: no spines, no list, nothing to read until you go up to
+     one. */
 
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -32,7 +33,11 @@
     --focus: #3d7ba8;
   }
 
+  /* A column, so the wall can take whatever height the window has left: a
+     filter down to two books still stands them on a wall, not in a box. */
   body {
+    display: flex;
+    flex-direction: column;
     min-height: 100vh;
     background:
       radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%)
@@ -114,7 +119,7 @@
     padding: clamp(22px, 2.6vw, 34px) var(--margin) 0;
   }
 
-  .page-label, .readout, .bay-label, .bay-caption, .rec {
+  .page-label, .readout, .plaque, .rec {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
@@ -155,6 +160,7 @@
   .wall {
     --panel-w: calc(var(--pitch) * 0.5);
     position: relative;
+    flex: 1 0 auto;
     margin-top: clamp(18px, 2vw, 28px);
     padding: var(--rise) var(--margin) 80px;
     background:
@@ -177,32 +183,37 @@
     background: linear-gradient(100deg, rgba(255,253,247,.55) 0%, rgba(255,253,247,0) 38%);
   }
 
-  .bay { position: relative; margin-bottom: calc(var(--rise) * 1.4); }
-  .bay[hidden] { display: none; }
-
-  .bay-head {
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-    height: 14px;
-    margin-bottom: 18px;
-  }
-  .bay-label { color: var(--ink-strong); font-variant-numeric: tabular-nums; }
-  .bay-caption {
-    color: var(--ink-quiet);
+  /* The museum labels a picture on the wall beside it, not under a heading
+     a screen away. With one wall running the length of the page, the label
+     is pinned to the window instead, so it is in view wherever the covers
+     being looked at are. It holds nothing at rest. */
+  .plaque {
+    position: fixed;
+    left: var(--margin);
+    bottom: 18px;
+    z-index: 5;
+    max-width: calc(100vw - 2 * var(--margin));
+    padding: .78em 1.2em;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,.10);
+    background: rgba(250,248,243,.92);
+    box-shadow: 0 6px 18px -8px rgba(40,30,20,.28);
+    color: var(--ink-strong);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-width: 0;
-    transition: color .2s ease;
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+    transition: opacity .3s ease-out, transform .3s ease-out;
   }
-  .bay-caption.on { color: var(--ink); }
-  .bay-caption em { font-style: normal; color: var(--ink-quiet); }
+  .plaque.on { opacity: 1; transform: none; }
+  .plaque em { font-style: normal; color: var(--ink-quiet); }
 
   /* Every line of covers stands on a ledge, and the ledges are drawn as one
-     repeating background on the bay rather than as elements, so a bay that
-     wraps to three lines gets three ledges and the last one still runs the
-     full width of the wall, as a real ledge would past its last book. The
+     repeating background on the wall rather than as elements, so however
+     many lines the covers wrap to, each gets a ledge, and the last one still
+     runs the full width, as a real ledge would past its last book. The
      row gap is exactly the --rise the gradient leaves, which keeps the two in
      register. */
   .ledges {
@@ -261,25 +272,9 @@
       linear-gradient(to bottom, rgba(0,0,0,.08), rgba(0,0,0,0) 40%);
   }
 
-  /* No cover image to be had: set the title on the book's own colour, the way
-     the spines are set on the live shelf. */
-  .cover .fallback {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10%;
-    overflow: hidden;
-    text-align: center;
-    /* follows the cover, or a phone-sized cover loses the ends of its words */
-    font-size: clamp(6px, calc(var(--h) * .068), 9px);
-    font-weight: 600;
-    letter-spacing: .05em;
-    line-height: 1.25;
-    text-transform: uppercase;
-    color: var(--t);
-  }
+  /* A cover host that fails leaves the book's own colour standing in for its
+     art, which the background above already paints. The name is on the link
+     for a screen reader either way. */
 
   /* Taken down off the ledge to look at: it comes upright and forward, and its
      shadow falls further onto the wall because it is further from it. */
@@ -293,14 +288,10 @@
   }
   .cover:focus-visible { outline: 2px solid var(--focus); }
 
-  /* Filtered out but left standing in its place, so the books that remain do
-     not slide along the ledge and the wall keeps its shape. visibility takes
-     it off the tab order and the accessibility tree as well. */
-  .cover.off {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity .3s ease, visibility 0s linear .3s;
-  }
+  /* Filtered out, the book comes off the wall and the rest close up. With
+     one wall instead of a bay per year, holding the gaps would leave a
+     filtered view as a few covers scattered across a hundred empty places. */
+  .cover.off { display: none; }
 
   /* All-time favourites get the one thing a child's library would give them:
      a small paper tag on the ledge below. */
@@ -322,7 +313,7 @@
     display: flex;
     justify-content: space-between;
     gap: 20px;
-    padding: 0 var(--margin) 40px;
+    padding: 18px var(--margin) 40px;
   }
   .rec {
     color: var(--ink-quiet);
@@ -394,8 +385,11 @@
 </div>
 
 <main class="wall" id="wall">
+  <div class="ledges" id="ledges"></div>
   <p class="empty" id="empty" hidden>Nothing on that wall</p>
 </main>
+
+<p class="plaque" id="plaque" aria-hidden="true"></p>
 
 <footer class="foot">
   <span class="legend-fav">All-time</span>
@@ -526,36 +520,22 @@ var books = [
 
   var GROUPS = [
     { key: 'g', name: 'Genre', values: ['Sci-Fi', 'Non-Fiction', 'Novel', 'Fantasy', 'Play'] },
+    { key: 'y', name: 'Year', values: ['2026', '2025', '2024', '2023', '2022', '≤ 2021'] },
     { key: 'r', name: 'Recommended', values: ['A', 'Y'], labels: { A: 'All-Time', Y: 'Yes' } }
   ];
-  var YEARS = ['2026', '2025', '2024', '2023', '2022', '≤ 2021'];
 
   // 'S' and 'X' were two passes at the same verdict; both mean yes.
   books.forEach(function (b) { b.r = b.r === 'A' ? 'A' : (b.r ? 'Y' : ''); });
 
-  var active = { g: 'all', r: 'all' };
+  var active = { g: 'all', y: 'all', r: 'all' };
   var buttons = [];
-  var bays = {};
-  var wall = document.getElementById('wall');
-
-  function lum(hex) {
-    var c = [1, 3, 5].map(function (i) {
-      var v = parseInt(hex.substr(i, 2), 16) / 255;
-      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-    });
-    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-  }
-  // Same choice as the live shelf: whichever ink contrasts more, measured.
-  function inkOn(hex) {
-    var L = lum(hex);
-    var dark = (L + 0.05) / (lum('#171310') + 0.05);
-    var light = (lum('#fffcf6') + 0.05) / (L + 0.05);
-    return dark >= light ? '#171310' : '#fffcf6';
-  }
+  var ledges = document.getElementById('ledges');
+  var plaque = document.getElementById('plaque');
 
   // 'Yes' is a floor, not a tier: the all-time books were recommended too.
   function matches(b) {
     return (active.g === 'all' || b.g === active.g) &&
+           (active.y === 'all' || b.y === active.y) &&
            (active.r === 'all' || (active.r === 'Y' ? b.r !== '' : b.r === active.r));
   }
 
@@ -587,86 +567,44 @@ var books = [
 
   /* ---- wall ---- */
 
-  YEARS.forEach(function (y) {
-    var bay = document.createElement('section');
-    bay.className = 'bay';
-    bay.setAttribute('aria-label', y);
-
-    var head = document.createElement('div');
-    head.className = 'bay-head';
-    var label = document.createElement('h2');
-    label.className = 'bay-label';
-    label.textContent = y;
-    // A sighted reader's caption for whichever cover is in hand. The covers
-    // carry their own names for a screen reader, so this is kept from it.
-    var cap = document.createElement('p');
-    cap.className = 'bay-caption';
-    cap.setAttribute('aria-hidden', 'true');
-    head.appendChild(label);
-    head.appendChild(cap);
-
-    var ledges = document.createElement('div');
-    ledges.className = 'ledges';
-
-    bay.appendChild(head);
-    bay.appendChild(ledges);
-    wall.insertBefore(bay, document.getElementById('empty'));
-    bays[y] = { el: bay, ledges: ledges, cap: cap, books: [] };
-  });
-
-  function rest(bay) {
-    var n = bay.books.filter(function (b) { return !b.el.classList.contains('off'); }).length;
-    bay.cap.textContent = n + (n === 1 ? ' book' : ' books');
-    bay.cap.classList.remove('on');
-  }
-
-  function show(bay, b) {
-    bay.cap.innerHTML = '';
-    bay.cap.appendChild(document.createTextNode(b.t + '  '));
+  function show(b) {
+    plaque.textContent = b.t + '  ';
     var em = document.createElement('em');
-    em.textContent = '· ' + b.a;
-    bay.cap.appendChild(em);
-    bay.cap.classList.add('on');
+    em.textContent = '· ' + b.a + ' · ' + b.y;
+    plaque.appendChild(em);
+    plaque.classList.add('on');
   }
+  function rest() { plaque.classList.remove('on'); }
 
   books.forEach(function (b) {
-    var bay = bays[b.y];
     var a = document.createElement('a');
     a.className = 'cover' + (b.r === 'A' ? ' fav' : '');
     a.href = 'https://www.amazon.com/s?k=' + encodeURIComponent(b.t + ' ' + b.a) + '&i=stripbooks';
     a.target = '_blank';
     a.rel = 'noopener';
     a.style.setProperty('--k', b.k);
-    a.style.setProperty('--t', inkOn(b.k));
     a.style.setProperty('--s', b.s);
 
     var img = document.createElement('img');
     img.loading = 'lazy';
     img.decoding = 'async';
-    img.alt = b.t + ' by ' + b.a;
+    img.alt = '';   // the link carries the name, and keeps it if the image fails
     img.src = b.u;
+    a.setAttribute('aria-label', b.t + ' by ' + b.a);
     // Some cover hosts answer a missing book with a 1px placeholder rather
-    // than an error, so a suspiciously small image is treated as no image.
-    function noCover() {
-      img.remove();
-      var f = document.createElement('span');
-      f.className = 'fallback';
-      f.textContent = b.t;
-      a.setAttribute('aria-label', b.t + ' by ' + b.a);
-      a.appendChild(f);
-    }
+    // than an error, so a suspiciously small image counts as no image.
+    function noCover() { img.remove(); }
     img.addEventListener('error', noCover);
     img.addEventListener('load', function () { if (img.naturalWidth < 8) noCover(); });
     a.appendChild(img);
 
-    a.addEventListener('pointerenter', function () { show(bay, b); });
-    a.addEventListener('focus', function () { show(bay, b); });
-    a.addEventListener('pointerleave', function () { rest(bay); });
-    a.addEventListener('blur', function () { rest(bay); });
+    a.addEventListener('pointerenter', function () { show(b); });
+    a.addEventListener('focus', function () { show(b); });
+    a.addEventListener('pointerleave', function () { rest(); });
+    a.addEventListener('blur', function () { rest(); });
 
     b.el = a;
-    bay.books.push(b);
-    bay.ledges.appendChild(a);
+    ledges.appendChild(a);
   });
 
   function render() {
@@ -674,19 +612,12 @@ var books = [
       btn.setAttribute('aria-pressed', active[btn.dataset.group] === btn.dataset.value);
     });
     var shown = 0;
-    YEARS.forEach(function (y) {
-      var bay = bays[y], n = 0;
-      bay.books.forEach(function (b) {
-        var on = matches(b);
-        b.el.classList.toggle('off', !on);
-        if (on) n++;
-      });
-      // A bay with nothing left on it is taken down altogether; within a bay
-      // the gaps are kept, so the survivors stay where they were.
-      bay.el.hidden = n === 0;
-      shown += n;
-      rest(bay);
+    books.forEach(function (b) {
+      var on = matches(b);
+      b.el.classList.toggle('off', !on);
+      if (on) shown++;
     });
+    rest();
     document.getElementById('empty').hidden = shown > 0;
     document.getElementById('readout').innerHTML =
       '<b>' + shown + '</b> of ' + books.length + ' books';
