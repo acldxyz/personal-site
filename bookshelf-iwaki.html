@@ -185,7 +185,21 @@
   /* The space is an empty plane at the mouth of the room, in front of every
      wall, and in 3D it is hit-tested like one: left to take the pointer, it
      would swallow every hover and click on the books behind it. */
-  .space { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
+  /* Taller than the stage by --lift, and anchored to its foot: the floor and
+     the eye stay where they were, and the walls run on up past the top of
+     the window to a ceiling that only shows where it recedes toward the
+     back. The shelving keeps to the stage's height at the bottom of each
+     wall, with bare concrete above it, so the books do not shrink to pay for
+     the height. */
+  .space {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(100% + var(--lift, 0px));
+    transform-style: preserve-3d;
+    pointer-events: none;
+  }
   /* The niche takes the pointer rather than the book: a book that is out
      of its niche has moved from under the pointer, and if it held the hover
      itself it would drop it, go back, take it again, and flicker. */
@@ -231,7 +245,8 @@
   .left  { --light: linear-gradient(90deg,  rgba(60,44,26,.06), rgba(60,44,26,.20)); }
   .right { --light: linear-gradient(270deg, rgba(255,250,238,.18), rgba(60,44,26,.10)); }
   .back  { --light: linear-gradient(rgba(60,44,26,.10), rgba(60,44,26,.10)); }
-  .wall-face > .niches { position: relative; }
+  .wall-face { display: flex; flex-direction: column; justify-content: flex-end; }
+  .wall-face > .niches { position: relative; height: var(--shelf, 100%); flex: none; }
 
   /* Pale boards running away from you, darkening toward the back. */
   .floor {
@@ -510,7 +525,7 @@
   .room.flat { height: auto; perspective: none; overflow: visible; padding: 18px var(--margin) 60px; }
   .flat .space { position: static; }
   .flat .surface, .flat .niche.blank, .flat .niche.off { display: none; }
-  .flat .wall-face { position: static; transform: none; width: auto; height: auto; }
+  .flat .wall-face { display: block; position: static; transform: none; width: auto; height: auto; }
   .flat .wall-face::before { display: none; }
   .flat .niches {
     grid-auto-flow: row;
@@ -833,6 +848,11 @@ var books = [
      cover height is whatever fits that many rows into the wall's height. */
 
   var DEPTH = 0.9, LENS = 0.9;    // the back wall shows at about half size
+  // How far the walls rise above the window, as a share of its height. The
+  // ceiling shows only while the back wall's top edge is still inside the
+  // window, which at half size and an eye 46% down means a lift under about
+  // 0.46; at 0.28 a band of it still shows above the back wall.
+  var LIFT = 0.28;
   // Niche proportions from :root, in units of --h: height, width, gap.
   var NH = 1.286, NW = 0.98, GAP = 0.16, MARGIN = 0.8;
 
@@ -847,7 +867,7 @@ var books = [
     var place = [];
 
     if (flat) {
-      ['--h', '--rows', '--D', '--P', '--room-h'].forEach(function (v) { st.removeProperty(v); });
+      ['--h', '--rows', '--D', '--P', '--room-h', '--lift', '--shelf'].forEach(function (v) { st.removeProperty(v); });
       // Unfolded, the walls still split the books in walking order, a third each.
       var third = Math.ceil(niches.length / 3);
       place = [niches.slice(0, third), niches.slice(third, 2 * third), niches.slice(2 * third)];
@@ -865,6 +885,8 @@ var books = [
         if (rows * (cb + 2 * cs) >= niches.length) break;
       }
       st.setProperty('--room-h', H + 'px');
+      st.setProperty('--shelf', H + 'px');
+      st.setProperty('--lift', (H * LIFT) + 'px');
       st.setProperty('--h', h.toFixed(2) + 'px');
       st.setProperty('--rows', rows);
       st.setProperty('--D', D + 'px');
