@@ -213,12 +213,16 @@
     justify-content: center;
   }
 
-  /* Cut into the wall rather than built onto it. Light from the upper left
-     puts the top and left inner walls in shadow and catches the lower right
-     lip, which is the whole of what makes a flat box read as a recess. Each
-     niche keeps a pair of tie holes in the wall above it, so the concrete is
-     still there between them. */
+  /* Each niche is a small wooden box set into the wall: a pale frame that
+     stands just proud of the concrete, and a darker back panel the book
+     leans on. The grain is SVG noise stretched along one axis, which is
+     what turns static into streaks, and it is inline so the page stays a
+     single file. --gx and --gy shift it per niche so no two frames are cut
+     from the same stretch of board. One tile covers a whole niche and is
+     never repeated, because turbulence stretched this far does not tile
+     cleanly and the seam shows. */
   .niche {
+    --frame: calc(var(--pad) * .42);
     position: relative;
     height: var(--niche-h);
     display: flex;
@@ -226,25 +230,44 @@
     justify-content: center;
     padding: var(--pad) var(--pad) calc(var(--pad) * 1.2);
     border-radius: 2px;
+    /* Four boards butted together: the stiles run the full height with their
+       grain upright, the rails sit between them with theirs level. A hairline
+       at each stile's inner edge is the joint. */
     background:
-      linear-gradient(to bottom, rgba(70,58,44,.075), rgba(70,58,44,.03) 55%, rgba(70,58,44,.05));
+      linear-gradient(135deg, rgba(255,248,232,.30), rgba(255,248,232,0) 45%, rgba(60,36,14,.10)),
+      linear-gradient(90deg, transparent calc(var(--frame) - 1px), rgba(70,42,16,.30) calc(var(--frame) - 1px) var(--frame), transparent var(--frame))
+        0 0 / 100% 100% no-repeat,
+      linear-gradient(270deg, transparent calc(var(--frame) - 1px), rgba(70,42,16,.22) calc(var(--frame) - 1px) var(--frame), transparent var(--frame))
+        0 0 / 100% 100% no-repeat,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='360'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.28 .006' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.4  0 0 0 0 0.24  0 0 0 0 0.1  0 0 0 1.9 -0.62'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E") left var(--gy, 0) / var(--frame) 360px no-repeat,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='360'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.28 .006' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.4  0 0 0 0 0.24  0 0 0 0 0.1  0 0 0 1.9 -0.62'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E") right calc(var(--gy, 0) - 90px) / var(--frame) 360px no-repeat,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006 .28' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.4  0 0 0 0 0.24  0 0 0 0 0.1  0 0 0 1.9 -0.62'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E") var(--gx, 0) var(--gy, 0) / 360px 240px no-repeat,
+      #c9a271;
     box-shadow:
-      inset 4px 5px 9px -2px rgba(50,38,24,.22),
-      inset 1px 1px 0 rgba(50,38,24,.16),
-      inset -1px -1px 0 rgba(255,255,255,.7),
-      0 0 0 1px rgba(70,58,44,.05);
+      inset 1px 1px 0 rgba(255,246,226,.45),
+      inset -1px -1px 0 rgba(70,42,16,.28),
+      2px 3px 6px -2px rgba(50,32,14,.32),
+      1px 1px 1px rgba(50,32,14,.12);
   }
+
+  /* The back panel, a step darker and in shadow along the top and left where
+     the frame overhangs it from the light. */
   .niche::before {
     content: '';
     position: absolute;
-    top: calc(var(--cover-gap) * -.5 - 1.5px);
-    left: 22%;
-    right: 22%;
-    height: 3px;
+    inset: var(--frame);
+    border-radius: 1px;
     background:
-      radial-gradient(circle, rgba(70,58,44,.16) 0 1.4px, transparent 1.9px) left center / 3px 3px no-repeat,
-      radial-gradient(circle, rgba(70,58,44,.16) 0 1.4px, transparent 1.9px) right center / 3px 3px no-repeat;
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006 .24' numOctaves='2' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 0.26  0 0 0 0 0.15  0 0 0 0 0.05  0 0 0 1.9 -0.58'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E") var(--gx, 0) var(--gy, 0) / 360px 240px no-repeat,
+      #a67d4c;
+    box-shadow:
+      inset 5px 6px 10px -3px rgba(40,22,6,.50),
+      inset 1px 1px 0 rgba(40,22,6,.40),
+      inset -1px -1px 0 rgba(255,236,200,.22);
   }
+  .niche > .cover { z-index: 1; }
+  .niche > .cover:hover, .niche > .cover:focus-visible { z-index: 2; }
+
   /* Filtered out, a book's niche goes with it and the rest close up: on one
      wall, empty niches held in place would leave a filtered view as a few
      books scattered through a hundred holes. */
@@ -311,7 +334,8 @@
     content: '';
     position: absolute;
     left: 50%;
-    bottom: calc(var(--pad) * .45);
+    bottom: calc(var(--frame) + var(--pad) * .2);
+    z-index: 1;
     width: 9px;
     height: 4px;
     margin-left: -4.5px;
@@ -590,6 +614,13 @@ var books = [
   books.forEach(function (b) {
     var niche = document.createElement('div');
     niche.className = 'niche' + (b.r === 'A' ? ' fav' : '');
+    // A fixed scatter rather than Math.random, so a niche keeps its board
+    // between visits.
+    // Kept inside one tile: the largest niche is under 160 by 200, so these
+    // ranges never bring a tile's edge into view, where the noise would seam.
+    var n = books.indexOf(b);
+    niche.style.setProperty('--gx', -((n * 97) % 200) + 'px');
+    niche.style.setProperty('--gy', -((n * 53) % 40) + 'px');
     var a = document.createElement('a');
     a.className = 'cover';
     a.href = 'https://www.amazon.com/s?k=' + encodeURIComponent(b.t + ' ' + b.a) + '&i=stripbooks';
