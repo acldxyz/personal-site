@@ -375,12 +375,10 @@
   .niche.off > .cover { visibility: hidden; }
   .niche.off::after { display: none; }
 
-  /* One book, face out, stood on the floor of its niche and leaning back a
-     few degrees against the rear wall — which is also why the cover's top
-     edge is a shade darker than its foot. It stands a little proud of the
-     back panel: in the room everything is sorted by depth, and a lean that
-     tipped its top behind the panel's plane would put the cover out of
-     sight. */
+  /* One book, face out, stood on the floor of its niche and lying flat
+     against the back panel. It is lifted off the panel by a pixel only: in
+     the room everything is sorted by depth, and two surfaces sharing a plane
+     are drawn in no reliable order. */
   .cover {
     position: relative;
     display: block;
@@ -389,11 +387,13 @@
     border-radius: 1.5px 2.5px 2.5px 1.5px;
     background: var(--k);
     transform-origin: 50% 100%;
-    transform: translateZ(calc(var(--h) * .09)) rotateX(4deg);
+    transform: translateZ(1px);
+    /* Tight, because there is no gap behind it for a shadow to fall into:
+       the book's own thickness against the panel, and no more. */
     box-shadow:
       inset 0 0 0 1px rgba(60,48,32,.14),
-      3px 4px 7px -3px rgba(40,30,20,.34),
-      1px 2px 2px rgba(40,30,20,.14);
+      1px 1.5px 0 rgba(40,30,20,.28),
+      1.5px 2px 3px rgba(40,30,20,.18);
     transition: transform .3s ease-out, box-shadow .3s ease-out;
     outline-offset: 4px;
   }
@@ -404,8 +404,8 @@
     object-fit: cover;
     border-radius: inherit;
   }
-  /* The hinge down the left edge and the lean's falloff, in black and white
-     only so no cover's colour shifts. */
+  /* The hinge down the left edge, in black and white only so no cover's
+     colour shifts. */
   .cover::after {
     content: '';
     position: absolute;
@@ -413,8 +413,7 @@
     border-radius: inherit;
     pointer-events: none;
     background:
-      linear-gradient(90deg, rgba(0,0,0,.20) 0, rgba(255,255,255,.14) 3px, rgba(0,0,0,0) 7px),
-      linear-gradient(to bottom, rgba(0,0,0,.08), rgba(0,0,0,0) 40%);
+      linear-gradient(90deg, rgba(0,0,0,.20) 0, rgba(255,255,255,.14) 3px, rgba(0,0,0,0) 7px);
   }
 
   /* A cover host that fails leaves the book's own colour standing in for its
@@ -878,8 +877,13 @@ var books = [
       // left with nothing on it at all.
       var caps = [rows * cs, rows * cb, rows * cs];
       var total = caps[0] + caps[1] + caps[2];
-      var take = caps.map(function (c) { return Math.floor(niches.length * c / total); });
-      take[1] = niches.length - take[0] - take[2];    // the back wall absorbs the rounding
+      var share = caps.map(function (c) { return niches.length * c / total; });
+      var take = share.map(Math.floor);
+      // What rounding left over goes to the largest remainders, and never
+      // past a wall's capacity, or its grid quietly grows another column.
+      var left = niches.length - take[0] - take[1] - take[2];
+      [0, 1, 2].sort(function (i, j) { return (share[j] - take[j]) - (share[i] - take[i]); })
+        .forEach(function (k) { if (left > 0 && take[k] < caps[k]) { take[k]++; left--; } });
       var spare = total - niches.length;
       while (blanks.length < spare) {
         var e = document.createElement('div');
