@@ -248,14 +248,27 @@
   .wall-face { display: flex; flex-direction: column; justify-content: flex-end; }
   .wall-face > .niches { position: relative; height: var(--shelf, 100%); flex: none; }
 
-  /* Pale boards running away from you, darkening toward the back. */
+  /* A Venetian marble floor, after San Marco: a field of cubi prospettici,
+     the tumbling blocks laid in white, red Verona and grey so that every
+     hexagon reads as a cube seen from above. It suits a room that is all
+     perspective. The field is framed by bands laid along the walls, as those
+     floors are, in grey, white and red; and the polish takes a long
+     reflection of the ceiling slot down the middle. Noise veining was tried
+     and dropped: at this scale it read as cloud lying on the floor, not as
+     stone. Front of the floor is the bottom of the element. */
   .floor {
+    --band: calc(var(--h) * .16);
     background:
-      linear-gradient(to bottom, rgba(60,40,20,.28), rgba(60,40,20,0) 70%),
-      repeating-linear-gradient(90deg,
-        rgba(80,52,24,.0) 0 calc(var(--h) * .9 - 1px),
-        rgba(80,52,24,.22) calc(var(--h) * .9 - 1px) calc(var(--h) * .9)),
-      #cfb38a;
+      linear-gradient(to bottom, rgba(40,26,14,.34), rgba(40,26,14,0) 70%),
+      linear-gradient(90deg, transparent 44%, rgba(255,252,244,.22) 50%, transparent 56%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34.64' height='60.00' viewBox='0 0 34.64 60.00'%3E%3Cpath d='M17.32 0.00 L34.64 10.00 L17.32 20.00 L0.00 10.00ZM0.00 30.00 L17.32 40.00 L0.00 50.00 L-17.32 40.00ZM34.64 30.00 L51.96 40.00 L34.64 50.00 L17.32 40.00ZM0.00 -30.00 L17.32 -20.00 L0.00 -10.00 L-17.32 -20.00ZM34.64 -30.00 L51.96 -20.00 L34.64 -10.00 L17.32 -20.00ZM17.32 60.00 L34.64 70.00 L17.32 80.00 L0.00 70.00ZM17.32 -60.00 L34.64 -50.00 L17.32 -40.00 L0.00 -50.00Z' fill='%23ebe4d6' stroke='%232a2420' stroke-opacity='.28' stroke-width='.5'/%3E%3Cpath d='M0.00 10.00 L17.32 20.00 L17.32 40.00 L0.00 30.00ZM-17.32 40.00 L0.00 50.00 L0.00 70.00 L-17.32 60.00ZM17.32 40.00 L34.64 50.00 L34.64 70.00 L17.32 60.00ZM-17.32 -20.00 L0.00 -10.00 L0.00 10.00 L-17.32 0.00ZM17.32 -20.00 L34.64 -10.00 L34.64 10.00 L17.32 0.00ZM0.00 70.00 L17.32 80.00 L17.32 100.00 L0.00 90.00ZM0.00 -50.00 L17.32 -40.00 L17.32 -20.00 L0.00 -30.00Z' fill='%23a55340' stroke='%232a2420' stroke-opacity='.28' stroke-width='.5'/%3E%3Cpath d='M17.32 20.00 L34.64 10.00 L34.64 30.00 L17.32 40.00ZM0.00 50.00 L17.32 40.00 L17.32 60.00 L0.00 70.00ZM34.64 50.00 L51.96 40.00 L51.96 60.00 L34.64 70.00ZM0.00 -10.00 L17.32 -20.00 L17.32 0.00 L0.00 10.00ZM34.64 -10.00 L51.96 -20.00 L51.96 0.00 L34.64 10.00ZM17.32 80.00 L34.64 70.00 L34.64 90.00 L17.32 100.00ZM17.32 -40.00 L34.64 -50.00 L34.64 -30.00 L17.32 -20.00Z' fill='%234d4945' stroke='%232a2420' stroke-opacity='.28' stroke-width='.5'/%3E%3C/svg%3E") 50% 100% / calc(var(--h) * .8) calc(var(--h) * 1.386),
+      #ebe4d6;
+    box-shadow:
+      inset 0 0 0 var(--band) #4d4945,
+      inset 0 0 0 calc(var(--band) * 1.35) #ebe4d6,
+      inset 0 0 0 calc(var(--band) * 2.2) #a55340,
+      inset 0 0 0 calc(var(--band) * 2.5) #ebe4d6,
+      inset 0 0 0 calc(var(--band) * 2.6) rgba(42,36,32,.5);
   }
   /* Ando lights his rooms from slots more than windows. One runs the length
      of the ceiling, and its glow is what the walls are lit by. */
