@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projects — Adam Dawson</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<!-- Same property as every other page on the site. -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S9B2L8ZZLW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-S9B2L8ZZLW');
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { min-height: 100%; }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(18px, 4vh, 44px);
+    padding: clamp(40px, 8vh, 96px) 16px;
+    background: radial-gradient(ellipse 90% 70% at 50% 44%,
+                #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%);
+    background-attachment: fixed;
+    color: #2f2a24;
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+  }
+
+  h1 {
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: clamp(32px, 7vw, 84px);
+    letter-spacing: -0.01em;
+  }
+
+  /* The labels are placed in viewBox units, so the stage has to hold the
+     SVG's exact aspect ratio or they drift off their nodes. */
+  .stage {
+    position: relative;
+    /* Capped by height as well, so the way back home stays on screen at
+       laptop heights rather than falling below the fold. */
+    width: min(100%, 780px, (100svh - 300px) * 600 / 440);
+    aspect-ratio: 600 / 440;
+  }
+
+  .stage svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .project,
+  .home {
+    font-size: clamp(10px, 1.05vw, 12px);
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: #6f665d;
+    text-decoration: none;
+    padding: .78em 1.2em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease,
+                opacity .25s ease;
+  }
+
+  /* Bordered and backed at rest, unlike the menu pills: these sit on top of
+     linework, and without a ground of their own the sulci run through the
+     letters. */
+  .project {
+    position: absolute;
+    left: calc(var(--x) / 600 * 100%);
+    top: calc(var(--y) / 440 * 100%);
+    background: rgba(250, 248, 243, .88);
+    border-color: rgba(0, 0, 0, .14);
+  }
+
+  .project.above { transform: translate(-50%, calc(-100% - 18px)); }
+  .project.below { transform: translate(-50%, 18px); }
+
+  .project:hover,
+  .project:focus-visible,
+  .home:hover {
+    color: #2f2a24;
+    background: #faf8f3;
+    border-color: rgba(0, 0, 0, .22);
+  }
+
+  .home:hover { background: rgba(0, 0, 0, .05); }
+
+  .project:focus-visible,
+  .home:focus-visible { outline: 2px solid #3d7ba8; outline-offset: 2px; }
+
+  /* With a project singled out, the rest of the network steps back. */
+  .stage.focus .project:not(.lit) { opacity: .42; }
+  .stage svg .edge, .stage svg .site { transition: opacity .3s ease; }
+  .stage.focus svg .edge:not(.lit),
+  .stage.focus svg .site:not(.lit) { opacity: .25; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .project, .home, .stage svg .edge, .stage svg .site { transition-duration: .01s; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Projects</h1>
+
+<!-- One activity centre per project. Adding a project is adding a link here
+     with its position on the brain (viewBox units, 600 × 440) and a side for
+     the label; the script picks up the rest, including its colour. -->
+<div class="stage" id="stage">
+  <svg viewBox="0 0 600 440" aria-hidden="true">
+    <defs>
+      <clipPath id="cerebrum-clip"><path id="cerebrum-clip-path"/></clipPath>
+      <clipPath id="cerebellum-clip"><path id="cerebellum-clip-path"/></clipPath>
+      <filter id="spark-glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="2.4" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <g id="anatomy"></g>
+    <g id="edges"></g>
+    <g id="sparks" filter="url(#spark-glow)"></g>
+    <g id="sites"></g>
+  </svg>
+
+  <a class="project above" href="the-new-lp.html" style="--x: 205; --y: 160">The New LP</a>
+  <a class="project below" href="fatherhood.html" style="--x: 305; --y: 268">Heirlloom</a>
+</div>
+
+<a class="home" href="index.html">Home</a>
+
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var stage = document.getElementById('stage');
+  var svg = stage.querySelector('svg');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  // Block palette, cycled in order, so each project's centre wears the same
+  // colours as the letters on the home page.
+  var PALETTE = [[201, 74, 63], [92, 159, 82], [225, 182, 64], [74, 135, 185]];
+  function rgb(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a == null ? 1 : a) + ')'; }
+
+  // Seeded, so the folds come out the same on every visit; a brain that
+  // rearranges itself on reload reads as a glitch, not as life.
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  var rand = mulberry32(20261021);
+
+  function el(name, attrs, parent) {
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+
+  // ---- Anatomy -------------------------------------------------------------
+  // Side view, facing left: frontal lobe at the left, cerebellum tucked under
+  // the back.
+  var CEREBRUM =
+    'M 118 250 C 92 200 104 132 160 98 C 206 64 282 50 348 58 ' +
+    'C 424 67 484 100 508 152 C 530 198 520 248 490 274 ' +
+    'C 468 292 438 296 414 290 C 394 300 370 306 346 302 ' +
+    'C 302 330 246 336 204 318 C 176 306 164 288 150 282 ' +
+    'C 134 278 122 268 118 250 Z';
+  var CEREBELLUM =
+    'M 396 294 C 404 330 448 352 486 338 C 516 326 522 296 500 276 ' +
+    'C 478 290 440 296 414 290 Z';
+  var STEM =
+    'M 352 302 C 358 332 356 364 348 396 L 378 396 C 382 362 388 330 396 298 Z';
+
+  var INK = '#6f665d', SOFT = '#8a8076';
+  var anatomy = document.getElementById('anatomy');
+  document.getElementById('cerebrum-clip-path').setAttribute('d', CEREBRUM);
+  document.getElementById('cerebellum-clip-path').setAttribute('d', CEREBELLUM);
+
+  el('path', { d: STEM, fill: '#ece4d6', stroke: INK, 'stroke-width': 1.8 }, anatomy);
+  el('path', { d: CEREBELLUM, fill: '#ece4d6', stroke: INK, 'stroke-width': 1.8 }, anatomy);
+  var cerebrum = el('path', { d: CEREBRUM, fill: '#f3ede2', stroke: 'none' }, anatomy);
+
+  // Folia: the cerebellum's fine, parallel ridges.
+  var folia = el('g', { 'clip-path': 'url(#cerebellum-clip)', fill: 'none', stroke: SOFT,
+                        'stroke-width': 1.1, 'stroke-linecap': 'round' }, anatomy);
+  for (var f = 0; f < 9; f++) {
+    var fy = 296 + f * 6.2;
+    el('path', { d: 'M 390 ' + (fy - 4) + ' Q 452 ' + (fy + 10) + ' 524 ' + (fy - 14) }, folia);
+  }
+
+  // The two fissures every brain drawing has, drawn first and heavier, so the
+  // generated folds settle around them rather than across them.
+  var MAJOR = [
+    [[214, 272], [252, 252], [300, 236], [344, 228], [372, 230]],   // lateral
+    [[334, 62], [326, 96], [312, 132], [300, 168], [290, 204]]      // central
+  ];
+
+  // Sulci are grown as meandering walks that stop short of anything already
+  // drawn. Keeping a fixed spacing between them is what makes the result read
+  // as folded tissue instead of scribble.
+  var SPACING = 10, STEP = 6;
+  var grid = {};
+  function key(x, y) { return Math.floor(x / SPACING) + ',' + Math.floor(y / SPACING); }
+  function addPt(p) {
+    var k = key(p[0], p[1]);
+    (grid[k] || (grid[k] = [])).push(p);
+  }
+  // `own` is the walk so far. It may run close to its last few steps, but not
+  // to anything older on its own trail, or it curls shut into a ring.
+  function crowded(p, own) {
+    var r2 = SPACING * SPACING;
+    for (var o = 0; o < own.length - 3; o++) {
+      var ox = own[o][0] - p[0], oy = own[o][1] - p[1];
+      if (ox * ox + oy * oy < r2) return true;
+    }
+    var cx = Math.floor(p[0] / SPACING), cy = Math.floor(p[1] / SPACING);
+    for (var i = -1; i <= 1; i++) for (var j = -1; j <= 1; j++) {
+      var b = grid[(cx + i) + ',' + (cy + j)];
+      if (!b) continue;
+      for (var n = 0; n < b.length; n++) {
+        var q = b[n];
+        var dx = q[0] - p[0], dy = q[1] - p[1];
+        if (dx * dx + dy * dy < r2) return true;
+      }
+    }
+    return false;
+  }
+
+  var probe = svg.createSVGPoint ? svg.createSVGPoint() : null;
+  function inside(p, margin) {
+    if (!probe || !cerebrum.isPointInFill) return true;
+    // Sampling a ring around the point keeps folds off the outline itself.
+    var m = margin || 0, offs = m ? [[0, 0], [m, 0], [-m, 0], [0, m], [0, -m]] : [[0, 0]];
+    for (var i = 0; i < offs.length; i++) {
+      probe.x = p[0] + offs[i][0]; probe.y = p[1] + offs[i][1];
+      if (!cerebrum.isPointInFill(probe)) return false;
+    }
+    return true;
+  }
+
+  // Catmull-Rom through the points, emitted as cubic Béziers.
+  function smooth(pts) {
+    var d = 'M ' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
+    for (var i = 0; i < pts.length - 1; i++) {
+      var p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      d += ' C ' + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + ' ' + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) +
+           ' ' + (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + ' ' + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) +
+           ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
+    }
+    return d;
+  }
+
+  var folds = el('g', { 'clip-path': 'url(#cerebrum-clip)', fill: 'none', stroke: SOFT,
+                        'stroke-width': 1.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, anatomy);
+
+  MAJOR.forEach(function (pts, i) {
+    // Densify so the spacing check sees the whole fissure, not five knots.
+    for (var s = 0; s < pts.length - 1; s++)
+      for (var t = 0; t < 1; t += .2)
+        addPt([pts[s][0] + (pts[s + 1][0] - pts[s][0]) * t, pts[s][1] + (pts[s + 1][1] - pts[s][1]) * t]);
+    el('path', { d: smooth(pts), stroke: INK, 'stroke-width': 2.2 }, folds);
+  });
+
+  for (var attempt = 0; attempt < 900; attempt++) {
+    var origin = [104 + rand() * 420, 50 + rand() * 290];
+    if (!inside(origin, 6) || crowded(origin, [])) continue;
+    var heading = rand() * Math.PI * 2, bend = (rand() - .5) * .5;
+    var pts = [origin];
+    for (var step = 0; step < 22; step++) {
+      // A slowly wandering curvature gives the looping, rounded turns of a
+      // gyrus; pure noise in the heading gives a jittery line.
+      bend += (rand() - .5) * .35;
+      bend = Math.max(-.55, Math.min(.55, bend));
+      heading += bend;
+      var last = pts[pts.length - 1];
+      var next = [last[0] + Math.cos(heading) * STEP, last[1] + Math.sin(heading) * STEP];
+      if (!inside(next, 4) || crowded(next, pts)) break;
+      pts.push(next);
+    }
+    if (pts.length < 4) continue;
+    pts.forEach(addPt);
+    el('path', { d: smooth(pts) }, folds);
+  }
+
+  // Outline last, over the folds' clipped ends.
+  el('path', { d: CEREBRUM, fill: 'none', stroke: INK, 'stroke-width': 2.2, 'stroke-linejoin': 'round' }, anatomy);
+
+  // ---- Network -------------------------------------------------------------
+  // Projects are the activity centres. The quiet sites around them are there
+  // so currents have somewhere to come from — two lit points with one line
+  // between them reads as a diagram, not a brain.
+  var links = Array.prototype.slice.call(stage.querySelectorAll('.project'));
+  var sites = links.map(function (a, i) {
+    var cs = a.style;
+    return { x: +cs.getPropertyValue('--x'), y: +cs.getPropertyValue('--y'),
+             color: PALETTE[i % PALETTE.length], link: a, glow: 0 };
+  });
+  var QUIET = [[300, 104], [402, 96], [470, 178], [396, 212], [246, 214],
+               [452, 318], [160, 236], [452, 248], [362, 154]];
+  QUIET.forEach(function (q) { sites.push({ x: q[0], y: q[1] }); });
+
+  // Every project reaches every other and its two nearest quiet sites; the
+  // quiet sites then mesh with their own nearest neighbours.
+  var edges = [], seen = {};
+  function join(a, b) {
+    var k = Math.min(a, b) + '-' + Math.max(a, b);
+    if (a === b || seen[k]) return;
+    seen[k] = true;
+    var A = sites[a], B = sites[b];
+    var dx = B.x - A.x, dy = B.y - A.y, len = Math.sqrt(dx * dx + dy * dy);
+    var bow = (rand() - .5) * .5 * len;
+    var cx = (A.x + B.x) / 2 - dy / len * bow, cy = (A.y + B.y) / 2 + dx / len * bow;
+    edges.push({ a: a, b: b, cx: cx, cy: cy, rate: 1, next: 0 });
+  }
+  function nearest(i, n, pool) {
+    return pool.filter(function (j) { return j !== i; }).sort(function (p, q) {
+      var P = sites[p], Q = sites[q], S = sites[i];
+      return (P.x - S.x) * (P.x - S.x) + (P.y - S.y) * (P.y - S.y) -
+             (Q.x - S.x) * (Q.x - S.x) - (Q.y - S.y) * (Q.y - S.y);
+    }).slice(0, n);
+  }
+  var all = sites.map(function (_, i) { return i; });
+  var quiet = all.filter(function (i) { return !sites[i].link; });
+  all.forEach(function (i) {
+    if (sites[i].link) {
+      all.forEach(function (j) { if (sites[j].link) join(i, j); });
+      nearest(i, 3, quiet).forEach(function (j) { join(i, j); });
+    } else {
+      nearest(i, 2, quiet).forEach(function (j) { join(i, j); });
+    }
+  });
+
+  var edgeLayer = document.getElementById('edges');
+  var sparkLayer = document.getElementById('sparks');
+  var siteLayer = document.getElementById('sites');
+
+  function pathD(e, reverse) {
+    var A = sites[reverse ? e.b : e.a], B = sites[reverse ? e.a : e.b];
+    return 'M ' + A.x + ' ' + A.y + ' Q ' + e.cx.toFixed(1) + ' ' + e.cy.toFixed(1) + ' ' + B.x + ' ' + B.y;
+  }
+
+  edges.forEach(function (e) {
+    e.node = el('path', { 'class': 'edge', d: pathD(e), fill: 'none', stroke: SOFT,
+                          'stroke-width': 1, 'stroke-opacity': .45, 'stroke-dasharray': '2 3' }, edgeLayer);
+    e.len = e.node.getTotalLength();
+    e.projects = [sites[e.a], sites[e.b]].filter(function (s) { return s.link; });
+    // Currents favour the projects: that's where the activity is.
+    e.rate = e.projects.length ? 1.8 : .55;
+  });
+
+  sites.forEach(function (s, i) {
+    var g = el('g', { 'class': 'site' }, siteLayer);
+    if (s.link) {
+      var gid = 'glow-' + i;
+      var grad = el('radialGradient', { id: gid }, svg.querySelector('defs'));
+      el('stop', { offset: '0%', 'stop-color': rgb(s.color, .55) }, grad);
+      el('stop', { offset: '45%', 'stop-color': rgb(s.color, .18) }, grad);
+      el('stop', { offset: '100%', 'stop-color': rgb(s.color, 0) }, grad);
+      s.halo = el('circle', { cx: s.x, cy: s.y, r: 44, fill: 'url(#' + gid + ')' }, g);
+      el('circle', { cx: s.x, cy: s.y, r: 7, fill: rgb(s.color), stroke: '#faf8f3', 'stroke-width': 2 }, g);
+    } else {
+      el('circle', { cx: s.x, cy: s.y, r: 2.6, fill: SOFT, 'fill-opacity': .7 }, g);
+    }
+    s.node = g;
+  });
+
+  // ---- Focus ---------------------------------------------------------------
+  var focused = null;
+  function setFocus(s) {
+    focused = s;
+    stage.classList.toggle('focus', !!s);
+    sites.forEach(function (t) {
+      var on = !!s && (t === s || edges.some(function (e) {
+        return (sites[e.a] === s && sites[e.b] === t) || (sites[e.b] === s && sites[e.a] === t);
+      }));
+      t.node.classList.toggle('lit', on);
+      if (t.link) t.link.classList.toggle('lit', on);
+    });
+    edges.forEach(function (e) {
+      e.node.classList.toggle('lit', !!s && (sites[e.a] === s || sites[e.b] === s));
+      e.next = 0;   // re-time immediately, so the change in pace shows at once
+    });
+  }
+  sites.forEach(function (s) {
+    if (!s.link) return;
+    s.link.addEventListener('mouseenter', function () { setFocus(s); });
+    s.link.addEventListener('focus', function () { setFocus(s); });
+    s.link.addEventListener('mouseleave', function () { setFocus(null); });
+    s.link.addEventListener('blur', function () { setFocus(null); });
+  });
+
+  // ---- Currents ------------------------------------------------------------
+  var SPEED = .2;        // px per ms
+  var SEG = 22;          // length of the bright head of a current
+  var sparks = [];
+
+  function fire(e, now) {
+    var reverse = rand() < .5;
+    var from = sites[reverse ? e.b : e.a], to = sites[reverse ? e.a : e.b];
+    // A current takes the colour of the project it leaves; between quiet
+    // sites it's ink, so the projects stay the only colour on the page.
+    var src = from.link ? from : (to.link ? to : null);
+    var colour = src ? rgb(src.color, .95) : 'rgba(111,102,93,.55)';
+    var node = el('path', { d: pathD(e, reverse), fill: 'none', stroke: colour,
+                            'stroke-width': src ? 2.4 : 1.6, 'stroke-linecap': 'round',
+                            'stroke-dasharray': SEG + ' ' + (e.len + SEG) }, sparkLayer);
+    sparks.push({ node: node, len: e.len, t0: now, to: to, edge: e });
+  }
+
+  function interval(e) {
+    var r = e.rate;
+    if (focused) r *= (sites[e.a] === focused || sites[e.b] === focused) ? 3 : .3;
+    return (700 + rand() * 2600) / r;
+  }
+
+  var last = 0;
+  function frame(now) {
+    edges.forEach(function (e) {
+      if (!e.next) e.next = now + rand() * interval(e);
+      if (now >= e.next) { fire(e, now); e.next = now + interval(e); }
+    });
+
+    for (var i = sparks.length - 1; i >= 0; i--) {
+      var s = sparks[i], d = (now - s.t0) * SPEED;
+      s.node.setAttribute('stroke-dashoffset', SEG - d);
+      if (d >= s.len + SEG) {
+        s.node.remove();
+        sparks.splice(i, 1);
+      } else if (d >= s.len && !s.landed) {
+        s.landed = true;
+        if (s.to.link) s.to.glow = 1;   // the centre flares as a current lands
+      }
+    }
+
+    var dt = last ? Math.min(64, now - last) : 16;
+    last = now;
+    sites.forEach(function (s, i) {
+      if (!s.link) return;
+      s.glow *= Math.pow(.997, dt);
+      // A slow resting pulse, offset per project so they don't breathe in step.
+      var rest = .5 + .5 * Math.sin(now / 1400 + i * 2.1);
+      var k = 1 + .14 * rest + .35 * s.glow + (focused === s ? .25 : 0);
+      s.halo.setAttribute('r', (44 * k).toFixed(1));
+      s.halo.setAttribute('opacity', Math.min(1, .7 + .3 * s.glow).toFixed(2));
+    });
+
+    if (!reduce.matches) requestAnimationFrame(frame);
+  }
+
+  // Reduced motion keeps the drawing and the network, without anything moving.
+  function start() {
+    if (reduce.matches) {
+      sparks.forEach(function (s) { s.node.remove(); });
+      sparks = [];
+      return;
+    }
+    last = 0;
+    edges.forEach(function (e) { e.next = 0; });
+    requestAnimationFrame(frame);
+  }
+  if (reduce.addEventListener) reduce.addEventListener('change', start);
+  start();
+})();
+</script>
+
+</body>
+</html>

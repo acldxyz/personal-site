@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The New LP — Adam Dawson</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<!-- Same property as every other page on the site. -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S9B2L8ZZLW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-S9B2L8ZZLW');
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { min-height: 100%; }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: radial-gradient(ellipse 90% 70% at 50% 44%,
+                #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%);
+    background-attachment: fixed;
+    color: #2f2a24;
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+  }
+
+  /* Same bar as the Bookshelf, so every page below the home page shares one
+     way out. */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: clamp(14px, 1.6vw, 20px) clamp(22px, 2.8vw, 40px);
+    border-bottom: 1px solid rgba(0,0,0,.08);
+  }
+
+  .wordmark {
+    display: inline-block;
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: -.01em;
+    line-height: 1.15;
+    color: #2f2a24;
+    text-decoration: none;
+    opacity: .82;
+    transition: opacity .2s ease;
+  }
+  .wordmark:hover { opacity: 1; }
+  .wordmark:focus-visible { outline: 2px solid #3d7ba8; outline-offset: 3px; }
+
+  .site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 1px;
+    font-size: 11px;
+    margin-right: -.9em;
+  }
+
+  .site-nav a,
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: #6f665d;
+    text-decoration: none;
+  }
+  .site-nav a {
+    padding: .52em .9em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+  }
+  .site-nav a:hover {
+    color: #2f2a24;
+    background: rgba(0,0,0,.05);
+    border-color: rgba(0,0,0,.14);
+  }
+  .site-nav a:focus-visible { outline: 2px solid #3d7ba8; outline-offset: 2px; }
+
+  main {
+    flex: 1;
+    width: min(100%, 680px);
+    margin: 0 auto;
+    padding: clamp(48px, 10vh, 120px) 16px;
+  }
+
+  /* The dot is the project's centre on the brain, in the same colour, so the
+     page reads as the place that point leads to. */
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: .9em;
+    color: #8a8076;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgb(var(--hue));
+    box-shadow: 0 0 0 4px rgba(var(--hue), .18);
+  }
+
+  h1 {
+    margin-top: .5em;
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: clamp(32px, 7vw, 64px);
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+
+  .body {
+    margin-top: clamp(24px, 4vh, 40px);
+    font-size: 17px;
+    line-height: 1.65;
+    color: #4a433b;
+  }
+  .body p + p { margin-top: 1em; }
+
+  .reveal { animation: rise .55s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-nav a, .wordmark { transition-duration: .01s; }
+    .reveal { animation-duration: .01s; }
+  }
+</style>
+</head>
+<!-- A project page. To make another, copy this file, change the title, the
+     name and the body, and set --hue to the colour its point wears on the
+     brain: the block palette in the order the links appear in projects.html
+     (red, green, yellow, blue). -->
+<body style="--hue: 201, 74, 63">
+
+<header class="topbar">
+  <a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
+  <nav class="site-nav" aria-label="Primary">
+    <a href="projects.html">All projects</a>
+  </nav>
+</header>
+
+<main class="reveal">
+  <p class="eyebrow">Project</p>
+  <h1>The New LP</h1>
+  <div class="body">
+    <p>Write-up to come.</p>
+  </div>
+</main>
+
+</body>
+</html>
