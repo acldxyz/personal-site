@@ -27,7 +27,7 @@ When redesigning a page, target the new language unless told otherwise.
 | `index.html` | **Live home page, and the style reference for the new language.** Self-contained apart from the favicon and the analytics tag. |
 | `bookshelf.html` | The reading list. New language. Book data is the `books` array near the end, one object per book; the comment above it names the fields. |
 | `projects.html` | Projects. An illustrated brain; each project is a lit point on it, and currents run between them. A project is one link in the `.stage` div with its `--x`/`--y` on the brain; its colour comes from its order. New language. |
-| `authorship-partners.html` | A project page, and the template for the rest: copy it and set `--hue` to the colour the project's point wears on the brain. Body is placeholder. |
+| `authorship-partners.html`, `venture-lp-tools.html` | Project pages; either is the template for the next: copy it and set `--hue` to the colour the project's point wears on the brain. Body is placeholder. |
 | `reading.html` | Redirect stub to `bookshelf.html`, kept because the old address was linked and bookmarked. Don't add books here. |
 | `favicon-block.svg` | Tab icon: the red "A" block, flattened from its live pose. |
 | `styles.css` | Old design language only. |
@@ -248,8 +248,9 @@ a known transitional state, to be made uniform in a later pass. Naming is
 consistent though: Reading List → Bookshelf and Links → Canon were both renamed
 everywhere, page and sidebars alike.
 
-Projects links Authorship Partners → `authorship-partners.html` and Heirlloom → `fatherhood.html`,
-which is already Heirlloom's home, so it gets no project page of its own.
+Projects links Authorship Partners → `authorship-partners.html`, Heirlloom →
+`fatherhood.html` (already Heirlloom's home, so it gets no project page of its
+own) and Venture LP Tools → `venture-lp-tools.html`.
 
 The Bookshelf moved to `bookshelf.html`, with `reading.html` left as a redirect
 so old links keep working. `links.html` kept its filename. Note that its styles
