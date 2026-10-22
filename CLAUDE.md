@@ -27,7 +27,7 @@ When redesigning a page, target the new language unless told otherwise.
 | `index.html` | **Live home page, and the style reference for the new language.** Self-contained apart from the favicon and the analytics tag. |
 | `bookshelf.html` | The reading list. New language. Book data is the `books` array near the end, one object per book; the comment above it names the fields. |
 | `projects.html` | Projects. An illustrated brain; each project is a lit point on it, and currents run between them. A project is one link in the `.stage` div with its `--x`/`--y` on the brain; its colour comes from its order. New language. |
-| `authorship-partners.html`, `venture-lp-tools.html` | Project pages; either is the template for the next: copy it and set `--hue` to the colour the project's point wears on the brain. Body is placeholder. |
+| `authorship-partners.html`, `venture-lp-tools.html`, `interview-questions.html` | Project pages; any is the template for the next: copy it and set `--hue` to the colour the project's point wears on the brain. Body is placeholder. |
 | `reading.html` | Redirect stub to `bookshelf.html`, kept because the old address was linked and bookmarked. Don't add books here. |
 | `favicon-block.svg` | Tab icon: the red "A" block, flattened from its live pose. |
 | `styles.css` | Old design language only. |
@@ -250,7 +250,14 @@ everywhere, page and sidebars alike.
 
 Projects links Authorship Partners → `authorship-partners.html`, Heirlloom →
 `fatherhood.html` (already Heirlloom's home, so it gets no project page of its
-own) and Venture LP Tools → `venture-lp-tools.html`.
+own), Venture LP Tools → `venture-lp-tools.html` and Interview Questions →
+`interview-questions.html`.
+
+The brain is full at phone widths. Labels hold a 10px minimum font while the
+brain shrinks, so at 320px each label spans a third of it; with four, the top
+back of the brain was the only spot left where nothing collided at 320, 390 and
+1280. A fifth project needs a different answer on small screens (shorter
+labels, or labels that show only on focus), not just another position.
 
 The Bookshelf moved to `bookshelf.html`, with `reading.html` left as a redirect
 so old links keep working. `links.html` kept its filename. Note that its styles
