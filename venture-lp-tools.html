@@ -128,11 +128,63 @@
   }
   .body p + p { margin-top: 1em; }
 
+  /* Each model is a row, not a card: the page stays paper, and the hairline
+     between them is enough to tell them apart. */
+  .tools {
+    list-style: none;
+    margin-top: clamp(32px, 6vh, 56px);
+    border-top: 1px solid rgba(0,0,0,.08);
+  }
+  .tool {
+    display: grid;
+    gap: 10px;
+    padding: clamp(24px, 4vh, 36px) 0;
+    border-bottom: 1px solid rgba(0,0,0,.08);
+  }
+  .tool .kind {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #8a8076;
+  }
+  .tool h2 {
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: clamp(22px, 3.4vw, 30px);
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  .tool p:not(.kind) {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #4a433b;
+    max-width: 60ch;
+  }
+  /* The pill, bordered at rest: it is the one thing on the row to press, and
+     a borderless one reads as a caption. */
+  .open {
+    justify-self: start;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #6f665d;
+    text-decoration: none;
+    padding: .78em 1.2em;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,.14);
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+  }
+  .open:hover { color: #2f2a24; background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.22); }
+  .open:focus-visible { outline: 2px solid #3d7ba8; outline-offset: 2px; }
+
   .reveal { animation: rise .55s ease-out both; }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 
   @media (prefers-reduced-motion: reduce) {
-    .site-nav a, .wordmark { transition-duration: .01s; }
+    .site-nav a, .wordmark, .open { transition-duration: .01s; }
     .reveal { animation-duration: .01s; }
   }
 </style>
@@ -154,8 +206,29 @@
   <p class="eyebrow">Project</p>
   <h1>Venture LP Tools</h1>
   <div class="body">
-    <p>Write-up to come.</p>
+    <p>Two working models for fund LPs. Both open on mock sample funds; load
+       your own files in each model's Data panel. Nothing leaves your browser.</p>
   </div>
+
+  <ul class="tools">
+    <li class="tool">
+      <p class="kind">Cash flow model</p>
+      <h2>Fund performance</h2>
+      <p>Capital called and distributed, the J-curve, and net TVPI, IRR and DPI
+         against vintage benchmarks. A scenarios view projects exits for the
+         companies still held, and from them the cash still to come to LPs.</p>
+      <a class="open" href="lp-tools/fund-performance.html">Open the model</a>
+    </li>
+    <li class="tool">
+      <p class="kind">Risk model</p>
+      <h2>LP exposure</h2>
+      <p>Every company you own through your fund commitments, scaled to your
+         share of each fund. Shows concentration, manager overlap, the same
+         security held at different marks, and the exit each company needs to
+         return 3x or 4x to you.</p>
+      <a class="open" href="lp-tools/lp-exposure.html">Open the model</a>
+    </li>
+  </ul>
 </main>
 
 </body>

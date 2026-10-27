@@ -27,7 +27,9 @@ When redesigning a page, target the new language unless told otherwise.
 | `index.html` | **Live home page, and the style reference for the new language.** Self-contained apart from the favicon and the analytics tag. |
 | `bookshelf.html` | The reading list. New language. Book data is the `books` array near the end, one object per book; the comment above it names the fields. |
 | `projects.html` | Projects. An illustrated brain; each project is a lit point on it, and currents run between them. A project is one link in the `.stage` div with its `--x`/`--y` on the brain; its colour comes from its order. New language. |
-| `authorship-partners.html`, `venture-lp-tools.html`, `interview-questions.html` | Project pages; any is the template for the next: copy it and set `--hue` to the colour the project's point wears on the brain. Body is placeholder. |
+| `authorship-partners.html`, `interview-questions.html` | Project pages; either is the template for the next: copy it and set `--hue` to the colour the project's point wears on the brain. Body is placeholder. |
+| `venture-lp-tools.html` | Project page that leads to the two models in `lp-tools/`: the cash flow model and the risk model. |
+| `lp-tools/fund-performance.html`, `lp-tools/lp-exposure.html` | The cash flow model (Fund Performance) and the risk model (LP Exposure). **Built copies, not sources**: they come from `acldxyz/rorschach` (`lp-analytics/`), so change them there and copy the built pages back. Fund Performance is that repo's `index.html` on `main`; LP Exposure is `exposure.html` from branch `claude/laughing-pasteur-kbkgxt`, not yet merged there, with its module links renamed to these filenames. Not in the site's design language, and they load Chart.js, SheetJS and Google Fonts from CDNs — the one exception to self-contained pages. |
 | `reading.html` | Redirect stub to `bookshelf.html`, kept because the old address was linked and bookmarked. Don't add books here. |
 | `favicon-block.svg` | Tab icon: the red "A" block, flattened from its live pose. |
 | `styles.css` | Old design language only. |
