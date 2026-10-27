@@ -255,6 +255,13 @@ Projects links Authorship Partners → `authorship-partners.html`, Heirlloom →
 own), Venture LP Tools → `venture-lp-tools.html` and Interview Questions →
 `interview-questions.html`.
 
+Accounts for the LP models are on hold. The plan when it resumes: sign-up with
+email and password, Google, or X, through a hosted auth service (Firebase
+Authentication was the recommendation; Supabase also covers all three), with
+the models opening once signed in. A sign-in screen on a static site only hides
+the links; the files stay publicly reachable, so truly private models need
+server-side checks and likely a hosting change. Until then the models stay open.
+
 The brain is full at phone widths. Labels hold a 10px minimum font while the
 brain shrinks, so at 320px each label spans a third of it; with four, the top
 back of the brain was the only spot left where nothing collided at 320, 390 and
