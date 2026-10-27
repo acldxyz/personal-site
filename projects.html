@@ -32,13 +32,6 @@
     font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
   }
 
-  h1 {
-    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
-    font-weight: 900;
-    font-size: clamp(32px, 7vw, 84px);
-    letter-spacing: -0.01em;
-  }
-
   /* The labels are placed in viewBox units, so the stage has to hold the
      SVG's exact aspect ratio or they drift off their nodes. */
   .stage {
@@ -109,11 +102,216 @@
   @media (prefers-reduced-motion: reduce) {
     .project, .home, .stage svg .edge, .stage svg .site { transition-duration: .01s; }
   }
+  /* ---- the title, in blocks ----------------------------------------------
+     The home page's blocks, copied whole so this page stays self-contained.
+     Keep the two in step: a change to the blocks there belongs here too. One
+     row of eight has to fit a phone at 1.80 edges a block, which is what caps
+     --s at 6vw; the home page splits its ten over two rows instead. */
+  .blocks {
+    --s: clamp(18px, 6vw, 64px);
+    --gap: calc(var(--s) * 0.80);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .vh {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .line {
+    display: flex;
+    justify-content: center;
+    margin: calc(var(--gap) / 2) 0;
+  }
+
+  /* Static hit target, exactly the footprint of the block at rest — it never
+     transforms, so a block stays easy to hit however it has come to rest. */
+  .slot {
+    position: relative;
+    width: var(--s);
+    height: var(--s);
+    margin: 0 calc(var(--gap) / 2);
+    perspective: calc(var(--s) * 20);
+    perspective-origin: 50% 50%;
+  }
+
+  /* Contact shadow on the page plane. Sits before .cube in the DOM so it
+     paints underneath, and is offset down-right to agree with the light. Its
+     spread and density are driven from the block's live orientation. */
+  .shadow {
+    position: absolute;
+    left: calc(50% + var(--s) * 0.09);
+    top: calc(100% - var(--s) * 0.07);
+    width: var(--s);
+    height: calc(var(--s) * 0.34);
+    margin-left: calc(var(--s) / -2);
+    /* alphas carry the density outright now that reshadow() no longer scales
+       it — these are the old values times the ~0.82 it used to sit at */
+    background: radial-gradient(closest-side ellipse,
+      rgba(72, 57, 38, .28) 0%,
+      rgba(72, 57, 38, .12) 52%,
+      rgba(72, 57, 38, 0) 100%);
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  .cube {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* Built like a real alphabet block: the panel is routed down, leaving the
+     frame and the letter standing at the original surface. All three read
+     their shadows off --lu / --lv, the direction the light falls across this
+     face in its own axes, which relight() rewrites as the block turns — so the
+     relief stays true to the light instead of being painted on one way. The
+     defaults are what a face-on block sees. */
+  .face {
+    --lu: -0.40;
+    --lv: -0.55;
+    --b: calc(var(--s) * 0.105);            /* frame width */
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    /* A face can only round its corners in its own plane, so where three meet
+       they leave a gap: a notch where a corner lands on the silhouette, a hole
+       straight through where a corner faces you. The backing card behind the
+       block is cut to the true rounded outline and fills both — see
+       backfill(). It fills them flat, though, so the radius stays tight: at
+       0.025 the patch it shows is a few pixels. Shared with ROUND in the
+       script; change both together. */
+    border-radius: calc(var(--s) * 0.025);
+    background-color: var(--c);
+    box-shadow:
+      /* rounded outer edge: catches light on the near side, falls off on the far */
+      inset calc(var(--s) * -.026 * var(--lu)) calc(var(--s) * -.026 * var(--lv)) 0
+            rgba(255, 255, 255, .17),
+      inset calc(var(--s) *  .026 * var(--lu)) calc(var(--s) *  .026 * var(--lv)) 0
+            rgba(0, 0, 0, .16),
+      /* the frame */
+      inset 0 0 0 var(--b) var(--d),
+      /* the panel floor: the wall on the lit side shades it, the far wall is lit */
+      inset calc(var(--s) * -.065 * var(--lu)) calc(var(--s) * -.065 * var(--lv))
+            calc(var(--s) * .04) var(--b) rgba(0, 0, 0, .30),
+      inset calc(var(--s) *  .026 * var(--lu)) calc(var(--s) *  .026 * var(--lv))
+            calc(var(--s) * .014) var(--b) rgba(255, 255, 255, .2);
+  }
+
+  /* A flat card behind the block, cut each frame to the block's outline, so
+     whatever the faces leave uncovered shows the block's inner colour rather
+     than the page: the rounded corners, and the antialiased seam where two
+     faces meet, which otherwise reads as a light hairline down the edge.
+     Sits before .cube in the DOM, so it paints underneath the whole block.
+     Two edges on a side, which clears any pose. */
+  .backing {
+    position: absolute;
+    inset: calc(var(--s) * -0.5);
+    background: var(--k);
+    pointer-events: none;
+  }
+
+  .glyph {
+    font-size: calc(var(--s) * 0.62);
+    line-height: 1;
+    color: var(--d);
+    /* Stands at frame height out of the sunken panel: the near edge catches
+       the light, and it drops a short soft shadow away from it. This is what
+       lets the letter read with the colour contrast kept as low as it is. */
+    text-shadow:
+      calc(var(--s) * .02 * var(--lu)) calc(var(--s) * .02 * var(--lv)) 0
+        rgba(255, 255, 255, .3),
+      calc(var(--s) * -.032 * var(--lu)) calc(var(--s) * -.032 * var(--lv))
+        calc(var(--s) * .024) rgba(0, 0, 0, .32);
+  }
+
+  /* Quiet until it has something to undo: the page loads as just the name,
+     and the control fades in once a block has been knocked off its pose. */
+  .reset {
+    position: fixed;
+    right: clamp(16px, 3vw, 34px);
+    bottom: clamp(16px, 3vw, 34px);
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #8a8076;
+    background: rgba(0, 0, 0, .025);
+    border: 1px solid rgba(0, 0, 0, .12);
+    border-radius: 999px;
+    padding: .72em 1.3em;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .45s ease, color .2s ease,
+                background-color .2s ease, border-color .2s ease;
+  }
+
+  .reset.on { opacity: 1; pointer-events: auto; }
+
+  .reset:hover {
+    color: #2f2a24;
+    background: rgba(0, 0, 0, .06);
+    border-color: rgba(0, 0, 0, .26);
+  }
+
+  .reset:focus-visible { outline: 2px solid #3d7ba8; outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reset { transition: none; }
+  }
+
+  /* per-face lighting, driven from the block's live orientation */
+  .shade {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: #0b0805;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Satin paint. A soft highlight on the lit side of the face that swells as
+     the face turns toward the angle that bounces the light back at you, so a
+     tumbling block flashes as it passes through. Sits above .shade: a sheen is
+     reflected light, and doesn't dim with the diffuse shading underneath. */
+  .gloss {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    /* pushed well out toward the lit corner: centred, it sits on the letter
+       and reads as haze rather than satin */
+    background: radial-gradient(circle at calc(50% + var(--lu) * 80%)
+                                          calc(50% + var(--lv) * 80%),
+      rgba(255, 255, 255, .55) 0%, rgba(255, 255, 255, 0) 55%);
+    opacity: 0;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
 
-<h1>Projects</h1>
+<h1>
+  <span class="vh">Projects</span>
+  <span class="blocks" aria-hidden="true"><span class="line" data-word="PROJECTS"></span></span>
+</h1>
 
 <!-- One activity centre per project. Adding a project is adding a link here
      with its position on the brain (viewBox units, 600 × 440) and a side for
@@ -142,7 +340,509 @@
 
 <a class="home" href="index.html">Home</a>
 
+<button class="reset" id="reset" type="button" disabled>Reset</button>
+
 <script>
+(function () {
+  'use strict';
+
+  // ---- look ----------------------------------------------------------------
+  // Classic four-colour block set. The letter and its border are the same hue
+  // stepped down in value, so a block is only ever one colour.
+  var PALETTE = [
+    [201,  74,  63],   // red
+    [ 92, 159,  82],   // green
+    [225, 182,  64],   // yellow
+    [ 74, 135, 185]    // blue
+  ];
+  var DARKEN = 0.80;   // letter + border: a gentle step down from the face colour
+  var CORE   = 0.62;   // the backing card, glimpsed at the corners and seams
+
+  // Light sitting up and to the left, in front of the blocks.
+  var LX = -0.40, LY = -0.55, LZ = 0.73;
+  var AMBIENT = 0.52;
+
+  // ---- feel ----------------------------------------------------------------
+  // A brisk pass is roughly 1-2 px/ms. At 260 that lands a block at 0.7-1.4
+  // turns a second — an unhurried tumble where every face is legible on its way
+  // past, rather than a flick that blurs. The ceiling matters as much as the
+  // rate: it's what a fast swipe actually hits, so it moves with it.
+  var SPIN_PER_SPEED = 260;  // deg/sec of spin per px/ms of pointer speed
+  var MAX_SPIN       = 700;  // deg/sec ceiling
+  var DECAY_MS       = 2200; // friction time constant — momentum runs out here
+  var REST_SPIN      = 2;    // deg/sec below which a block is considered still
+
+  // Kept well under the figures above, or the accessibility branch stops being
+  // meaningfully gentler than the default.
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) { SPIN_PER_SPEED = 90; MAX_SPIN = 160; DECAY_MS = 900; }
+
+  // Centre-to-centre spacing as a multiple of the cube edge, kept in sync with
+  // --gap in the stylesheet (--gap = (SPACING - 1) * --s).
+  //
+  // A cube of edge S rotated by R has a projected half-width of
+  //   max over corners c of  |(R·c)x| * d / (d - (R·c)z)
+  // which peaks just under 0.9S for d = 20S. 1.80 centre-to-centre therefore
+  // clears every reachable orientation (verify() on the home page samples it).
+  var SPACING = 1.80;
+
+  // faces, in local space: [normal, transform]
+  var FACES = [
+    [[0, 0, 1],  'translateZ(HALF)'],
+    [[0, 0, -1], 'rotateY(180deg) translateZ(HALF)'],
+    [[1, 0, 0],  'rotateY(90deg) translateZ(HALF)'],
+    [[-1, 0, 0], 'rotateY(-90deg) translateZ(HALF)'],
+    [[0, -1, 0], 'rotateX(90deg) translateZ(HALF)'],   // y points down in CSS
+    [[0, 1, 0],  'rotateX(-90deg) translateZ(HALF)']
+  ];
+
+  // Each face's own across / down axes in cube space — what its CSS transform
+  // does to (1,0,0) and (0,1,0). Same order as FACES; across × down = normal.
+  var AXES = [
+    [[1, 0, 0],  [0, 1, 0]],
+    [[-1, 0, 0], [0, 1, 0]],
+    [[0, 0, -1], [0, 1, 0]],
+    [[0, 0, 1],  [0, 1, 0]],
+    [[1, 0, 0],  [0, 0, 1]],
+    [[1, 0, 0],  [0, 0, -1]]
+  ];
+
+  // scratch rotation matrix, reused by toMatrix / matrix3d / relight
+  var m = new Array(9);
+
+  function rgb(c, k) {
+    return 'rgb(' + Math.round(c[0] * k) + ',' + Math.round(c[1] * k) + ',' + Math.round(c[2] * k) + ')';
+  }
+
+  // ---- resting pose --------------------------------------------------------
+  // Where the blocks start, and where Reset puts them back. These orientations
+  // were lifted straight off a live tumble rather than generated from a rule —
+  // each block is off-axis by 17°-44° on its own mix of yaw, pitch and roll,
+  // which scatters in a way no tidy formula does. Order follows the letters.
+  //                w         x         y         z
+  var REST = [
+    [ 0.96723, -0.13201, -0.09336,  0.19575],   // A
+    [ 0.94796,  0.24464, -0.13600, -0.15174],   // D
+    [ 0.92604,  0.29569,  0.01054,  0.23431],   // A
+    [ 0.98505, -0.02771,  0.09215,  0.14289],   // M
+    [ 0.92920,  0.36893, -0.01617,  0.01460],   // D
+    [ 0.93137, -0.19189,  0.13890,  0.27645],   // A
+    [ 0.97454,  0.09472,  0.03059, -0.20093],   // W
+    [ 0.93960,  0.18770,  0.19605,  0.20851],   // S
+    [ 0.94107, -0.27655, -0.09690, -0.16887],   // O
+    [ 0.98870, -0.01179, -0.08995,  0.11937]    // N
+  ];
+
+  function restPose(i) {
+    var q = REST[i % REST.length];
+    return { w: q[0], x: q[1], y: q[2], z: q[3] };
+  }
+
+  // ---- build the blocks ----------------------------------------------------
+  var blocks = [];
+  var n = 0;
+
+  Array.prototype.forEach.call(document.querySelectorAll('.blocks .line'), function (line) {
+    line.getAttribute('data-word').split('').forEach(function (ch) {
+      var base = PALETTE[n % PALETTE.length];
+      n++;
+
+      var slot = document.createElement('span');
+      slot.className = 'slot';
+      // on the slot, so the backing card and the cube both see them
+      slot.style.setProperty('--c', rgb(base, 1));
+      slot.style.setProperty('--d', rgb(base, DARKEN));
+      slot.style.setProperty('--k', rgb(base, CORE));
+
+      // both before the cube, so they paint beneath it
+      var shadow = document.createElement('span');
+      shadow.className = 'shadow';
+      slot.appendChild(shadow);
+
+      var backing = document.createElement('span');
+      backing.className = 'backing';
+      slot.appendChild(backing);
+
+      var cube = document.createElement('span');
+      cube.className = 'cube';
+
+      var faces = [], shades = [], glosses = [];
+      FACES.forEach(function (f, i) {
+        var face = document.createElement('span');
+        face.className = 'face';
+        face.style.transform = f[1].replace('HALF', 'calc(var(--s) / 2)');
+
+        var glyph = document.createElement('span');
+        glyph.className = 'glyph';
+        glyph.textContent = ch;
+        if (i > 0) glyph.setAttribute('aria-hidden', 'true');
+
+        var shade = document.createElement('span');
+        shade.className = 'shade';
+
+        var gloss = document.createElement('span');
+        gloss.className = 'gloss';
+
+        face.appendChild(glyph);
+        face.appendChild(shade);
+        face.appendChild(gloss);
+        cube.appendChild(face);
+        faces.push(face);
+        shades.push(shade);
+        glosses.push(gloss);
+      });
+
+      slot.appendChild(cube);
+      line.appendChild(slot);
+
+      var q0 = restPose(blocks.length);
+      toMatrix(q0);
+      blocks.push({
+        slot: slot,
+        cube: cube,
+        faces: faces,
+        shades: shades,
+        glosses: glosses,
+        shadow: shadow,
+        backing: backing,
+        rect: null,
+        // half-extents of the resting pose, in edge multiples — the tilted
+        // block overhangs its slot, and the hit area should match what's drawn
+        hw: (Math.abs(m[0]) + Math.abs(m[1]) + Math.abs(m[2])) / 2,
+        hh: (Math.abs(m[3]) + Math.abs(m[4]) + Math.abs(m[5])) / 2,
+        // orientation quaternion + angular velocity vector (deg/sec, world axes)
+        q: q0,
+        rest: q0,          // the designed pose, to fall back to on reset
+        from: q0,          // orientation at the moment reset was pressed
+        wx: 0, wy: 0, wz: 0
+      });
+    });
+  });
+
+  // ---- quaternion helpers --------------------------------------------------
+  function qmul(a, b) {
+    return {
+      w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+      x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+      y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+      z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w
+    };
+  }
+
+  function toMatrix(q) {
+    var x = q.x, y = q.y, z = q.z, w = q.w;
+    m[0] = 1 - 2 * (y * y + z * z); m[1] = 2 * (x * y - z * w);     m[2] = 2 * (x * z + y * w);
+    m[3] = 2 * (x * y + z * w);     m[4] = 1 - 2 * (x * x + z * z); m[5] = 2 * (y * z - x * w);
+    m[6] = 2 * (x * z - y * w);     m[7] = 2 * (y * z + x * w);     m[8] = 1 - 2 * (x * x + y * y);
+  }
+
+  // Shortest-arc interpolation between two orientations. Nothing else gets a
+  // block home along a natural path — component-wise blending would swing it
+  // through orientations it never passed on the way out.
+  function slerp(a, b, t) {
+    var d = a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z;
+    var bw = b.w, bx = b.x, by = b.y, bz = b.z;
+    if (d < 0) { d = -d; bw = -bw; bx = -bx; by = -by; bz = -bz; }  // take the near way round
+
+    var k0, k1;
+    if (d > 0.9995) {                     // all but coincident: lerp and renormalise
+      k0 = 1 - t; k1 = t;
+    } else {
+      var th0 = Math.acos(d), th = th0 * t, s0 = Math.sin(th0);
+      k0 = Math.sin(th0 - th) / s0;
+      k1 = Math.sin(th) / s0;
+    }
+    var q = { w: a.w * k0 + bw * k1, x: a.x * k0 + bx * k1,
+              y: a.y * k0 + by * k1, z: a.z * k0 + bz * k1 };
+    var len = Math.sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z) || 1;
+    return { w: q.w / len, x: q.x / len, y: q.y / len, z: q.z / len };
+  }
+
+  function matrix3d() {  // matrix3d is column-major
+    return 'matrix3d(' +
+      m[0].toFixed(6) + ',' + m[3].toFixed(6) + ',' + m[6].toFixed(6) + ',0,' +
+      m[1].toFixed(6) + ',' + m[4].toFixed(6) + ',' + m[7].toFixed(6) + ',0,' +
+      m[2].toFixed(6) + ',' + m[5].toFixed(6) + ',' + m[8].toFixed(6) + ',0,' +
+      '0,0,0,1)';
+  }
+
+  // Halfway between the light and the viewer: a face whose normal points
+  // here bounces the light straight back, which is where the sheen peaks.
+  var HL = Math.sqrt(LX * LX + LY * LY + (LZ + 1) * (LZ + 1));
+  var HX = LX / HL, HY = LY / HL, HZ = (LZ + 1) / HL;
+  var SHEEN = 0.3, SHEEN_TIGHT = 14;      // peak strength, and how narrow it is
+
+  // world-space dot of a local vector with (x, y, z)
+  function wdot(v, x, y, z) {
+    return (m[0] * v[0] + m[1] * v[1] + m[2] * v[2]) * x +
+           (m[3] * v[0] + m[4] * v[1] + m[5] * v[2]) * y +
+           (m[6] * v[0] + m[7] * v[1] + m[8] * v[2]) * z;
+  }
+
+  // Per face: diffuse shading from the normal, the light's direction across
+  // the face for the relief, and the sheen from the halfway vector.
+  // Assumes toMatrix() has already been called for this block.
+  function relight(B) {
+    for (var i = 0; i < 6; i++) {
+      var d = wdot(FACES[i][0], LX, LY, LZ);
+      var bright = AMBIENT + (1 - AMBIENT) * Math.max(0, d);
+      B.shades[i].style.opacity = ((1 - bright) * 0.85).toFixed(3);
+
+      var face = B.faces[i];
+      face.style.setProperty('--lu', wdot(AXES[i][0], LX, LY, LZ).toFixed(3));
+      face.style.setProperty('--lv', wdot(AXES[i][1], LX, LY, LZ).toFixed(3));
+
+      var h = Math.max(0, wdot(FACES[i][0], HX, HY, HZ));
+      B.glosses[i].style.opacity = (SHEEN * Math.pow(h, SHEEN_TIGHT)).toFixed(3);
+    }
+  }
+
+  // The cube's projected footprint runs 1.0 edge-lengths face-on to 1.73
+  // corner-on, so the shadow tracks that spread — fixed at one size it would
+  // sit visibly too small under a corner-on block. Density stays put: a cube
+  // never turns thin (1.0 is the floor), so there's nothing for it to answer
+  // to, and modulating it just reads as a pulse.
+  // Assumes toMatrix() has already been called for this block.
+  function reshadow(B) {
+    var hw = (Math.abs(m[0]) + Math.abs(m[1]) + Math.abs(m[2])) / 2;
+    var hh = (Math.abs(m[3]) + Math.abs(m[4]) + Math.abs(m[5])) / 2;
+    B.shadow.style.transform = 'scale(' + (hw * 2).toFixed(3) + ',' + (0.55 + hh).toFixed(3) + ')';
+  }
+
+  // The faces round their corners but keep their edges sharp, and the solid
+  // that implies closes each corner with a patch of sphere: centred ROUND in
+  // from the corner along all three axes, radius ROUND·√2, so it meets each
+  // face exactly along that face's rounded corner. Nothing draws the patch;
+  // the backing card stands in for it. The block is convex, so its outline is
+  // the hull of the eight patches, and PATCH holds points spread across them.
+  var ROUND = 0.025;   // face corner radius, in edges — matches .face
+  var EYE   = 20;      // perspective distance, in edges — matches .slot
+  var PATCH = [];
+  (function () {
+    var r = ROUND, G = 8, offs = [];
+    // Offsets from the sphere's centre for the +x +y +z corner. Each component
+    // runs 0..r and |o| = r√2, which bounds the patch by the three arcs where
+    // a component reaches r — the faces' own rounded corners.
+    for (var i = 0; i <= G; i++) {
+      var t = i / G * Math.PI / 2;
+      offs.push([r * Math.cos(t), r * Math.sin(t), r]);
+      for (var j = 0; j <= G; j++) {
+        var a = r * i / G, b = r * j / G, cc = 2 * r * r - a * a - b * b;
+        if (cc <= r * r) offs.push([a, b, Math.sqrt(cc)]);
+      }
+    }
+    for (var k = 0; k < 8; k++) {
+      var sx = k & 1 ? 1 : -1, sy = k & 2 ? 1 : -1, sz = k & 4 ? 1 : -1;
+      offs.forEach(function (o) {
+        PATCH.push(sx * (0.5 - r + o[0]), sy * (0.5 - r + o[1]), sz * (0.5 - r + o[2]));
+      });
+    }
+  })();
+
+  function cross(o, a, b) {
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  }
+
+  function hull(p) {                     // Andrew's monotone chain
+    p.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    function chain(list) {
+      var out = [];
+      for (var i = 0; i < list.length; i++) {
+        while (out.length > 1 && cross(out[out.length - 2], out[out.length - 1], list[i]) <= 0) out.pop();
+        out.push(list[i]);
+      }
+      out.pop();
+      return out;
+    }
+    return chain(p).concat(chain(p.slice().reverse()));
+  }
+
+  // Cuts the backing card to the block's projected outline.
+  // Assumes toMatrix() has already been called for this block.
+  function backfill(B) {
+    var p = [];
+    for (var k = 0; k < PATCH.length; k += 3) {
+      var x = PATCH[k], y = PATCH[k + 1], z = PATCH[k + 2];
+      var f = EYE / (EYE - (m[6] * x + m[7] * y + m[8] * z));
+      p.push([(m[0] * x + m[1] * y + m[2] * z) * f, (m[3] * x + m[4] * y + m[5] * z) * f]);
+    }
+    var h = hull(p), pts = [];
+    for (var i = 0; i < h.length; i++) {   // the card spans -1..1 edges
+      pts.push(((h[i][0] + 1) * 50).toFixed(2) + '% ' + ((h[i][1] + 1) * 50).toFixed(2) + '%');
+    }
+    B.backing.style.clipPath = 'polygon(' + pts.join(',') + ')';
+  }
+
+  // ---- the flick -----------------------------------------------------------
+  // Rolling a ball: swipe right and the near face travels right, so the block
+  // turns about +Y; swipe down and it turns about -X. The impulse is added to
+  // whatever spin the block already has.
+  function kick(B, vx, vy) {
+    var ix = -vy * SPIN_PER_SPEED, iy = vx * SPIN_PER_SPEED;
+    // A pointer that arrives at a standstill — parked over a block on load, or
+    // easing in — imparts nothing, and shouldn't count as having touched it.
+    if (Math.abs(ix) + Math.abs(iy) < REST_SPIN) return;
+
+    resetAt = null;                  // a flick mid-reset takes over
+    B.wx += ix;
+    B.wy += iy;
+    var s = Math.sqrt(B.wx * B.wx + B.wy * B.wy + B.wz * B.wz);
+    if (s > MAX_SPIN) {
+      var k = MAX_SPIN / s;
+      B.wx *= k; B.wy *= k; B.wz *= k;
+    }
+    disturbed(true);
+    start();
+  }
+
+  // ---- reset ---------------------------------------------------------------
+  var RESET_MS = reduced ? 260 : 850;
+  var resetAt = null;                // elapsed ms into the reset, or null
+  var resetBtn = document.getElementById('reset');
+
+  function disturbed(on) {
+    resetBtn.classList.toggle('on', on);
+    resetBtn.disabled = !on;
+  }
+
+  resetBtn.addEventListener('click', function () {
+    for (var i = 0; i < blocks.length; i++) {
+      var B = blocks[i];
+      B.wx = B.wy = B.wz = 0;        // drop any momentum still in flight
+      B.from = B.q;
+    }
+    resetAt = 0;
+    start();
+  });
+
+  // ---- pointer tracking ----------------------------------------------------
+  var px = 0, py = 0, pt = 0, seen = false;
+  var vx = 0, vy = 0;          // smoothed pointer velocity, px/ms
+  var over = -1;
+
+  function measure() {
+    for (var i = 0; i < blocks.length; i++) {
+      var B = blocks[i];
+      var r = B.slot.getBoundingClientRect();
+      var s = r.width;                                  // the slot is one edge square
+      var padX = (B.hw - 0.5) * s, padY = (B.hh - 0.5) * s;
+      B.rect = {
+        left: r.left - padX, right: r.right + padX,
+        top: r.top - padY, bottom: r.bottom + padY
+      };
+    }
+    over = -1;
+  }
+
+  function hit(x, y) {
+    for (var i = 0; i < blocks.length; i++) {
+      var r = blocks[i].rect;
+      if (r && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return i;
+    }
+    return -1;
+  }
+
+  function onMove(e) {
+    var now = performance.now();
+    if (seen) {
+      var dt = now - pt;
+      if (dt > 150) {
+        vx = vy = 0;                       // pointer was parked; start clean
+      } else if (dt >= 1) {
+        var rx = (e.clientX - px) / dt;
+        var ry = (e.clientY - py) / dt;
+        vx = vx * 0.45 + rx * 0.55;        // light smoothing kills sample spikes
+        vy = vy * 0.45 + ry * 0.55;
+      }
+    }
+    px = e.clientX; py = e.clientY; pt = now; seen = true;
+
+    var idx = hit(e.clientX, e.clientY);
+    if (idx !== over) {
+      if (idx >= 0) kick(blocks[idx], vx, vy);
+      over = idx;
+    }
+  }
+
+  window.addEventListener('pointermove', onMove, { passive: true });
+  window.addEventListener('pointerdown', onMove, { passive: true });
+  window.addEventListener('pointerleave', function () { seen = false; over = -1; });
+
+  // ---- integrate -----------------------------------------------------------
+  var raf = 0, last = 0;
+
+  function frame(now) {
+    var dt = Math.min(64, now - last);
+    last = now;
+    var alive = false;
+
+    if (resetAt !== null) {
+      resetAt += dt;
+      var t = Math.min(1, resetAt / RESET_MS);
+      var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      for (var j = 0; j < blocks.length; j++) {
+        var R = blocks[j];
+        R.q = slerp(R.from, R.rest, e);
+        toMatrix(R.q);
+        R.cube.style.transform = matrix3d();
+        relight(R);
+        reshadow(R);
+        backfill(R);
+      }
+      if (t >= 1) { resetAt = null; disturbed(false); }
+      raf = requestAnimationFrame(frame);
+      return;
+    }
+
+    var decay = Math.exp(-dt / DECAY_MS);
+
+    for (var i = 0; i < blocks.length; i++) {
+      var B = blocks[i];
+      var speed = Math.sqrt(B.wx * B.wx + B.wy * B.wy + B.wz * B.wz);
+      if (speed < REST_SPIN) { B.wx = B.wy = B.wz = 0; continue; }
+
+      var rad = speed * (dt / 1000) * Math.PI / 180;
+      var half = rad / 2, s = Math.sin(half) / speed;
+      var dq = { w: Math.cos(half), x: B.wx * s, y: B.wy * s, z: B.wz * s };
+
+      // pre-multiply: the block turns about the world axis the mouse implied,
+      // not about its own already-tumbled axes
+      var q = qmul(dq, B.q);
+      var len = Math.sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z) || 1;
+      B.q = { w: q.w / len, x: q.x / len, y: q.y / len, z: q.z / len };
+
+      toMatrix(B.q);
+      B.cube.style.transform = matrix3d();
+      relight(B);
+      reshadow(B);
+      backfill(B);
+
+      B.wx *= decay; B.wy *= decay; B.wz *= decay;
+      alive = true;
+    }
+
+    raf = alive ? requestAnimationFrame(frame) : 0;
+  }
+
+  function start() {
+    if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+  }
+
+  // strike the resting pose, then measure against it
+  for (var i = 0; i < blocks.length; i++) {
+    toMatrix(blocks[i].q);
+    blocks[i].cube.style.transform = matrix3d();
+    relight(blocks[i]);
+    reshadow(blocks[i]);
+    backfill(blocks[i]);
+  }
+
+  window.addEventListener('resize', measure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  measure();
+})();
+
+
 (function () {
   var NS = 'http://www.w3.org/2000/svg';
   var stage = document.getElementById('stage');
