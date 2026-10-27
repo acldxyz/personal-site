@@ -111,10 +111,14 @@ td.lo { color: var(--bad) } td.hi { color: var(--good) }
 .matrix td { vertical-align: top } .matrix td small { display: block; font: 11px var(--body); color: var(--ink-3) }
 .bar-in { display: inline-block; height: 8px; background: var(--accent); border-radius: 2px; vertical-align: 1px; margin-left: 6px; opacity: .6 }
 @media (prefers-reduced-motion: reduce) { * { transition-duration: .01s !important } }
+.modules { flex-wrap: wrap } .modules a { white-space: nowrap }
+.modules .back { border-color: transparent; padding-left: 0; margin-right: 10px }
+.modules .back:hover { border-color: transparent }
+@media (max-width: 520px) { .modules .back { flex-basis: 100%; margin: 0 0 4px } }
 </style>
 
 <div class="wrap">
-  <nav class="modules" aria-label="Modules"><a href="fund-performance.html">Fund performance</a><a href="lp-exposure.html" aria-current="page">LP exposure</a></nav>
+  <nav class="modules" aria-label="Modules"><a class="back" href="../venture-lp-tools.html">&larr; Venture LP Tools</a><a href="fund-performance.html">Fund performance</a><a href="lp-exposure.html" aria-current="page">LP exposure</a></nav>
   <header>
     <div>
       <h1 id="lpTitle">LP Look-through Exposure</h1>

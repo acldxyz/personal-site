@@ -169,9 +169,18 @@ tr.total td { font-weight: 600; border-top: 2px solid var(--ink-3) }
 .hc-lists ul { margin: 6px 0 0; padding-left: 18px }
 .co-head { display: flex; gap: 8px; justify-content: space-between; align-items: start }
 @media (prefers-reduced-motion: reduce) { * { transition-duration: .01s !important } }
+.modules { display: flex; gap: 4px; font: 600 12px var(--body); letter-spacing: .04em; text-transform: uppercase }
+.modules a { color: var(--ink-3); text-decoration: none; padding: 3px 10px; border: 1px solid var(--rule); border-radius: 999px }
+.modules a:hover { color: var(--accent); border-color: var(--accent) }
+.modules a[aria-current="page"] { color: var(--panel); background: var(--accent); border-color: var(--accent) }
+.modules { flex-wrap: wrap } .modules a { white-space: nowrap }
+.modules .back { border-color: transparent; padding-left: 0; margin-right: 10px }
+.modules .back:hover { border-color: transparent }
+@media (max-width: 520px) { .modules .back { flex-basis: 100%; margin: 0 0 4px } }
 </style>
 
 <div class="wrap">
+  <nav class="modules" aria-label="Modules"><a class="back" href="../venture-lp-tools.html">&larr; Venture LP Tools</a><a href="fund-performance.html" aria-current="page">Fund performance</a><a href="lp-exposure.html">LP exposure</a></nav>
   <header>
     <div>
       <h1 id="gpTitle">Venture Track Record</h1>
