@@ -161,6 +161,32 @@
     color: #4a433b;
     max-width: 60ch;
   }
+  /* Same small caps as the model's kind label, so who it's for reads as a
+     label rather than as the start of a sentence. */
+  .audiences {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 10px 18px;
+    align-items: baseline;
+    max-width: 60ch;
+  }
+  .audiences dt {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #6f665d;
+  }
+  .audiences dd {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #4a433b;
+  }
+  @media (max-width: 480px) {
+    .audiences { grid-template-columns: 1fr; gap: 4px; }
+    .audiences dd + dt { margin-top: 10px; }
+  }
+
   /* The pill, bordered at rest: it is the one thing on the row to press, and
      a borderless one reads as a caption. */
   .open {
@@ -214,9 +240,13 @@
     <li class="tool">
       <p class="kind">Cash flow model</p>
       <h2>Fund performance</h2>
-      <p>Capital called and distributed, the J-curve, and net TVPI, IRR and DPI
-         against vintage benchmarks. A scenarios view projects exits for the
-         companies still held, and from them the cash still to come to LPs.</p>
+      <dl class="audiences">
+        <dt>For LPs</dt>
+        <dd>Automate your fund diligence, IC materials and portfolio monitoring.</dd>
+        <dt>For GPs</dt>
+        <dd>Step inside the institutional LP workflow. See how they'll see your
+            performance, and preempt the questions.</dd>
+      </dl>
       <a class="open" href="lp-tools/fund-performance.html">Open the model</a>
     </li>
     <li class="tool">
