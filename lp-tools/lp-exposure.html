@@ -115,8 +115,27 @@ td.lo { color: var(--bad) } td.hi { color: var(--good) }
 .modules .back { border-color: transparent; padding-left: 0; margin-right: 10px }
 .modules .back:hover { border-color: transparent }
 @media (max-width: 520px) { .modules .back { flex-basis: 100%; margin: 0 0 4px } }
+#start { border: 1px solid var(--rule); border-radius: 10px; padding: 24px; width: min(calc(100% - 32px), 520px); background: var(--panel); color: var(--ink); box-shadow: 0 20px 60px rgb(0 0 0 / .18) }
+#start::backdrop { background: rgb(20 24 23 / .45) }
+#start h2 { margin: 0 0 4px; font: 600 22px/1.2 var(--display) }
+#start .choices { display: grid; gap: 10px; margin: 18px 0 12px }
+#start .choice { display: grid; gap: 2px; text-align: left; padding: 14px 16px; border-radius: 8px; font: inherit }
+#start .choice b { font: 600 15px var(--body) }
+#start .choice span { font-size: 13px; line-height: 1.45; color: var(--ink-2) }
+#start .choice.primary span { color: inherit; opacity: .85 }
+.invite-note { margin: 0 0 10px; font-weight: 600; color: var(--accent) }
+.loaders.invite .drop { border-style: solid; border-color: var(--accent); background: var(--accent-soft) }
 </style>
 
+<dialog id="start" aria-labelledby="startH">
+  <h2 id="startH">How do you want to start?</h2>
+  <p class="note">You can switch at any time from the Data panel.</p>
+  <div class="choices">
+    <button type="button" class="choice primary" data-start="sample"><b>Explore with sample data</b><span>A mock LP portfolio: ten funds across eight managers. Nothing to prepare.</span></button>
+    <button type="button" class="choice" data-start="upload"><b>Upload your own data</b><span>Your fund commitments and each fund's schedule of investments. CSV or Excel.</span></button>
+  </div>
+  <p class="note">Your files are read in your browser and stay there.</p>
+</dialog>
 <div class="wrap">
   <nav class="modules" aria-label="Modules"><a class="back" href="../venture-lp-tools.html">&larr; Venture LP Tools</a><a href="fund-performance.html">Fund performance</a><a href="lp-exposure.html" aria-current="page">LP exposure</a></nav>
   <header>
@@ -135,6 +154,7 @@ td.lo { color: var(--bad) } td.hi { color: var(--good) }
         <button id="clearBtn" type="button">Clear</button>
       </div>
     </div>
+    <p class="invite-note" id="inviteNote" hidden>Drop your files on the two boxes below, or click one to choose a file. You need both.</p>
     <div class="loaders">
       <label class="drop" data-kind="commit"><b>Fund commitments</b><span class="note">One row per fund you are in: manager, fund size, your commitment, carry. Sets your look-through share of each fund. CSV or XLSX.</span><input type="file" accept=".csv,.xlsx,.xls"><span class="status">Not loaded</span></label>
       <label class="drop" data-kind="hold"><b>Fund holdings</b><span class="note">One row per fund, company and security from each manager's schedule of investments: round, shares, cost, fair value. CSV or XLSX.</span><input type="file" accept=".csv,.xlsx,.xls"><span class="status">Not loaded</span></label>
@@ -743,6 +763,23 @@ ${parts.join("\n")}</div></body></html>`;
 
 // Open on the sample so the first view shows what the tool does.
 document.getElementById("sampleBtn").click();
+(() => {
+  const d = document.getElementById("start");
+  if (!d.showModal) return;   // no <dialog>: the sample it already shows is the start
+  const loaders = document.querySelector(".loaders"), note = document.getElementById("inviteNote");
+  const settle = () => { loaders.classList.remove("invite"); note.hidden = true };
+  d.querySelector('[data-start="sample"]').addEventListener("click", () => d.close());
+  d.querySelector('[data-start="upload"]').addEventListener("click", () => {
+    document.getElementById("clearBtn").click();
+    d.close();
+    note.hidden = false; loaders.classList.add("invite");
+    note.scrollIntoView({ block: "start" });
+    loaders.querySelector("input").focus({ preventScroll: true });
+  });
+  // Once a file is in, the highlight has done its job.
+  loaders.addEventListener("change", settle); loaders.addEventListener("drop", settle);
+  d.showModal();
+})();
 </script>
 
 </html>

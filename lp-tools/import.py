@@ -42,5 +42,65 @@ MODULES_CSS = exp_src[exp_src.index(".modules {"):exp_src.index("\n", exp_src.in
 perf = swap(perf_src, "</style>\n\n<div class=\"wrap\">\n  <header>",
             MODULES_CSS + BACK_CSS + "</style>\n\n<div class=\"wrap\">\n  " + nav("fund-performance.html") + "\n  <header>")
 
+# A visitor arriving from the site hasn't decided yet whether they're browsing or
+# have files to hand, so each model asks first instead of opening straight onto
+# the sample. The sample still loads underneath, so choosing it (or pressing
+# Escape) just closes the dialog. Choosing upload clears the sample and points
+# at the model's own drop boxes, which open the column-matching step in place.
+START_CSS = """#start { border: 1px solid var(--rule); border-radius: 10px; padding: 24px; width: min(calc(100% - 32px), 520px); background: var(--panel); color: var(--ink); box-shadow: 0 20px 60px rgb(0 0 0 / .18) }
+#start::backdrop { background: rgb(20 24 23 / .45) }
+#start h2 { margin: 0 0 4px; font: 600 22px/1.2 var(--display) }
+#start .choices { display: grid; gap: 10px; margin: 18px 0 12px }
+#start .choice { display: grid; gap: 2px; text-align: left; padding: 14px 16px; border-radius: 8px; font: inherit }
+#start .choice b { font: 600 15px var(--body) }
+#start .choice span { font-size: 13px; line-height: 1.45; color: var(--ink-2) }
+#start .choice.primary span { color: inherit; opacity: .85 }
+.invite-note { margin: 0 0 10px; font-weight: 600; color: var(--accent) }
+.loaders.invite .drop { border-style: solid; border-color: var(--accent); background: var(--accent-soft) }
+"""
+
+def start(s, sample, upload, invite):
+    s = swap(s, "</style>\n\n<div class=\"wrap\">", START_CSS + "</style>\n\n<div class=\"wrap\">")
+    s = swap(s, '<div class="loaders">', f'<p class="invite-note" id="inviteNote" hidden>{invite}</p>\n    <div class="loaders">')
+    dialog = f"""<dialog id="start" aria-labelledby="startH">
+  <h2 id="startH">How do you want to start?</h2>
+  <p class="note">You can switch at any time from the Data panel.</p>
+  <div class="choices">
+    <button type="button" class="choice primary" data-start="sample"><b>Explore with sample data</b><span>{sample}</span></button>
+    <button type="button" class="choice" data-start="upload"><b>Upload your own data</b><span>{upload}</span></button>
+  </div>
+  <p class="note">Your files are read in your browser and stay there.</p>
+</dialog>
+"""
+    s = swap(s, '\n<div class="wrap">\n  <nav class="modules"', "\n" + dialog + '<div class="wrap">\n  <nav class="modules"')
+    return swap(s, 'document.getElementById("sampleBtn").click();\n', """document.getElementById("sampleBtn").click();
+(() => {
+  const d = document.getElementById("start");
+  if (!d.showModal) return;   // no <dialog>: the sample it already shows is the start
+  const loaders = document.querySelector(".loaders"), note = document.getElementById("inviteNote");
+  const settle = () => { loaders.classList.remove("invite"); note.hidden = true };
+  d.querySelector('[data-start="sample"]').addEventListener("click", () => d.close());
+  d.querySelector('[data-start="upload"]').addEventListener("click", () => {
+    document.getElementById("clearBtn").click();
+    d.close();
+    note.hidden = false; loaders.classList.add("invite");
+    note.scrollIntoView({ block: "start" });
+    loaders.querySelector("input").focus({ preventScroll: true });
+  });
+  // Once a file is in, the highlight has done its job.
+  loaders.addEventListener("change", settle); loaders.addEventListener("drop", settle);
+  d.showModal();
+})();
+""")
+
+perf = start(perf,
+    "Three mock funds from a made-up GP, Lanternfish Ventures. Nothing to prepare.",
+    "A GP's fund cash flows, plus its portfolio companies if you have them. CSV or Excel.",
+    "Drop your files on the boxes below, or click one to choose a file. Fund cash flows is the one you need; the others add more views.")
+exp = start(exp,
+    "A mock LP portfolio: ten funds across eight managers. Nothing to prepare.",
+    "Your fund commitments and each fund's schedule of investments. CSV or Excel.",
+    "Drop your files on the two boxes below, or click one to choose a file. You need both.")
+
 (here / "fund-performance.html").write_text(perf)
 (here / "lp-exposure.html").write_text(exp)
