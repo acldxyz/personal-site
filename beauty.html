@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beauty — Adam Dawson</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S9B2L8ZZLW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-S9B2L8ZZLW');
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ink: #6f665d;
+    --ink-strong: #2f2a24;
+    --ink-quiet: #8a8076;
+    --focus: #3d7ba8;
+    --measure: 38rem;
+  }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%)
+      fixed;
+    color: var(--ink);
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ------------------------------------------------------------- topbar */
+
+  /* Same bar as the Bookshelf, so the two new-language inner pages share
+     their navigation. */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: clamp(14px, 1.6vw, 20px) clamp(22px, 2.8vw, 40px);
+    border-bottom: 1px solid rgba(0,0,0,.08);
+  }
+
+  .wordmark {
+    display: inline-block;
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: -.01em;
+    line-height: 1.15;
+    color: var(--ink-strong);
+    text-decoration: none;
+    opacity: .82;
+    transition: opacity .2s ease;
+  }
+  .wordmark:hover { opacity: 1; }
+  .wordmark:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  .site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 1px;
+    /* Pulls the borderless pills back so the row sits flush with the margin.
+       Set here as well as on the links so the em resolves at 11px. */
+    font-size: 11px;
+    margin-right: -.9em;
+  }
+  .site-nav a {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink);
+    text-decoration: none;
+    padding: .52em .9em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+  }
+  .site-nav a:hover {
+    color: var(--ink-strong);
+    background: rgba(0,0,0,.05);
+    border-color: rgba(0,0,0,.14);
+  }
+  .site-nav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  /* --------------------------------------------------------------- page */
+
+  main {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: clamp(56px, 11vh, 120px) 16px clamp(64px, 12vh, 140px);
+  }
+
+  .trail {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-quiet);
+  }
+
+  /* The title takes the display face: it is the page's one large word, the
+     way the name is on the home page. Lowercase as written. */
+  h1 {
+    margin-top: 18px;
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: clamp(48px, 9vw, 88px);
+    line-height: .95;
+    letter-spacing: -.02em;
+    color: var(--ink-strong);
+  }
+
+  .sub {
+    margin-top: 16px;
+    font-size: clamp(10px, 1.05vw, 12px);
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  /* ---------------------------------------------------------------- list */
+
+  .list {
+    list-style: none;
+    margin-top: clamp(40px, 7vh, 72px);
+    border-top: 1px solid rgba(0,0,0,.08);
+  }
+
+  .list li {
+    display: grid;
+    grid-template-columns: 3.2em 1fr;
+    align-items: baseline;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(0,0,0,.08);
+    opacity: 0;
+    transform: translateY(6px);
+    animation: rise .55s ease-out forwards;
+    animation-delay: calc(var(--i) * 45ms);
+  }
+
+  .list .n {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    color: var(--ink-quiet);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .list .t {
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--ink-strong);
+  }
+
+  /* The list is incomplete by title, so it ends open rather than closed: a
+     last row with no number and no rule. */
+  .list li.more { border-bottom: 0; }
+  .list li.more .t { color: var(--ink-quiet); letter-spacing: .3em; }
+
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: .01s !important;
+      animation-duration: .01s !important;
+      animation-delay: 0s !important;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .topbar { flex-direction: column; align-items: flex-start; }
+    .site-nav { justify-content: flex-start; margin-right: 0; margin-left: -.9em; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
+  <nav class="site-nav" aria-label="Primary">
+    <a href="about.html">About</a>
+    <a href="bookshelf.html">Bookshelf</a>
+    <a href="links.html">Canon</a>
+    <a href="mailto:adam@acld.xyz">Contact</a>
+  </nav>
+</header>
+
+<main>
+  <!-- Plain text, not a link: Projects has no page of its own yet. -->
+  <p class="trail">Projects</p>
+  <h1>beauty</h1>
+  <p class="sub">an incomplete list of beauty</p>
+
+  <ol class="list" id="list"></ol>
+</main>
+
+<script>
+  // One string per entry, in the order they should appear. Numbering is
+  // generated, so entries can be added or reordered freely.
+  // PLACEHOLDER — replace with the real list.
+  const entries = [
+    'Placeholder entry one',
+    'Placeholder entry two',
+    'Placeholder entry three',
+    'Placeholder entry four',
+    'Placeholder entry five',
+  ];
+
+  const list = document.getElementById('list');
+  entries.forEach((text, i) => {
+    const li = document.createElement('li');
+    li.style.setProperty('--i', i);
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = String(i + 1).padStart(2, '0');
+    const t = document.createElement('span');
+    t.className = 't';
+    t.textContent = text;
+    li.append(n, t);
+    list.append(li);
+  });
+
+  const more = document.createElement('li');
+  more.className = 'more';
+  more.style.setProperty('--i', entries.length);
+  more.innerHTML = '<span class="n" aria-hidden="true"></span><span class="t">…</span>';
+  more.setAttribute('aria-label', 'and more');
+  list.append(more);
+</script>
+
+</body>
+</html>
