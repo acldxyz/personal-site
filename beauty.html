@@ -137,35 +137,20 @@
   }
 
   .list li {
-    display: grid;
-    grid-template-columns: 3.2em 1fr;
-    align-items: baseline;
     padding: 18px 0;
     border-bottom: 1px solid rgba(0,0,0,.08);
     opacity: 0;
     transform: translateY(6px);
     animation: rise .55s ease-out forwards;
     animation-delay: calc(var(--i) * 45ms);
-  }
-
-  .list .n {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .16em;
-    color: var(--ink-quiet);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .list .t {
     font-size: 17px;
     line-height: 1.5;
     color: var(--ink-strong);
   }
 
   /* The list is incomplete by title, so it ends open rather than closed: a
-     last row with no number and no rule. */
-  .list li.more { border-bottom: 0; }
-  .list li.more .t { color: var(--ink-quiet); letter-spacing: .3em; }
+     last row with no rule. */
+  .list li.more { border-bottom: 0; color: var(--ink-quiet); letter-spacing: .3em; }
 
   @keyframes rise { to { opacity: 1; transform: none; } }
 
@@ -201,39 +186,53 @@
   <h1>beauty</h1>
   <p class="sub">an incomplete list of beauty</p>
 
-  <ol class="list" id="list"></ol>
+  <ul class="list" id="list"></ul>
 </main>
 
 <script>
-  // One string per entry, in the order they should appear. Numbering is
-  // generated, so entries can be added or reordered freely.
-  // PLACEHOLDER — replace with the real list.
+  // No ranking is meant, so the order is shuffled on every load rather than
+  // fixed; the order written here doesn't matter.
   const entries = [
-    'Placeholder entry one',
-    'Placeholder entry two',
-    'Placeholder entry three',
-    'Placeholder entry four',
-    'Placeholder entry five',
+    'Smiles',
+    'Frowns',
+    'Anger',
+    'Fall rain',
+    'Winter fog',
+    'Snow',
+    'Trees',
+    'Sycamore bark',
+    'Dahlias',
+    'Dawn',
+    'Dusk',
+    'Wrinkles',
+    'Stars',
+    'Fear',
+    'Monarch butterflies',
+    'Bernese mountain dogs',
+    'Newfoundland dogs',
+    'Vancouver Island',
+    'Orcas',
+    'Lafayette Street (NYC)',
   ];
+
+  // Fisher–Yates: a sort with a random comparator is biased.
+  for (let i = entries.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [entries[i], entries[j]] = [entries[j], entries[i]];
+  }
 
   const list = document.getElementById('list');
   entries.forEach((text, i) => {
     const li = document.createElement('li');
     li.style.setProperty('--i', i);
-    const n = document.createElement('span');
-    n.className = 'n';
-    n.textContent = String(i + 1).padStart(2, '0');
-    const t = document.createElement('span');
-    t.className = 't';
-    t.textContent = text;
-    li.append(n, t);
+    li.textContent = text;
     list.append(li);
   });
 
   const more = document.createElement('li');
   more.className = 'more';
   more.style.setProperty('--i', entries.length);
-  more.innerHTML = '<span class="n" aria-hidden="true"></span><span class="t">…</span>';
+  more.textContent = '…';
   more.setAttribute('aria-label', 'and more');
   list.append(more);
 </script>
