@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pattern / Novelty</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+
+  body {
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+  .vh {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+
+  nav {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+  }
+  nav a {
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #6f665d;
+    text-decoration: none;
+    padding: .78em 1.2em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+  }
+  nav a:hover { color: #2f2a24; background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.14); }
+  nav a:focus-visible { outline: 2px solid #3d7ba8; outline-offset: 2px; }
+  nav a[aria-current="page"] { color: #2f2a24; }
+
+  @media (prefers-reduced-motion: reduce) {
+    nav a { transition-duration: .01s; }
+  }
+</style>
+</head>
+<body>
+<canvas role="img" aria-label="A spiral. At its centre, pattern: a medallion from an oriental rug, whose woven border unwinds along the spiral, fraying as it goes, into novelty: a tangle of crayon scribbles at the outer end."></canvas>
+<h1 class="vh">Pattern and novelty</h1>
+<nav aria-label="Versions">
+  <a href="spiral-words.html">Words</a>
+  <a href="spiral-images.html" aria-current="page">Images</a>
+</nav>
+
+<script>
+(() => {
+  const cvs = document.querySelector('canvas');
+  const ctx = cvs.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+
+  // Vegetable-dye rug palette: madder, indigo, undyed wool, weld-and-madder gold.
+  const RUG = {
+    red: '#9b2d24', indigo: '#25385c', ivory: '#efe3c8',
+    gold: '#c9962f', brown: '#3b2417', rose: '#c56a50', green: '#57704a',
+  };
+  const CRAYONS = ['#d0392b', '#2d5db0', '#3d9447', '#e8862a', '#7b4c9f', '#d9a91f'];
+
+  const TURNS = 2.15;
+  const BOIL_FPS = 8;   // crayon lines re-jitter at drawn-animation rate, not display rate
+
+  let W, H, dpr, cx, cy, R, M, bandW, tangleR, path, cw;
+  let rugC, rugX, crayC, crayX, medC, knotPat, grainPat, tangle;
+
+  const hash = n => { const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
+  const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+  const smooth = (a, b, x) => { x = clamp((x - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); };
+  function rng(seed) {
+    return () => {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // Archimedean spiral resampled to even arc length: every position below is
+  // "distance along the spiral", which is what lets the rug border travel.
+  function makePath(r0, r1, turns) {
+    const N = 6000, TH = turns * Math.PI * 2;
+    const rx = new Float64Array(N + 1), ry = new Float64Array(N + 1), rs = new Float64Array(N + 1);
+    rx[0] = r0;
+    for (let i = 1; i <= N; i++) {
+      const u = i / N, th = u * TH, r = r0 + (r1 - r0) * u;
+      rx[i] = r * Math.cos(th); ry[i] = r * Math.sin(th);
+      rs[i] = rs[i - 1] + Math.hypot(rx[i] - rx[i - 1], ry[i] - ry[i - 1]);
+    }
+    const L = rs[N], n = Math.floor(L) + 1;
+    const X = new Float32Array(n), Y = new Float32Array(n), TX = new Float32Array(n), TY = new Float32Array(n);
+    for (let i = 0, j = 0; i < n; i++) {
+      while (j < N - 1 && rs[j + 1] < i) j++;
+      const f = (i - rs[j]) / ((rs[j + 1] - rs[j]) || 1);
+      X[i] = rx[j] + (rx[j + 1] - rx[j]) * f;
+      Y[i] = ry[j] + (ry[j + 1] - ry[j]) * f;
+    }
+    for (let i = 0; i < n; i++) {
+      const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1);
+      const dx = X[b] - X[a], dy = Y[b] - Y[a], d = Math.hypot(dx, dy) || 1;
+      TX[i] = dx / d; TY[i] = dy / d;
+    }
+    return { X, Y, TX, TY, L, n };
+  }
+  const P = { x: 0, y: 0, tx: 0, ty: 0 };
+  function at(s) {
+    const f = clamp(s, 0, path.n - 1), i = Math.min(path.n - 2, f | 0), a = f - i;
+    P.x = path.X[i] + (path.X[i + 1] - path.X[i]) * a;
+    P.y = path.Y[i] + (path.Y[i + 1] - path.Y[i]) * a;
+    P.tx = path.TX[i]; P.ty = path.TY[i];
+    return P;
+  }
+  // A point offset n across the spiral at s, as plain numbers.
+  const off = (s, n) => { const p = at(s); return [p.x - p.ty * n, p.y + p.tx * n]; };
+
+  /* ---------- the medallion ---------- */
+
+  function polygon(g, sides, r, rot) {
+    g.beginPath();
+    for (let i = 0; i < sides; i++) {
+      const a = rot + i * Math.PI * 2 / sides;
+      i ? g.lineTo(r * Math.cos(a), r * Math.sin(a)) : g.moveTo(r * Math.cos(a), r * Math.sin(a));
+    }
+    g.closePath();
+  }
+  // Two overlapping squares: the inner vertices fall at r·cos45°/cos22.5°.
+  function star8(g, r, rot) {
+    const ri = r * Math.SQRT1_2 / Math.cos(Math.PI / 8);
+    g.beginPath();
+    for (let i = 0; i < 16; i++) {
+      const a = rot + i * Math.PI / 8, rr = i % 2 ? ri : r;
+      i ? g.lineTo(rr * Math.cos(a), rr * Math.sin(a)) : g.moveTo(rr * Math.cos(a), rr * Math.sin(a));
+    }
+    g.closePath();
+  }
+  function diamond(g, x, y, a, l, w) {
+    const c = Math.cos(a), s = Math.sin(a);
+    g.beginPath();
+    g.moveTo(x + c * l, y + s * l);
+    g.lineTo(x - s * w, y + c * w);
+    g.lineTo(x - c * l, y - s * l);
+    g.lineTo(x + s * w, y - c * w);
+    g.closePath();
+  }
+
+  // Drawn once per resize into its own canvas, in unit radius.
+  function drawMedallion(g, size) {
+    const T = Math.PI * 2;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, size, size);
+    g.translate(size / 2, size / 2);
+    g.scale(size / 2 * 0.98, size / 2 * 0.98);
+    g.lineJoin = 'round';
+
+    polygon(g, 8, 1, Math.PI / 8); g.fillStyle = RUG.indigo; g.fill();
+    polygon(g, 8, 0.93, Math.PI / 8); g.fillStyle = RUG.ivory; g.fill();
+
+    // Sawtooth guard, red teeth on undyed ground.
+    g.fillStyle = RUG.red;
+    for (let i = 0; i < 32; i++) {
+      const a = i * T / 32, h = T / 64;
+      g.beginPath();
+      g.moveTo(0.78 * Math.cos(a - h), 0.78 * Math.sin(a - h));
+      g.lineTo(0.87 * Math.cos(a), 0.87 * Math.sin(a));
+      g.lineTo(0.78 * Math.cos(a + h), 0.78 * Math.sin(a + h));
+      g.fill();
+    }
+    g.beginPath(); g.arc(0, 0, 0.785, 0, T); g.fillStyle = RUG.red; g.fill();
+    g.beginPath(); g.arc(0, 0, 0.785, 0, T); g.strokeStyle = RUG.brown; g.lineWidth = 0.018; g.stroke();
+
+    // Small ivory "eyes" on the field between the star's points.
+    g.fillStyle = RUG.ivory;
+    for (let i = 0; i < 8; i++) {
+      const a = (i + 0.5) * T / 8;
+      diamond(g, 0.7 * Math.cos(a), 0.7 * Math.sin(a), a, 0.05, 0.035); g.fill();
+    }
+
+    star8(g, 0.68, 0); g.fillStyle = RUG.ivory; g.fill();
+    g.strokeStyle = RUG.brown; g.lineWidth = 0.016; g.stroke();
+    star8(g, 0.58, 0); g.fillStyle = RUG.indigo; g.fill();
+
+    for (let i = 0; i < 8; i++) {
+      const a = i * T / 8;
+      diamond(g, 0.42 * Math.cos(a), 0.42 * Math.sin(a), a, 0.11, 0.055);
+      g.fillStyle = RUG.gold; g.fill();
+      diamond(g, 0.42 * Math.cos(a), 0.42 * Math.sin(a), a, 0.045, 0.022);
+      g.fillStyle = RUG.red; g.fill();
+      const b = a + T / 16;
+      g.beginPath(); g.arc(0.46 * Math.cos(b), 0.46 * Math.sin(b), 0.022, 0, T);
+      g.fillStyle = RUG.ivory; g.fill();
+    }
+
+    g.fillStyle = RUG.rose;
+    for (let i = 0; i < 8; i++) {
+      g.save(); g.rotate(i * T / 8 + T / 16);
+      g.beginPath(); g.ellipse(0.19, 0, 0.12, 0.055, 0, 0, T); g.fill();
+      g.restore();
+    }
+    g.beginPath(); g.arc(0, 0, 0.12, 0, T); g.fillStyle = RUG.gold; g.fill();
+    star8(g, 0.075, Math.PI / 8); g.fillStyle = RUG.indigo; g.fill();
+    g.beginPath(); g.arc(0, 0, 0.022, 0, T); g.fillStyle = RUG.ivory; g.fill();
+  }
+
+  /* ---------- textures ---------- */
+
+  // One knot: dark at the right and bottom where it meets its neighbours. Laid
+  // over the whole rug layer in screen space, so everything reads as pile.
+  function makeKnot() {
+    const n = Math.max(3, Math.round(3.5 * dpr));
+    const c = document.createElement('canvas'); c.width = c.height = n;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgba(40,22,12,.20)';
+    g.fillRect(n - 1, 0, 1, n); g.fillRect(0, n - 1, n, 1);
+    g.fillStyle = 'rgba(255,248,230,.10)';
+    g.fillRect(0, 0, n - 1, 1);
+    return ctx.createPattern(c, 'repeat');
+  }
+  // Paper tooth: specks the wax skipped over. Punched out of the crayon layer.
+  function makeGrain() {
+    const n = 160, c = document.createElement('canvas'); c.width = c.height = n;
+    const g = c.getContext('2d'), img = g.createImageData(n, n), r = rng(7);
+    for (let i = 0; i < n * n; i++) {
+      const v = r();
+      img.data[i * 4 + 3] = v < 0.16 ? 90 + r() * 120 : v < 0.34 ? 35 : 0;
+    }
+    g.putImageData(img, 0, 0);
+    return ctx.createPattern(c, 'repeat');
+  }
+
+  // The scribble ball, in unit radius: wandering strokes that keep their
+  // heading for a while and are pulled back in when they reach the edge.
+  function makeTangle() {
+    const r = rng(1913), strokes = [];
+    for (let j = 0; j < 7; j++) {
+      let x = (r() - 0.5) * 0.5, y = (r() - 0.5) * 0.5, a = r() * Math.PI * 2, turn = 0;
+      const bias = (r() < 0.5 ? -1 : 1) * (0.18 + r() * 0.25);
+      const pts = [];
+      const n = 160 + (r() * 140 | 0);
+      for (let i = 0; i < n; i++) {
+        turn = turn * 0.9 + (r() - 0.5) * 0.55;
+        a += turn + bias;
+        x += Math.cos(a) * 0.055; y += Math.sin(a) * 0.055;
+        const d = Math.hypot(x, y);
+        if (d > 0.82) {
+          let diff = Math.atan2(-y, -x) - a;
+          diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+          a += diff * 0.35;
+        }
+        pts.push(x, y);
+      }
+      strokes.push({ pts, color: CRAYONS[j % CRAYONS.length], seed: j * 101 });
+    }
+    return strokes;
+  }
+
+  /* ---------- layout ---------- */
+
+  function canvasLike() {
+    const c = document.createElement('canvas');
+    c.width = cvs.width; c.height = cvs.height;
+    return c;
+  }
+
+  function build() {
+    W = innerWidth; H = innerHeight; dpr = Math.min(2, devicePixelRatio || 1);
+    cvs.width = Math.round(W * dpr); cvs.height = Math.round(H * dpr);
+    cx = W / 2; cy = (H - 40) / 2;
+    R = Math.max(120, Math.min(W / 2 - 12, (H - 100) / 2));
+    M = R * 0.2;
+    bandW = R * 0.085;
+    tangleR = R * 0.2;
+    cw = Math.max(1.8, R * 0.0085);
+    // The border starts under the medallion's edge, so it reads as coming
+    // out of it; the outer end stops short enough for the tangle to fit.
+    path = makePath(M * 0.6, R - tangleR * 1.25, TURNS);
+
+    rugC = canvasLike(); rugX = rugC.getContext('2d');
+    crayC = canvasLike(); crayX = crayC.getContext('2d');
+    medC = document.createElement('canvas');
+    medC.width = medC.height = Math.ceil(M * 2 * dpr) + 4;
+    drawMedallion(medC.getContext('2d'), medC.width);
+    knotPat = makeKnot();
+    grainPat = makeGrain();
+    tangle = tangle || makeTangle();
+  }
+
+  /* ---------- frame ---------- */
+
+  function drawBand(g, t) {
+    const L = path.L, cl = bandW * 0.92, h = bandW / 2, v = bandW * 0.55;
+    const shift = t * v;
+    const BAND_END = 0.66;
+
+    // Cells are fixed to the cloth, numbered from the medallion out, and carried
+    // along the spiral. Each frays by its own amounts as it travels — drifts,
+    // turns, shrinks, and eventually drops out — so the loosening is ragged.
+    for (let i = Math.floor(-shift / cl) - 1; ; i++) {
+      const sc = i * cl + shift;
+      const u = sc / L;
+      if (u > BAND_END) break;
+      if (sc < -cl) continue;
+      const p = 1 - smooth(0.2, BAND_END, u);      // 1 = intact, 0 = gone
+      const f = 1 - p;
+      if (hash(i * 9.1 + 3) > p * 1.3) continue;
+      const alpha = Math.pow(p, 0.7);
+
+      const c = at(Math.max(0, sc));
+      const jn = f * bandW * 1.3 * (hash(i * 1.7) - 0.5) * 2;
+      const jt = f * cl * 0.6 * (hash(i * 2.9) - 0.5) * 2;
+      const rot = f * 1.4 * (hash(i * 4.3) - 0.5) * 2;
+      const sc2 = 1 - 0.4 * f;
+      const ox = c.x, oy = c.y;
+
+      g.save();
+      g.globalAlpha = alpha;
+      g.translate(ox - c.ty * jn + c.tx * jt, oy + c.tx * jn + c.ty * jt);
+      g.rotate(rot);
+      g.scale(sc2, sc2);
+      g.translate(-ox, -oy);
+
+      // Bands across the border are curved quads read straight off the
+      // spiral, so neighbouring cells meet without wedge gaps on the bend.
+      const sA = sc - cl / 2 - 0.6, sB = sc + cl / 2 + 0.6;
+      const quad = (n0, n1, fill) => {
+        const a = off(sA, n0), b = off(sB, n0), m1 = off(sc, n0),
+              d = off(sA, n1), e = off(sB, n1), m2 = off(sc, n1);
+        g.beginPath();
+        g.moveTo(a[0], a[1]); g.lineTo(m1[0], m1[1]); g.lineTo(b[0], b[1]);
+        g.lineTo(e[0], e[1]); g.lineTo(m2[0], m2[1]); g.lineTo(d[0], d[1]);
+        g.closePath(); g.fillStyle = fill; g.fill();
+      };
+      quad(-h, h, RUG.ivory);
+      quad(-h, -h * 0.7, RUG.red);
+      quad(h * 0.7, h, RUG.red);
+      quad(-h * 0.62, -h * 0.54, RUG.indigo);
+      quad(h * 0.54, h * 0.62, RUG.indigo);
+
+      // Alternating motif, set in the cell's own frame.
+      const a = Math.atan2(c.ty, c.tx);
+      g.translate(ox, oy); g.rotate(a);
+      if (i % 2 === 0) {
+        diamond(g, 0, 0, 0, cl * 0.36, h * 0.44); g.fillStyle = RUG.indigo; g.fill();
+        diamond(g, 0, 0, 0, cl * 0.17, h * 0.21); g.fillStyle = RUG.gold; g.fill();
+      } else {
+        diamond(g, 0, 0, Math.PI / 4, h * 0.3, h * 0.3); g.fillStyle = RUG.green; g.fill();
+        g.fillStyle = RUG.red;
+        for (let q = 0; q < 4; q++) {
+          const b = q * Math.PI / 2;
+          g.beginPath(); g.arc(Math.cos(b) * h * 0.3, Math.sin(b) * h * 0.3, h * 0.1, 0, Math.PI * 2); g.fill();
+        }
+      }
+      g.restore();
+    }
+  }
+
+  function drawCrayonTrail(g, t, boil) {
+    const L = path.L, v = bandW * 0.55;
+    // Each strand loosens out of the border at its own point, then wanders
+    // further and starts to loop. The loop radius outgrows its wavelength
+    // towards the tip, which is what turns waves into scribble.
+    for (let j = 0; j < 5; j++) {
+      const uStart = 0.2 + j * 0.055;
+      const f1 = 0.06 + hash(j + 1) * 0.04, f2 = 0.017 + hash(j + 5) * 0.01;
+      const ph1 = hash(j + 9) * 40, ph2 = hash(j + 13) * 40, ph3 = hash(j + 17) * 40;
+      const lam = bandW * (1.3 + hash(j + 21) * 0.8), w3 = Math.PI * 2 / lam;
+      const lane = (hash(j + 25) - 0.5) * bandW * 0.8;
+      const color = CRAYONS[j];
+
+      let prev = null;
+      const step = 3;
+      for (let s = uStart * L; s <= L; s += step) {
+        const u = s / L, m = s - t * v;
+        const q = smooth(uStart, 1, u);
+        // Swell and loop rate both wander, so no two loops come out the same
+        // size or spacing — even loops read as a garland, not a scribble.
+        const swell = 0.55 + 0.45 * Math.sin(m * 0.021 + ph2) * Math.sin(m * 0.0083 + ph1);
+        const A = bandW * (0.12 + 1.1 * q * q) * swell;
+        const rho = bandW * 0.75 * smooth(uStart + 0.12, 1, u) * (0.35 + 0.65 * Math.abs(Math.sin(m * 0.013 + ph3)));
+        const th = m * w3 + ph3 + 2.4 * Math.sin(m * 0.017 + ph1) + 1.3 * Math.sin(m * 0.047 + ph2);
+        const n = lane * (1 - smooth(uStart, 0.9, u)) +
+                  A * (Math.sin(m * f1 + ph1) * 0.5 + Math.sin(m * f2 + ph2) * 0.3 +
+                       Math.sin(m * (f1 * 2.7) + ph3) * 0.2) +
+                  rho * Math.sin(th);
+        const tg = rho * 1.3 * Math.cos(th);
+        const p = at(s);
+        const bi = Math.round(s / step);
+        const jx = (hash(bi * 3.1 + boil * 17 + j) - 0.5) * 1.4;
+        const jy = (hash(bi * 5.7 + boil * 29 + j) - 0.5) * 1.4;
+        const x = p.x - p.ty * n + p.tx * tg + jx, y = p.y + p.tx * n + p.ty * tg + jy;
+        if (prev) {
+          const grow = smooth(uStart * L, uStart * L + bandW * 4, s);
+          g.globalAlpha = 0.9 * grow;
+          g.lineWidth = cw * (0.5 + 0.5 * grow);
+          g.strokeStyle = color;
+          g.beginPath(); g.moveTo(prev[0], prev[1]); g.lineTo(x, y); g.stroke();
+        }
+        prev = [x, y];
+      }
+    }
+    g.globalAlpha = 1;
+  }
+
+  function drawTangle(g, t, boil) {
+    const tip = at(path.L);
+    const ox = tip.x + tip.tx * tangleR * 0.55, oy = tip.y + tip.ty * tangleR * 0.55;
+    g.save();
+    g.translate(ox, oy);
+    g.rotate(t * 0.06);
+    g.lineWidth = cw * 0.85;
+    g.globalAlpha = 0.9;
+    for (const st of tangle) {
+      const pts = st.pts, n = pts.length / 2;
+      const P2 = i => {
+        const k = i * 2;
+        // Slow drift keeps the ball alive between boils.
+        const d = 0.03 * Math.sin(t * 0.7 + i * 0.13 + st.seed);
+        const jx = (hash(i * 3.3 + boil * 13 + st.seed) - 0.5) * 1.4 / tangleR;
+        const jy = (hash(i * 7.1 + boil * 19 + st.seed) - 0.5) * 1.4 / tangleR;
+        return [(pts[k] + d + jx) * tangleR, (pts[k + 1] - d + jy) * tangleR];
+      };
+      g.beginPath();
+      let a = P2(0); g.moveTo(a[0], a[1]);
+      for (let i = 1; i < n - 1; i++) {
+        const b = P2(i), c = P2(i + 1);
+        g.quadraticCurveTo(b[0], b[1], (b[0] + c[0]) / 2, (b[1] + c[1]) / 2);
+      }
+      g.strokeStyle = st.color;
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  function frame(t) {
+    const boil = Math.floor(t * BOIL_FPS) % 3;   // three drawings, cycled
+
+    // Rug layer
+    rugX.setTransform(1, 0, 0, 1, 0, 0);
+    rugX.globalCompositeOperation = 'source-over';
+    rugX.clearRect(0, 0, rugC.width, rugC.height);
+    rugX.setTransform(dpr, 0, 0, dpr, cx * dpr, cy * dpr);
+    drawBand(rugX, t);
+    rugX.save();
+    rugX.rotate(-t * 0.035);
+    const ms = medC.width / dpr;
+    rugX.drawImage(medC, -ms / 2, -ms / 2, ms, ms);
+    rugX.restore();
+    rugX.setTransform(1, 0, 0, 1, 0, 0);
+    rugX.globalCompositeOperation = 'source-atop';
+    rugX.fillStyle = knotPat;
+    rugX.fillRect(0, 0, rugC.width, rugC.height);
+
+    // Crayon layer
+    crayX.setTransform(1, 0, 0, 1, 0, 0);
+    crayX.globalCompositeOperation = 'source-over';
+    crayX.clearRect(0, 0, crayC.width, crayC.height);
+    crayX.setTransform(dpr, 0, 0, dpr, cx * dpr, cy * dpr);
+    crayX.lineCap = 'round';
+    crayX.lineJoin = 'round';
+    drawCrayonTrail(crayX, t, boil);
+    drawTangle(crayX, t, boil);
+    crayX.setTransform(1, 0, 0, 1, 0, 0);
+    crayX.globalCompositeOperation = 'destination-out';
+    crayX.fillStyle = grainPat;
+    crayX.fillRect(0, 0, crayC.width, crayC.height);
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    ctx.drawImage(rugC, 0, 0);
+    // Multiply, so crossing strokes darken where they overlap, as wax does.
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.drawImage(crayC, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  let t0 = null, raf = 0;
+  function loop(now) {
+    if (t0 === null) t0 = now;
+    frame((now - t0) / 1000);
+    raf = requestAnimationFrame(loop);
+  }
+  function start() {
+    cancelAnimationFrame(raf);
+    build();
+    if (reduce.matches) frame(40);
+    else raf = requestAnimationFrame(loop);
+  }
+
+  addEventListener('resize', start);
+  reduce.addEventListener('change', start);
+  start();
+})();
+</script>
+</body>
+</html>
