@@ -13,7 +13,7 @@ which one the file you're editing belongs to before matching anything.
 Heirlloom posts under `heirlloom/`. Dark sidebar nav, `'Crimson Pro', Georgia,
 serif`, shared `styles.css`.
 
-**New** — `index.html` and `bookshelf.html`. Warm paper background, wooden
+**New** — `index.html`, `bookshelf.html` and `thoughts.html`. Warm paper background, wooden
 alphabet blocks, quiet uppercase controls. Self-contained, does not use
 `styles.css`. **`index.html` is the reference for the new direction, and the
 tokens below are taken from it.**
@@ -26,6 +26,7 @@ When redesigning a page, target the new language unless told otherwise.
 |---|---|
 | `index.html` | **Live home page, and the style reference for the new language.** Self-contained apart from the favicon and the analytics tag. |
 | `bookshelf.html` | The reading list. New language. Book data is the `books` array near the end, one object per book; the comment above it names the fields. |
+| `thoughts.html` | Writing → Thoughts. Entries drift in and out of focus; the field in the foreground catches the ones that match. New language. Entries are the `THOUGHTS` array, newest first; `tags` feed the matching. The seed words under the field should be ones that actually match something. |
 | `reading.html` | Redirect stub to `bookshelf.html`, kept because the old address was linked and bookmarked. Don't add books here. |
 | `favicon-block.svg` | Tab icon: the red "A" block, flattened from its live pose. |
 | `styles.css` | Old design language only. |
@@ -40,7 +41,7 @@ deploys; only `main` reaches acld.xyz. It holds:
 | File | What it is |
 |---|---|
 | `home-draft.html` | The draft `index.html` was promoted from. Now **stale**: it still carries the animated root system under Writing, and a third child. Kept because the root animation lives nowhere else. |
-| `thoughts.html` | Writing → Thoughts. Entries drift in and out of focus; the field in the foreground catches the ones that match. New language. Entries are placeholder. Its link is held out of the live menu; re-add when it ships. Also the only page carrying no analytics tag. |
+| `thoughts.html` | Stale copy with fourteen placeholder entries. The live page is on `main`; this one is only useful for seeing the design with a full field. |
 | `pine-tree.html` | Illustration library — six versions of a pine tree icon, none in use. Shelved, not dead. |
 | `reading-v2.html`, `reading-v3.html`, `reading-tesseract.html` | Earlier reading-list redesign attempts, superseded by `bookshelf.html`. |
 | `fatherhood-v2.html`, `fatherhood-panorama.html`, `index-v2.html`, `golden-eagle.html`, `lightning-test.html`, `wordmark-lines.html` | Other drafts and experiments. |
@@ -232,14 +233,16 @@ Canon → `links.html`, Contact → `mailto:adam@acld.xyz`.
 **Writing is a `<button>`, not a link** — it toggles a submenu rather than
 navigating, and has no page of its own. Still open.
 
-Writing's children are Fatherhood → `fatherhood.html` and Research →
-`research.html`, revealed as a plain row that fades up under the button. An
-earlier version grew an animated root system down to three children; that was
-removed from the live page and survives only in `home-draft.html` on the
-`drafts` branch. Thoughts is the third child and is commented out of the menu
-until `thoughts.html` ships.
+Writing's children are Fatherhood → `fatherhood.html`, Research →
+`research.html` and Thoughts → `thoughts.html`, revealed as a plain row that
+fades up under the button. An earlier version grew an animated root system down
+to three children; that was removed from the live page and survives only in
+`home-draft.html` on the `drafts` branch.
 
-**The home page and Bookshelf are in the new language.** About and Canon are
+Thoughts shipped in November 2026 with one real entry ("A wave"); the
+placeholder entries it was designed against stay on the `drafts` branch.
+
+**The home page, Bookshelf and Thoughts are in the new language.** About and Canon are
 still the old one, so the menu drops visitors into a different-looking site —
 a known transitional state, to be made uniform in a later pass. Naming is
 consistent though: Reading List → Bookshelf and Links → Canon were both renamed

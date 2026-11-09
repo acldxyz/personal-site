@@ -257,10 +257,12 @@
   }
 
   .writing-sub.open a:nth-of-type(2) { transition-delay: .06s; }
+  .writing-sub.open a:nth-of-type(3) { transition-delay: .12s; }
 
   @media (prefers-reduced-motion: reduce) {
     .menu a, .writing-toggle, .writing-sub a { transition-duration: .01s; }
-    .writing-sub.open a:nth-of-type(2) { transition-delay: 0s; }
+    .writing-sub.open a:nth-of-type(2),
+    .writing-sub.open a:nth-of-type(3) { transition-delay: 0s; }
   }
 
   /* Quiet until it has something to undo: the page loads as just the name,
@@ -347,11 +349,10 @@
   <a href="links.html">Canon</a>
   <a href="mailto:adam@acld.xyz">Contact</a>
 
-  <!-- Thoughts belongs here too, but thoughts.html is still a draft and is not
-       deployed — the link would 404. Re-add it when that page ships. -->
   <div class="writing-sub" id="writing-sub" inert>
     <a href="fatherhood.html">Fatherhood</a>
     <a href="research.html">Research</a>
+    <a href="thoughts.html">Thoughts</a>
   </div>
 </nav>
 

@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thoughts — Adam Dawson</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S9B2L8ZZLW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-S9B2L8ZZLW');
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  :root {
+    --ink: #6f665d;
+    --ink-strong: #2f2a24;
+    --ink-quiet: #8a8076;
+    --focus: #3d7ba8;
+
+    /* One card width drives the whole composition: the drift, the captive
+       column and the reader's measure are all derived from it. */
+    --card: clamp(224px, 23vw, 288px);
+  }
+
+  body {
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%);
+    color: var(--ink);
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ------------------------------------------------------------ masthead */
+
+  .mast {
+    position: fixed;
+    top: clamp(18px, 3vw, 34px);
+    left: clamp(18px, 3vw, 40px);
+    z-index: 40;
+  }
+
+  .wordmark {
+    display: inline-block;
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: -.01em;
+    line-height: 1.15;
+    color: var(--ink-strong);
+    text-decoration: none;
+    opacity: .82;
+    transition: opacity .2s ease;
+  }
+  .wordmark:hover { opacity: 1; }
+  .wordmark:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  .page-label {
+    margin-top: 9px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-quiet);
+  }
+
+  /* --------------------------------------------------------------- drift */
+
+  .drift {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 10;
+  }
+
+  /* Cards are placed by script in page coordinates; one transform carries
+     position, depth and tremble together, so a frame is a single write. */
+  .thought {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--card);
+    display: block;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    background: rgba(250, 248, 243, .72);
+    border: 1px solid rgba(0, 0, 0, .10);
+    border-radius: 14px;
+    padding: 15px 17px 16px;
+    cursor: default;
+    /* filter is deliberately not listed: promoting every card's blur to its
+       own layer costs more than it saves once there are a dozen of them. */
+    will-change: transform, opacity;
+    transition: background-color .3s ease, border-color .3s ease, box-shadow .3s ease;
+  }
+
+  .t-title {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    line-height: 1.45;
+    color: var(--ink-strong);
+  }
+
+  .t-summary {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  .t-date {
+    display: block;
+    margin-top: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #a49a8e;
+  }
+
+  /* Caught: it composes itself on the way in — the summary tightens to two
+     lines so a column of them can be skimmed in one pass — and it takes on
+     the weight of something sitting still. */
+  .thought.caught {
+    background: rgba(252, 250, 246, .95);
+    border-color: rgba(0, 0, 0, .18);
+    padding: 13px 16px 14px;
+    box-shadow: 0 10px 26px -18px rgba(72, 57, 38, .55);
+  }
+
+  .thought.caught .t-summary { -webkit-line-clamp: 2; margin-top: 7px; }
+  .thought.caught .t-date { margin-top: 8px; }
+
+  /* Only once it has actually stopped does it become a target. */
+  .thought.held-state { cursor: pointer; }
+
+  .thought.held-state:hover {
+    border-color: rgba(0, 0, 0, .30);
+    box-shadow: 0 14px 30px -18px rgba(72, 57, 38, .70);
+  }
+
+  .thought:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  /* --------------------------------------------------------------- field */
+  /* The one thing on the page that never moves. */
+
+  .field {
+    position: fixed;
+    z-index: 30;
+    top: clamp(74px, 12vh, 128px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(620px, calc(100vw - 40px));
+    padding: clamp(20px, 3vw, 30px) clamp(20px, 3.4vw, 34px) clamp(16px, 2.4vw, 24px);
+    text-align: center;
+    background: rgba(248, 245, 239, .82);
+    /* re-blurred every frame while cards drift behind it, so it stays to one
+       pass — the saturate it used to carry was not worth a second */
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    border: 1px solid rgba(0, 0, 0, .12);
+    border-radius: 20px;
+    box-shadow: 0 24px 60px -40px rgba(72, 57, 38, .8);
+  }
+
+  .ask {
+    font-size: clamp(15px, 2.2vw, 21px);
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--ink-strong);
+  }
+
+  .field form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: clamp(14px, 2vw, 20px);
+  }
+
+  .field input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--ink-strong);
+    background: rgba(255, 255, 255, .55);
+    border: 1px solid rgba(0, 0, 0, .14);
+    border-radius: 999px;
+    padding: .78em 1.15em;
+    transition: border-color .2s ease, background-color .2s ease;
+  }
+
+  .field input::placeholder { color: #a89e92; }
+  .field input:hover { border-color: rgba(0, 0, 0, .24); }
+  .field input:focus {
+    outline: none;
+    border-color: var(--focus);
+    background: rgba(255, 255, 255, .8);
+  }
+
+  .pill {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: .78em 1.2em;
+    cursor: pointer;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease,
+                opacity .45s ease;
+  }
+
+  .pill:hover {
+    color: var(--ink-strong);
+    background: rgba(0, 0, 0, .05);
+    border-color: rgba(0, 0, 0, .14);
+  }
+  .pill:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .ask-btn { border-color: rgba(0, 0, 0, .14); }
+
+  .field-foot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    margin-top: 12px;
+    min-height: 30px;
+  }
+
+  .hint, .verdict {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+  .hint { color: #a49a8e; }
+  .verdict { color: var(--ink-quiet); }
+
+  .seed {
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-quiet);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: .5em .8em;
+    cursor: pointer;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+  }
+  .seed:hover {
+    color: var(--ink-strong);
+    background: rgba(0, 0, 0, .05);
+    border-color: rgba(0, 0, 0, .14);
+  }
+  .seed:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  /* Nothing to release until something has been caught. */
+  .release {
+    position: fixed;
+    z-index: 40;
+    right: clamp(16px, 3vw, 34px);
+    bottom: clamp(16px, 3vw, 34px);
+    color: var(--ink-quiet);
+    background: rgba(0, 0, 0, .025);
+    border-color: rgba(0, 0, 0, .12);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .release.on { opacity: 1; pointer-events: auto; }
+  .release:hover {
+    color: var(--ink-strong);
+    background: rgba(0, 0, 0, .06);
+    border-color: rgba(0, 0, 0, .26);
+  }
+
+  .scroll-note {
+    position: fixed;
+    z-index: 30;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: clamp(14px, 2.6vw, 26px);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #a49a8e;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .45s ease;
+  }
+  .scroll-note.on { opacity: 1; }
+
+  /* -------------------------------------------------------------- reader */
+
+  .reader {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: clamp(24px, 6vh, 70px) 20px;
+    overflow-y: auto;
+    background: rgba(233, 228, 217, .74);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+    opacity: 0;
+    /* display:flex outranks the UA rule for [hidden], so the overlay has to be
+       shut off explicitly — otherwise it sits invisible over the whole page and
+       eats every click and keystroke. pointer-events covers the fade out, when
+       it is still on screen but no longer open. */
+    pointer-events: none;
+    transition: opacity .3s ease;
+  }
+  .reader[hidden] { display: none; }
+  .reader.on { opacity: 1; pointer-events: auto; }
+
+  .sheet {
+    width: min(640px, 100%);
+    background: #faf8f3;
+    border: 1px solid rgba(0, 0, 0, .12);
+    border-radius: 20px;
+    padding: clamp(26px, 4.4vw, 46px);
+    box-shadow: 0 40px 90px -50px rgba(72, 57, 38, .9);
+    transform: translateY(10px);
+    transition: transform .3s ease;
+  }
+  .reader.on .sheet { transform: translateY(0); }
+
+  .sheet h1 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    line-height: 1.5;
+    color: var(--ink-strong);
+  }
+
+  .sheet .meta {
+    margin-top: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #a49a8e;
+  }
+
+  .sheet .body { margin-top: 22px; }
+
+  .sheet .body p {
+    max-width: 62ch;
+    font-size: 15px;
+    line-height: 1.68;
+    color: #574f47;
+  }
+  .sheet .body p + p { margin-top: 1.05em; }
+
+  /* pulled left by its own padding so the label lines up with the prose */
+  .sheet-close { margin: 26px 0 0 -1.2em; }
+
+  /* ------------------------------------------------------ reduced motion */
+  /* No drift, no tremble: the same thoughts laid out still, and the field
+     filters them where they sit. */
+
+  /* height:auto hands scrolling back to the document, so the grid can run
+     past the fold like an ordinary page. */
+  body.calm { overflow: visible; height: auto; display: flex; flex-direction: column; }
+
+  /* Nothing floats here, so the field has nothing to sit in front of: it takes
+     its place at the head of the document instead — ahead of the drift, which
+     is the only reason this needs to be a flex column. */
+  body.calm .field {
+    order: -1;
+    position: static;
+    transform: none;
+    margin: clamp(74px, 12vh, 128px) auto clamp(24px, 4vh, 40px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  body.calm .drift {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    justify-content: center;
+    gap: 16px;
+    overflow: visible;
+    padding: 0 clamp(18px, 4vw, 48px) 90px;
+  }
+
+  body.calm .thought {
+    position: relative;
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    cursor: pointer;
+    background: rgba(252, 250, 246, .95);
+    border-color: rgba(0, 0, 0, .18);
+  }
+  body.calm .thought.gone { display: none; }
+  body.calm .mast { position: absolute; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .thought, .pill, .seed, .reader, .sheet, .scroll-note { transition-duration: .01s; }
+  }
+
+  @media (max-width: 560px) {
+    .mast { position: absolute; }
+    .field { top: clamp(84px, 14vh, 130px); }
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
+  <div class="page-label">Thoughts</div>
+</header>
+
+<main class="drift" id="drift" aria-label="Thoughts"></main>
+
+<section class="field" id="field">
+  <p class="ask">Have we thought about the same thing?</p>
+  <form id="ask-form" role="search">
+    <label class="sr" for="ask-input">
+      Something you are thinking about, or something you want to see whether I have thought about
+    </label>
+    <input id="ask-input" name="q" type="text" autocomplete="off" spellcheck="false"
+           placeholder="Something on your mind…">
+    <button class="pill ask-btn" type="submit">Ask</button>
+  </form>
+  <div class="field-foot" id="field-foot">
+    <span class="hint" id="hint">Try</span>
+    <button class="seed" type="button">strangers</button>
+    <button class="seed" type="button">joy</button>
+    <button class="seed" type="button">being seen</button>
+  </div>
+  <p class="sr" id="verdict-live" role="status" aria-live="polite"></p>
+</section>
+
+<button class="pill release" id="release" type="button" disabled>Let them go</button>
+<p class="scroll-note" id="scroll-note" aria-hidden="true">Scroll to see the rest</p>
+
+<div class="reader" id="reader" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+  <article class="sheet">
+    <h1 id="sheet-title"></h1>
+    <p class="meta" id="sheet-meta"></p>
+    <div class="body" id="sheet-body"></div>
+    <button class="pill sheet-close" id="sheet-close" type="button">Close</button>
+  </article>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---- the entries ---------------------------------------------------------
+  // Newest first. body is a list of paragraphs; tags feed the matching and
+  // show in the reader, so pick words a visitor might actually type.
+  var THOUGHTS = [
+    {
+      title: 'A wave',
+      date: 'November 2026',
+      tags: ['strangers', 'joy', 'practice'],
+      summary: 'Wave hello at a stranger. There’s joy in seeing someone. There’s joy in being seen.',
+      body: [
+        'Wave hello at a stranger. There’s joy in seeing someone. There’s joy in being seen. The practice works regardless of their acknowledgment or reciprocation.'
+      ]
+    }
+  ];
+
+  // ---- feel ----------------------------------------------------------------
+  var SPEED_MIN   = 5,  SPEED_MAX   = 15;   // px/sec of drift
+  var FOCUS_MIN_S = 13, FOCUS_MAX_S = 22;   // seconds for one pass in and out of focus
+  var BLUR_MAX    = 3.6;                    // px at the far end of that swing
+  var CATCH_K     = 3.1;                    // approach rate toward a captive slot
+  var SETTLE_PX   = 0.7;                    // under this, a thought counts as held
+  var SLOT_GAP    = 12;
+  var COL_TOP_PAD = 20;                     // clearance under the field
+  var LANE_GAP    = 22;                     // between captive lanes
+  var MAX_LANES   = 3;
+
+  // The preview browser reports reduce whatever the machine is set to, which
+  // makes the drift impossible to look at while building it. ?motion forces it
+  // back on; nothing else overrides the setting.
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+                !/[?&]motion\b/.test(location.search);
+
+  var driftEl    = document.getElementById('drift');
+  var fieldEl    = document.getElementById('field');
+  var formEl     = document.getElementById('ask-form');
+  var inputEl    = document.getElementById('ask-input');
+  var footEl     = document.getElementById('field-foot');
+  var hintEl     = document.getElementById('hint');
+  var liveEl     = document.getElementById('verdict-live');
+  var releaseEl  = document.getElementById('release');
+  var noteEl     = document.getElementById('scroll-note');
+  var readerEl   = document.getElementById('reader');
+  var sheetTitle = document.getElementById('sheet-title');
+  var sheetMeta  = document.getElementById('sheet-meta');
+  var sheetBody  = document.getElementById('sheet-body');
+  var closeEl    = document.getElementById('sheet-close');
+
+  // ---- build ---------------------------------------------------------------
+  var items = THOUGHTS.map(function (t, i) {
+    var el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'thought';
+    el.disabled = !reduced;          // only a stopped thought can be selected
+
+    var title = document.createElement('span');
+    title.className = 't-title';
+    title.textContent = t.title;
+
+    var summary = document.createElement('span');
+    summary.className = 't-summary';
+    summary.textContent = t.summary;
+
+    var date = document.createElement('span');
+    date.className = 't-date';
+    date.textContent = t.date;
+
+    el.appendChild(title);
+    el.appendChild(summary);
+    el.appendChild(date);
+    driftEl.appendChild(el);
+
+    el.addEventListener('click', function () { open(i); });
+
+    return {
+      data: t,
+      el: el,
+      hay: (t.title + ' ' + t.summary + ' ' + t.tags.join(' ') + ' ' + t.body.join(' ')).toLowerCase(),
+      x: 0, y: 0, vx: 0, vy: 0, h: 0,
+      phase: Math.random() * Math.PI * 2,
+      rate: 0,
+      wobble: 1,
+      state: 'free',                 // free | catching | held
+      tx: 0, ty: 0,
+      grip: 0,                       // 0 drifting, 1 caught and fully in focus
+      wasTf: '', wasOp: -1, wasBlur: -1, wasZ: -1   // last written, to skip no-op writes
+    };
+  });
+
+  // ---- placement -----------------------------------------------------------
+  var W = 0, H = 0, cardW = 0;
+
+  function measure() {
+    W = driftEl.clientWidth;
+    H = driftEl.clientHeight;
+    cardW = items[0].el.offsetWidth;
+    items.forEach(function (it) { it.h = it.el.offsetHeight; });
+  }
+
+  // Scatter without stacking: a handful of tries per card, keeping whichever
+  // candidate lands furthest from everything already placed.
+  function scatter() {
+    var placed = [];
+    items.forEach(function (it) {
+      var best = null, bestD = -1;
+      for (var k = 0; k < 24; k++) {
+        var c = {
+          x: cardW / 2 + Math.random() * Math.max(1, W - cardW),
+          y: it.h / 2 + Math.random() * Math.max(1, H - it.h)
+        };
+        var d = Infinity;
+        for (var j = 0; j < placed.length; j++) {
+          d = Math.min(d, Math.hypot(c.x - placed[j].x, c.y - placed[j].y));
+        }
+        if (d > bestD) { bestD = d; best = c; }
+      }
+      placed.push(best);
+      it.x = best.x;
+      it.y = best.y;
+
+      var a = Math.random() * Math.PI * 2;
+      var s = SPEED_MIN + Math.random() * (SPEED_MAX - SPEED_MIN);
+      it.vx = Math.cos(a) * s;
+      it.vy = Math.sin(a) * s;
+      it.rate = (Math.PI * 2) / (FOCUS_MIN_S + Math.random() * (FOCUS_MAX_S - FOCUS_MIN_S));
+      it.wobble = 0.6 + Math.random() * 0.8;
+    });
+  }
+
+  // ---- matching ------------------------------------------------------------
+  var STOP = ['the','and','but','for','you','are','was','with','that','this','have',
+              'has','had','not','about','been','from','they','them','than','into',
+              'what','when','where','how','why','does','did','who','its','ive',
+              'think','thinking','thought','thoughts'];
+
+  // Loose on purpose. Any token appearing anywhere in an entry counts; a
+  // trailing s is shaved so "books" still finds "book".
+  function tokens(q) {
+    return q.toLowerCase().split(/[^a-z0-9']+/).filter(function (w) {
+      return w.length > 2 && STOP.indexOf(w) === -1;
+    }).map(function (w) {
+      return w.length > 4 && w.charAt(w.length - 1) === 's' ? w.slice(0, -1) : w;
+    });
+  }
+
+  function matches(q) {
+    var ts = tokens(q);
+    if (!ts.length) return [];
+    var hits = [];
+    items.forEach(function (it) {
+      var score = 0;
+      ts.forEach(function (w) {
+        if (it.hay.indexOf(w) === -1) return;
+        score += 1;
+        if (it.data.tags.some(function (tag) { return tag.indexOf(w) === 0; })) score += 3;
+        if (it.data.title.toLowerCase().indexOf(w) !== -1) score += 2;
+      });
+      if (score) hits.push({ it: it, score: score });
+    });
+    hits.sort(function (a, b) { return b.score - a.score; });
+    return hits.map(function (h) { return h.it; });
+  }
+
+  // ---- captivity -----------------------------------------------------------
+  var held = [];
+  var colScroll = 0, colOverflow = 0, colTop = 0;
+
+  function layoutColumn() {
+    if (!held.length) { colOverflow = 0; noteEl.classList.remove('on'); return; }
+    var top = colTop = fieldEl.getBoundingClientRect().bottom + COL_TOP_PAD;
+    var room = H - top - 24;
+
+    // One lane runs off the bottom long before the page runs out of width, so
+    // take as many lanes as it takes to fit — up to three, past which a catch
+    // stops being skimmable and may as well scroll.
+    var avg = held.reduce(function (s, it) { return s + it.h + SLOT_GAP; }, 0) / held.length;
+    var rows = Math.max(1, Math.floor((room + SLOT_GAP) / avg));
+    var fits = Math.max(1, Math.floor((W - 60) / (cardW + LANE_GAP)));
+    var lanes = Math.max(1, Math.min(MAX_LANES, fits, Math.ceil(held.length / rows)));
+    var per = Math.ceil(held.length / lanes);
+    var laneOf = [];
+    var laneH = [];
+    for (var c = 0; c < lanes; c++) {
+      laneOf.push(held.slice(c * per, (c + 1) * per));
+      laneH.push(laneOf[c].reduce(function (s, it) { return s + it.h + SLOT_GAP; }, -SLOT_GAP));
+    }
+
+    var tallest = Math.max.apply(null, laneH);
+    colOverflow = Math.max(0, tallest - room);
+    colScroll = Math.min(colScroll, colOverflow);
+
+    // A short catch centres in whatever is left under the field; a long one
+    // starts at the top and is moved by the wheel. Both lanes share one top,
+    // so their first cards line up however unequal their heights.
+    var y0 = colOverflow > 0 ? top - colScroll : top + (room - tallest) / 2;
+
+    laneOf.forEach(function (lane, i) {
+      var x = W / 2 + (i - (lanes - 1) / 2) * (cardW + LANE_GAP);
+      var y = y0;
+      lane.forEach(function (it) {
+        it.tx = x;
+        it.ty = y + it.h / 2;
+        y += it.h + SLOT_GAP;
+      });
+    });
+
+    noteEl.classList.toggle('on', colOverflow > 4);
+  }
+
+  function capture(list) {
+    held = list;
+    colScroll = 0;
+    items.forEach(function (it) {
+      if (list.indexOf(it) !== -1) {
+        if (it.state === 'free') it.state = 'catching';
+        it.el.classList.add('caught');
+      } else {
+        it.state = 'free';
+        it.el.disabled = true;
+        it.el.classList.remove('caught', 'held-state');
+      }
+    });
+    // .caught changes their geometry, so heights are stale until it is applied.
+    items.forEach(function (it) { it.h = it.el.offsetHeight; });
+    layoutColumn();
+    releaseEl.classList.toggle('on', held.length > 0);
+    releaseEl.disabled = held.length === 0;
+  }
+
+  function releaseAll(fromUser) {
+    items.forEach(function (it) {
+      if (it.state !== 'free') {
+        // They leave the way they were straining to the whole time: outward,
+        // and faster than they were drifting. Friction pulls it back down.
+        var a = Math.random() * Math.PI * 2;
+        var s = (SPEED_MAX + 22) * (0.8 + Math.random() * 0.5);
+        it.vx = Math.cos(a) * s;
+        it.vy = Math.sin(a) * s;
+      }
+      it.state = 'free';
+      it.el.disabled = !reduced;
+      it.el.classList.remove('caught', 'held-state', 'gone');
+    });
+    items.forEach(function (it) { it.h = it.el.offsetHeight; });
+    held = [];
+    colOverflow = 0;
+    noteEl.classList.remove('on');
+    releaseEl.classList.remove('on');
+    releaseEl.disabled = true;
+    if (fromUser) { inputEl.value = ''; inputEl.focus(); }
+    say('');
+  }
+
+  // The footer holds either the seed words or the verdict, never both.
+  function say(text) {
+    liveEl.textContent = text;
+    hintEl.textContent = text || 'Try';
+    hintEl.className = text ? 'verdict' : 'hint';
+    Array.prototype.forEach.call(footEl.querySelectorAll('.seed'), function (b) {
+      b.hidden = !!text;
+    });
+  }
+
+  // ---- the loop ------------------------------------------------------------
+  var last = 0;
+
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000) || 0;
+    last = now;
+    var t = now / 1000;
+
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      var focus;
+
+      if (it.state === 'free') {
+        it.x += it.vx * dt;
+        it.y += it.vy * dt;
+
+        // Wrap rather than bounce: a thought leaving the frame is still going
+        // somewhere, and re-entering opposite keeps the field evenly grazed.
+        var mx = cardW / 2 + 30, my = it.h / 2 + 30;
+        if (it.x < -mx) it.x = W + mx; else if (it.x > W + mx) it.x = -mx;
+        if (it.y < -my) it.y = H + my; else if (it.y > H + my) it.y = -my;
+
+        // Bleed any escape velocity back down to a drift.
+        var sp = Math.hypot(it.vx, it.vy);
+        if (sp > SPEED_MAX) {
+          var k = Math.max(SPEED_MAX / sp, 1 - dt * 0.55);
+          it.vx *= k; it.vy *= k;
+        }
+
+        it.grip = Math.max(0, it.grip - dt * 1.6);
+        focus = 0.5 + 0.5 * Math.sin(t * it.rate + it.phase);
+        focus = focus + (1 - focus) * it.grip;   // a released thought fades back, never cuts
+        // With something caught, the ones still loose give up the foreground.
+        if (held.length) focus *= 0.45;
+      } else {
+        // Caught. Exponential approach, so the arrival reads as a slowing
+        // rather than a stop.
+        var e = 1 - Math.exp(-CATCH_K * dt);
+        it.x += (it.tx - it.x) * e;
+        it.y += (it.ty - it.y) * e;
+        it.grip = Math.min(1, it.grip + dt * 2.2);
+        focus = 1;
+
+        if (it.state === 'catching' &&
+            Math.abs(it.tx - it.x) < SETTLE_PX && Math.abs(it.ty - it.y) < SETTLE_PX) {
+          it.state = 'held';
+          it.el.disabled = false;
+          it.el.classList.add('held-state');
+        }
+      }
+
+      var dx = 0, dy = 0, rot = 0;
+      if (it.state === 'held') {
+        // Still straining. Two incommensurate frequencies, so the tremble never
+        // finds a rhythm, under a slow envelope that lets it swell and ease.
+        var amp = (0.62 + 0.5 * Math.sin(t * 0.7 + it.phase)) * it.wobble;
+        dx = amp * (Math.sin(t * 7.3 + it.phase) * 0.9 + Math.sin(t * 11.9 + it.phase * 2) * 0.4);
+        dy = amp * (Math.sin(t * 8.9 + it.phase * 1.7) * 0.7 + Math.sin(t * 13.1 + it.phase) * 0.3);
+        rot = amp * 0.16 * Math.sin(t * 6.1 + it.phase * 3);
+      } else if (it.state === 'free') {
+        rot = 1.6 * Math.sin(t * it.rate * 0.8 + it.phase * 1.4);
+      }
+
+      // Tops out at exactly 1, so a caught thought is rendered at its true
+      // size and its text stays crisp for reading.
+      var scale = 0.82 + 0.18 * focus;
+
+      // A long captive column scrolls up behind the field; rather than let a
+      // card show through it, hand it back as it crosses the top of the column.
+      var veil = 1;
+      if (it.state !== 'free' && colOverflow > 0) {
+        veil = Math.max(0, Math.min(1, (it.y + it.h / 2 - colTop) / (it.h * 0.7)));
+      }
+
+      // Sub-pixel, always. At 5-15 px/sec a card advances a tenth of a pixel per
+      // frame, so rounding to whole pixels holds it still for a dozen frames and
+      // then jumps it — which reads as stutter however fast the frames arrive.
+      // The compositor handles the fractions; the tremble depends on them too.
+      var tf = 'translate3d(' + (it.x + dx - cardW / 2).toFixed(2) + 'px,' +
+                                (it.y + dy - it.h / 2).toFixed(2) + 'px,0)' +
+               ' rotate(' + rot.toFixed(3) + 'deg) scale(' + scale.toFixed(4) + ')';
+      if (tf !== it.wasTf) { it.el.style.transform = it.wasTf = tf; }
+
+      // The rest changes far more slowly than the position does, and each write
+      // costs a style recalc — blur costs a re-raster — so they are quantised
+      // and only written when the quantised value actually moves.
+      var op = Math.round((0.20 + 0.80 * focus) * veil * 100) / 100;
+      if (op !== it.wasOp) { it.el.style.opacity = it.wasOp = op; }
+
+      var blur = Math.round((1 - focus) * BLUR_MAX * 4) / 4;   // quarter-pixel steps
+      if (blur !== it.wasBlur) {
+        it.el.style.filter = blur < 0.2 ? 'none' : 'blur(' + blur + 'px)';
+        it.wasBlur = blur;
+      }
+
+      var z = 11 + Math.round(focus * 6) + (it.state === 'free' ? 0 : 9);
+      if (z !== it.wasZ) { it.el.style.zIndex = it.wasZ = z; }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  // ---- reader --------------------------------------------------------------
+  var lastFocused = null;
+
+  function open(i) {
+    if (!reduced && items[i].state !== 'held') return;
+    var t = THOUGHTS[i];
+    lastFocused = document.activeElement;
+    sheetTitle.textContent = t.title;
+    sheetMeta.textContent = t.date + ' · ' + t.tags.join(' · ');
+    sheetBody.textContent = '';
+    t.body.forEach(function (para) {
+      var p = document.createElement('p');
+      p.textContent = para;
+      sheetBody.appendChild(p);
+    });
+    readerEl.hidden = false;
+    requestAnimationFrame(function () { readerEl.classList.add('on'); });
+    closeEl.focus();
+  }
+
+  function close() {
+    readerEl.classList.remove('on');
+    setTimeout(function () { readerEl.hidden = true; }, 300);
+    if (lastFocused && lastFocused.focus) lastFocused.focus();
+  }
+
+  closeEl.addEventListener('click', close);
+  readerEl.addEventListener('click', function (e) { if (e.target === readerEl) close(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!readerEl.hidden) close();
+    else if (held.length || inputEl.value) releaseAll(true);
+  });
+
+  // ---- wiring --------------------------------------------------------------
+  function ask(q) {
+    if (!q.trim()) { releaseAll(false); return; }
+
+    var hits = matches(q);
+
+    if (reduced) {
+      items.forEach(function (it) {
+        it.el.classList.toggle('gone', hits.length > 0 && hits.indexOf(it) === -1);
+      });
+      releaseEl.classList.add('on');
+      releaseEl.disabled = false;
+    } else {
+      capture(hits);
+    }
+
+    if (!hits.length) say('Not yet — nothing of mine has landed there');
+    else if (reduced) say(hits.length === 1 ? 'One match' : hits.length + ' matches');
+    else say(hits.length === 1 ? 'One, and it has stopped' : hits.length + ' have stopped');
+  }
+
+  formEl.addEventListener('submit', function (e) {
+    e.preventDefault();
+    ask(inputEl.value);
+  });
+
+  footEl.addEventListener('click', function (e) {
+    var b = e.target.closest('.seed');
+    if (!b) return;
+    inputEl.value = b.textContent;
+    ask(inputEl.value);
+  });
+
+  releaseEl.addEventListener('click', function () { releaseAll(true); });
+
+  // ---- go ------------------------------------------------------------------
+  if (reduced) {
+    document.body.classList.add('calm');
+    noteEl.remove();
+    // Nothing was ever captive here, so the control is a filter reset.
+    releaseEl.textContent = 'Show all';
+  } else {
+    measure();
+    scatter();
+    // Paint one frame straight away — otherwise every card sits stacked at the
+    // origin until the first animation frame lands. frame() keeps itself going.
+    frame(0);
+
+    window.addEventListener('resize', function () {
+      var oldW = W || 1, oldH = H || 1;
+      measure();
+      items.forEach(function (it) {
+        it.x = it.x / oldW * W;
+        it.y = it.y / oldH * H;
+      });
+      layoutColumn();
+    });
+
+    // A long captive set can outgrow the space under the field. The wheel —
+    // and a drag, on a touch screen — moves the column, never the page.
+    function nudge(dy) {
+      colScroll = Math.max(0, Math.min(colOverflow, colScroll + dy));
+      layoutColumn();
+    }
+
+    window.addEventListener('wheel', function (e) {
+      if (colOverflow <= 0 || !readerEl.hidden) return;
+      nudge(e.deltaY);
+      e.preventDefault();
+    }, { passive: false });
+
+    var dragY = null;
+
+    window.addEventListener('touchstart', function (e) {
+      dragY = e.touches.length === 1 ? e.touches[0].clientY : null;
+    }, { passive: true });
+
+    window.addEventListener('touchmove', function (e) {
+      if (dragY === null || colOverflow <= 0 || !readerEl.hidden) return;
+      var y = e.touches[0].clientY;
+      nudge(dragY - y);
+      dragY = y;
+      e.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('touchend', function () { dragY = null; }, { passive: true });
+  }
+})();
+</script>
+</body>
+</html>
