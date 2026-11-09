@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Is it a grab? — Adam Dawson</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S9B2L8ZZLW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-S9B2L8ZZLW');
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ink: #6f665d;
+    --ink-strong: #2f2a24;
+    --ink-quiet: #8a8076;
+    --focus: #3d7ba8;
+  }
+
+  html, body { min-height: 100%; }
+
+  body {
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%)
+      fixed;
+    color: var(--ink);
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    padding: clamp(14px, 1.6vw, 20px) clamp(16px, 2.8vw, 40px);
+  }
+
+  .wordmark {
+    display: inline-block;
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: -.01em;
+    color: var(--ink-strong);
+    text-decoration: none;
+    opacity: .82;
+    transition: opacity .2s ease;
+  }
+  .wordmark:hover { opacity: 1; }
+  .wordmark:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: clamp(8px, 2vh, 24px) 16px 48px;
+    text-align: center;
+  }
+
+  h1 {
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: clamp(30px, 5.4vw, 54px);
+    letter-spacing: -.02em;
+    line-height: 1;
+    color: var(--ink-strong);
+  }
+
+  /* ------------------------------------------------------------ fields */
+
+  .fields {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px clamp(18px, 4vw, 48px);
+    margin-top: clamp(18px, 3.5vh, 34px);
+  }
+
+  fieldset {
+    border: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  /* A legend refuses to sit inline with its fieldset's contents in most
+     engines, so the visible label is a span and the legend is kept for
+     screen readers only. */
+  legend, .vh {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .field-label,
+  .pill,
+  .prompt,
+  .verdict .name,
+  .actions button {
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    font-size: clamp(10px, 1.05vw, 12px);
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  .field-label { color: var(--ink-quiet); margin-right: .6em; }
+
+  .opt { position: relative; }
+  .opt input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .pill,
+  .actions button {
+    display: inline-block;
+    white-space: nowrap;
+    color: var(--ink);
+    background: none;
+    padding: .78em 1.2em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease,
+                opacity .45s ease;
+  }
+
+  .opt input:hover + .pill,
+  .actions button:hover {
+    color: var(--ink-strong);
+    background: rgba(0, 0, 0, .05);
+    border-color: rgba(0, 0, 0, .14);
+  }
+
+  /* The chosen option holds the hover treatment, the way the open Writing
+     toggle does on the home page, so the row still reads as text with one
+     word picked out of it. */
+  .opt input:checked + .pill {
+    color: var(--ink-strong);
+    background: rgba(0, 0, 0, .05);
+    border-color: rgba(0, 0, 0, .14);
+  }
+
+  .opt input:focus-visible + .pill,
+  .actions button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  /* ------------------------------------------------------------- stage */
+
+  .stage {
+    display: block;
+    width: 100%;
+    height: clamp(300px, 54vh, 520px);
+    margin-top: clamp(4px, 1.5vh, 16px);
+    touch-action: manipulation;
+    cursor: default;
+  }
+  .stage.picking { cursor: pointer; }
+  .stage text {
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    fill: var(--ink-quiet);
+  }
+
+  .zone { fill: rgba(47, 42, 36, 0); outline: none; transition: fill .2s ease; }
+  .zone.hot { fill: rgba(47, 42, 36, .16); }
+  .zone:focus-visible { stroke: var(--focus); stroke-width: 2; }
+
+  /* ----------------------------------------------------------- readout */
+
+  /* Prompt and verdict share one slot, so the page doesn't jump when the
+     answer arrives. */
+  .readout {
+    position: relative;
+    min-height: 150px;
+  }
+
+  .prompt {
+    color: var(--ink-quiet);
+    padding-top: 6px;
+    transition: opacity .3s ease;
+  }
+  .prompt.off { opacity: 0; }
+
+  .verdict {
+    position: absolute;
+    inset: 0 0 auto;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .5s ease-out, transform .5s ease-out;
+  }
+  .verdict.on { opacity: 1; transform: none; }
+
+  .verdict .answer {
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: clamp(34px, 5.6vw, 58px);
+    letter-spacing: -.02em;
+    line-height: 1;
+    color: var(--ink-strong);
+  }
+  .verdict .name { margin-top: 10px; color: var(--ink-strong); }
+  .verdict.banned .name { text-decoration: line-through; text-decoration-thickness: 2px; }
+  .verdict .note {
+    max-width: 34em;
+    margin: 10px auto 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  /* Progressive disclosure: nothing to replay or back out of until a rider
+     has been on the board. */
+  .actions button { opacity: 0; pointer-events: none; }
+  .actions button.on { opacity: 1; pointer-events: auto; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pill, .actions button, .prompt, .verdict, .zone, .wordmark {
+      transition-duration: .01s;
+      transition-delay: 0s;
+    }
+    .verdict { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="wordmark" href="index.html">Adam Dawson</a>
+</header>
+
+<main>
+  <h1>Is it a grab?</h1>
+
+  <div class="fields">
+    <fieldset>
+      <legend>Stance</legend>
+      <span class="field-label" aria-hidden="true">Stance</span>
+      <label class="opt"><input type="radio" name="stance" value="regular" checked><span class="pill">Regular</span></label>
+      <label class="opt"><input type="radio" name="stance" value="goofy"><span class="pill">Goofy</span></label>
+    </fieldset>
+    <fieldset>
+      <legend>Hand</legend>
+      <span class="field-label" aria-hidden="true">Hand</span>
+      <label class="opt"><input type="radio" name="hand" value="front" checked><span class="pill">Front</span></label>
+      <label class="opt"><input type="radio" name="hand" value="back"><span class="pill">Back</span></label>
+    </fieldset>
+  </div>
+
+  <svg class="stage picking" id="stage" role="group" aria-label="Snowboard. Pick a spot to grab."></svg>
+
+  <div class="readout">
+    <p class="prompt" id="prompt">Pick a spot on the board</p>
+    <section class="verdict" id="verdict" aria-live="polite">
+      <p class="answer" id="answer"></p>
+      <p class="name" id="name"></p>
+      <p class="note" id="note"></p>
+    </section>
+  </div>
+
+  <div class="actions">
+    <button type="button" id="again" disabled>Again</button>
+    <button type="button" id="repick" disabled>Pick another spot</button>
+  </div>
+</main>
+
+<script>
+(function () {
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var NS = 'http://www.w3.org/2000/svg';
+  var svg = document.getElementById('stage');
+
+  /* ---------------------------------------------------------------- data */
+
+  /* Everything is modelled for a regular rider: nose toward +u, rider facing
+     the toe edge (+v). Goofy is the same rider mirrored, which is exactly what
+     goofy is, so the grab table never needs a second copy. Front hand is
+     always the nose-side hand. */
+  var ZONES = [
+    { id: 'nose',       u0:  60, u1:  75, side:  0, at:  71, label: 'The nose' },
+    { id: 'toe-front',  u0:  20, u1:  60, side:  1, at:  42, label: 'Toe edge, ahead of the front foot' },
+    { id: 'heel-front', u0:  20, u1:  60, side: -1, at:  42, label: 'Heel edge, ahead of the front foot' },
+    { id: 'toe-mid',    u0: -20, u1:  20, side:  1, at:   0, label: 'Toe edge, between the feet' },
+    { id: 'heel-mid',   u0: -20, u1:  20, side: -1, at:   0, label: 'Heel edge, between the feet' },
+    { id: 'toe-back',   u0: -60, u1: -20, side:  1, at: -42, label: 'Toe edge, behind the back foot' },
+    { id: 'heel-back',  u0: -60, u1: -20, side: -1, at: -42, label: 'Heel edge, behind the back foot' },
+    { id: 'tail',       u0: -75, u1: -60, side:  0, at: -71, label: 'The tail' }
+  ];
+  var ZONE = {};
+  ZONES.forEach(function (z) { ZONE[z.id] = z; });
+
+  // yes: a named grab. meh: reachable, nameless. no: off limits.
+  var GRABS = {
+    'front:nose':       ['yes', 'Nose grab', 'Front hand on the nose.'],
+    'front:toe-front':  ['yes', 'Mute', 'Front hand, toe edge, out ahead of the front foot. Pull the board behind you with it and it becomes a Japan.'],
+    'front:toe-mid':    ['yes', 'Mute', 'Front hand on the toe edge, between the feet.'],
+    'front:toe-back':   ['meh', 'Unnamed', 'Front hand reaching past both feet to the toe edge. You can get there. Nobody has bothered to name it.'],
+    'front:heel-front': ['yes', 'Melon', 'Front hand on the heel edge. Usually taken between the feet; out ahead of the binding still counts.'],
+    'front:heel-mid':   ['yes', 'Melon', 'Front hand, heel edge, between the feet. Bone it out until the board is level with your head and it’s a Method.'],
+    'front:heel-back':  ['meh', 'Unnamed', 'Front hand across the body to the heel edge behind the back foot. A contortion, not a grab.'],
+    'front:tail':       ['yes', 'Seatbelt', 'Front hand reaching across the body to the tail.'],
+    'back:nose':        ['yes', 'Crail', 'Back hand all the way up to the nose — the skateboard definition. Snowboarders often take it on the toe edge just behind.'],
+    'back:toe-front':   ['yes', 'Crail', 'Back hand across to the toe edge, up toward the nose. Take it right by the front binding and people start calling it a nindy.'],
+    'back:toe-mid':     ['yes', 'Indy', 'Back hand on the toe edge, between the feet. The one everyone learns first.'],
+    'back:toe-back':    ['no',  'Tindy', 'Back hand on the toe edge behind the back foot. Off limits. The rider declines.'],
+    'back:heel-front':  ['meh', 'Unnamed', 'Back hand across the body to the heel edge, out past the front foot. Reachable in theory, unnamed in practice.'],
+    'back:heel-mid':    ['yes', 'Stalefish', 'Back hand reaching behind the back leg to the heel edge, between the feet. Go through the legs instead and it’s a Roast Beef.'],
+    'back:heel-back':   ['yes', 'Tailfish', 'Back hand on the heel edge, behind the back foot.'],
+    'back:tail':        ['yes', 'Tail grab', 'Back hand on the tail.']
+  };
+  var ANSWER = { yes: 'Yes.', meh: 'Not really.', no: 'No.' };
+
+  /* ------------------------------------------------------------- palette */
+
+  function rgb(c, f) {
+    f = f || 1;
+    return 'rgb(' + Math.round(c[0] * f) + ',' + Math.round(c[1] * f) + ',' + Math.round(c[2] * f) + ')';
+  }
+  var RED = [201, 74, 63], GREEN = [92, 159, 82], YELLOW = [225, 182, 64];
+  var DARKEN = 0.80, CORE = 0.62;            // the block steps, reused for the board
+  var INK = '#2f2a24', PANTS = '#4a423a', HARDWARE = '#3b352e';
+
+  /* ------------------------------------------------------------ geometry */
+
+  function add(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+  function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  function mul(a, s) { return [a[0] * s, a[1] * s, a[2] * s]; }
+  function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+  function len(a) { return Math.sqrt(dot(a, a)); }
+  function norm(a) { var l = len(a) || 1; return mul(a, 1 / l); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function lerp3(a, b, t) { return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]; }
+  function clamp01(t) { return t < 0 ? 0 : t > 1 ? 1 : t; }
+  function smooth(t) { t = clamp01(t); return t * t * (3 - 2 * t); }
+  function easeOut(t) { t = clamp01(t); return 1 - (1 - t) * (1 - t); }
+
+  // Half-width of the board at u: a gentle sidecut, then an elliptical tip.
+  function hw(u) {
+    var a = Math.abs(u);
+    if (a <= 62) return 12.5 + 1.8 * (a / 62) * (a / 62);
+    if (a >= 75) return 0;
+    var t = (a - 62) / 13;
+    return 14.3 * Math.sqrt(1 - t * t);
+  }
+
+  function samples(u0, u1) {
+    var out = [], n = Math.max(2, Math.ceil(Math.abs(u1 - u0) / 1.5));
+    for (var i = 0; i <= n; i++) out.push(lerp(u0, u1, i / n));
+    return out;
+  }
+
+  var OUTLINE = (function () {
+    var us = samples(-75, 75), pts = [];
+    us.forEach(function (u) { pts.push([u, hw(u)]); });
+    us.reverse().forEach(function (u) { pts.push([u, -hw(u)]); });
+    return pts;
+  })();
+
+  function zoneOutline(z) {
+    var us = samples(z.u0, z.u1), pts = [];
+    if (z.side === 0) {
+      us.forEach(function (u) { pts.push([u, hw(u)]); });
+      us.reverse().forEach(function (u) { pts.push([u, -hw(u)]); });
+    } else {
+      pts.push([z.u0, 0], [z.u1, 0]);
+      us.reverse().forEach(function (u) { pts.push([u, z.side * hw(u)]); });
+    }
+    return pts;
+  }
+
+  /* Two-bone IK. The joint bends toward `pole`; a target out of reach is
+     met at full stretch along the line to it rather than not at all. */
+  function ik(root, target, l1, l2, pole) {
+    var d = sub(target, root), dist = len(d), dir = mul(d, 1 / (dist || 1));
+    var dd = Math.min(Math.max(dist, Math.abs(l1 - l2) + .01), l1 + l2 - .01);
+    var end = add(root, mul(dir, dd));
+    var a = (l1 * l1 - l2 * l2 + dd * dd) / (2 * dd);
+    var h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
+    var p = norm(sub(pole, mul(dir, dot(pole, dir))));
+    return [add(add(root, mul(dir, a)), mul(p, h)), end];
+  }
+
+  /* ------------------------------------------------------------- the rig */
+
+  var THIGH = 46, SHIN = 46, UPPER = 33, FORE = 31, SPINE = 48, SHOULDER = 16;
+  var REACH = UPPER + FORE;
+
+  /* Board pose. A grab is half the rider reaching down and half the board
+     being brought up to meet the hand, so the board rolls the grabbed edge up
+     and pitches the grabbed end up. Without the tweak the heel-side grabs are
+     out of reach of any plausible torso. */
+  function boardFrame(zone, base, g) {
+    var roll = 0, pitch = 0;
+    if (zone) {
+      if (zone.side === -1) roll = .5;
+      if (zone.side === 1) roll = -.35;
+      if (zone.id === 'nose') pitch = .35;
+      if (zone.id === 'tail') pitch = -.35;
+      if (zone.side && zone.at > 0) pitch += .14;
+      if (zone.side && zone.at < 0) pitch -= .14;
+    }
+    roll *= g; pitch *= g;
+    var cr = Math.cos(roll), sr = Math.sin(roll), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    // (u, h, v) on the board → model space
+    return function (u, h, v) {
+      var y = h * cr - v * sr, z = h * sr + v * cr;
+      return [u * cp - y * sp, base + u * sp + y * cp, z];
+    };
+  }
+
+  function grabPoint(zone, hand) {
+    var u = zone.at;
+    // Between the feet, each hand takes the edge on its own side of centre.
+    if (zone.id === 'toe-mid' || zone.id === 'heel-mid') u = hand === 'front' ? 8 : -8;
+    if (!zone.side) return [u, 1, 0];
+    return [u, 1, zone.side * (hw(u) + .5)];
+  }
+
+  /* Builds the rider for one moment.
+     air: height off the snow. crouch: load before takeoff / absorb on landing.
+     tuck: knees up, board brought toward the body. grab: hand on the board.
+     cross: arms folded (the refusal). shake: head turning side to side. */
+  function rig(o) {
+    var t = o.tuck, g = o.grab;
+    var hipY = o.air + 84 - 15 * o.crouch - 6 * t;
+    var base = lerp(o.air, hipY - 28, t);
+    var B = boardFrame(o.zone, base, g);
+    var hip = [0, hipY, -4];
+
+    var gp = o.zone ? grabPoint(o.zone, o.hand) : [0, 0, 0];
+    var target = B(gp[0], gp[1], gp[2]);
+    var side = o.hand === 'front' ? 1 : -1;
+
+    var lean = norm([0, 1, .12 + .18 * o.crouch]);
+    var bendTo = norm([target[0] - hip[0], 0, target[2] - hip[2] + 10]);
+
+    function torso(beta) {
+      var dir = norm(add(mul(lean, Math.cos(beta)), mul(bendTo, Math.sin(beta))));
+      var chest = add(hip, mul(dir, SPINE));
+      var s = norm([dir[1], -dir[0], 0]);
+      return { dir: dir, chest: chest, s: s,
+               sf: add(chest, mul(s, SHOULDER)), sb: sub(chest, mul(s, SHOULDER)) };
+    }
+
+    // Bend only as far as the grab needs: the first angle that brings the
+    // hand within reach.
+    var need = 0;
+    if (o.zone && !o.cross) {
+      for (var b = 0; b <= 1.4; b += .05) {
+        var T = torso(b);
+        need = b;
+        if (len(sub(target, side > 0 ? T.sf : T.sb)) <= REACH * .96) break;
+      }
+    }
+    var tor = torso(need * g);
+
+    var feet = [B(27, 7, 0), B(-27, 7, 0)];
+    var hips = [add(hip, [10, 0, 0]), add(hip, [-10, 0, 0])];
+    // Knees splay out toward nose and tail as they come up, which opens the
+    // gap the hand reaches through for the edge grabs.
+    var splay = .15 + .65 * t;
+    var knees = [ik(hips[0], feet[0], THIGH, SHIN, [splay, 0, 1])[0],
+                 ik(hips[1], feet[1], THIGH, SHIN, [-splay, 0, 1])[0]];
+
+    var shoulders = [tor.sf, tor.sb];
+    var arms = [1, -1].map(function (sd, i) {
+      var sh = shoulders[i];
+      var hang = add(sh, [sd * 7, -REACH * .9, 4]);
+      var spread = add(sh, [sd * 42, 16, -8]);
+      var tgt = lerp3(hang, spread, t);
+      if (sd === side && o.zone) tgt = lerp3(tgt, target, g);
+      if (o.cross) {
+        var fold = add(add(tor.chest, mul(tor.s, -sd * 9)), [0, -9 + (sd > 0 ? 0 : 4), 13]);
+        tgt = lerp3(tgt, fold, o.cross);
+      }
+      var pole = add(mul(tor.s, sd), [0, sd === side ? .6 : -.3, -.4]);
+      if (o.cross) pole = lerp3(pole, add(mul(tor.s, sd), [0, -.8, 0]), o.cross);
+      return ik(sh, tgt, UPPER, FORE, pole);
+    });
+
+    var head = add(tor.chest, add(mul(tor.dir, 19), [2, 0, 1]));
+    var look = norm([.8, -.15, .55]);
+    if (o.zone && !o.cross) look = norm(lerp3(look, norm(sub(target, head)), .6 * g));
+    if (o.shake) {
+      var a = o.shake;
+      look = norm([look[0] * Math.cos(a) - look[2] * Math.sin(a), look[1], look[0] * Math.sin(a) + look[2] * Math.cos(a)]);
+    }
+
+    return { B: B, base: base, target: target, hip: hip, hips: hips, knees: knees,
+             feet: feet, tor: tor, arms: arms, head: head, look: look };
+  }
+
+  /* -------------------------------------------------------------- camera */
+
+  var F = 650;            // eye distance, cm: a mild perspective, not a fisheye
+  var TOP = Math.PI / 2, FRONT_E = .3;
+  var cam = { e: TOP, a: 0, S: 3, cy: 0, m: 1 };
+  var W = 800, H = 400, S_TOP = 3, S_FRONT = 1.5;
+
+  function proj(p) {
+    var x = p[0] * cam.m, y = p[1] - cam.cy, z = p[2];
+    var ca = Math.cos(cam.a), sa = Math.sin(cam.a), ce = Math.cos(cam.e), se = Math.sin(cam.e);
+    var x1 = x * ca + z * sa, z1 = -x * sa + z * ca;
+    var sy = y * ce - z1 * se, d = y * se + z1 * ce;
+    var k = F / (F - d);
+    return [x1 * k * cam.S, -sy * k * cam.S, d, k * cam.S];
+  }
+
+  function fmt(n) { return Math.round(n * 10) / 10; }
+  function pathOf(points) {
+    return points.map(function (p, i) { return (i ? 'L' : 'M') + fmt(p[0]) + ' ' + fmt(p[1]); }).join('') + 'Z';
+  }
+
+  /* ---------------------------------------------------------------- scene */
+
+  function make(tag, attrs, parent) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+
+  var gShadow = make('path', { fill: 'rgba(47,42,36,.10)' }, svg);
+  var boardBottom = make('path', { fill: rgb(RED, CORE) }, svg);
+  var boardTop = make('path', { fill: rgb(RED), stroke: rgb(RED, DARKEN), 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, svg);
+  var gZones = make('g', {}, svg);
+  var seams = make('path', { fill: 'none', stroke: 'rgba(255,255,255,.45)', 'stroke-width': 1, 'stroke-dasharray': '3 4' }, svg);
+  var gUnder = make('g', {}, svg);   // bindings and anything else under the rider
+  var marker = make('circle', { fill: 'none', stroke: INK, 'stroke-width': 2, opacity: 0 }, svg);
+  var gRider = make('g', {}, svg);
+  var gLabels = make('g', { 'aria-hidden': 'true' }, svg);
+
+  var zoneEls = {};
+  ZONES.forEach(function (z) {
+    var p = make('path', { 'class': 'zone', tabindex: '0', role: 'button', 'aria-label': z.label }, gZones);
+    p.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); choose(z.id, true); }
+    });
+    p.addEventListener('focus', function () { setHover(z.id); });
+    p.addEventListener('blur', function () { setHover(null); });
+    zoneEls[z.id] = p;
+  });
+
+  var labels = [
+    { text: 'Nose', at: [88, 2, 0], anchor: 'start' },
+    { text: 'Tail', at: [-88, 2, 0], anchor: 'end' },
+    { text: 'Toe edge', at: [0, 2, 30], anchor: 'middle' },
+    { text: 'Heel edge', at: [0, 2, -27], anchor: 'middle' }
+  ].map(function (l) {
+    l.el = make('text', { 'dominant-baseline': 'middle' }, gLabels);
+    l.el.textContent = l.text;
+    return l;
+  });
+
+  /* ---------------------------------------------------------------- state */
+
+  var stanceInputs = document.querySelectorAll('input[name="stance"]');
+  var handInputs = document.querySelectorAll('input[name="hand"]');
+  var promptEl = document.getElementById('prompt');
+  var verdictEl = document.getElementById('verdict');
+  var answerEl = document.getElementById('answer');
+  var nameEl = document.getElementById('name');
+  var noteEl = document.getElementById('note');
+  var againBtn = document.getElementById('again');
+  var repickBtn = document.getElementById('repick');
+
+  function checked(list) {
+    for (var i = 0; i < list.length; i++) if (list[i].checked) return list[i].value;
+  }
+
+  var st = {
+    stance: checked(stanceInputs), hand: checked(handInputs),
+    zone: null, hover: null,
+    mode: 'pick',           // pick | ride
+    p: 0,                   // 0 = looking down at the board, 1 = watching the rider
+    flip: checked(stanceInputs) === 'goofy' ? Math.PI : 0,
+    runStart: 0, revealed: false
+  };
+
+  /* Timeline of one run, in seconds from when the rider is chosen. The
+     camera swing takes the first .8s, so nothing moves until it has landed. */
+  var T_LOAD = 1.0, T_TAKEOFF = 1.3, AIRTIME = 1.9, T_LAND = T_TAKEOFF + AIRTIME, T_END = T_LAND + .45;
+  var T_SHAKE = 1.0, T_SHAKE_END = 2.6;
+
+  function riderPose(r) {
+    var o = { zone: st.zone ? ZONE[st.zone] : null, hand: st.hand,
+              air: 0, crouch: 0, tuck: 0, grab: 0, cross: 0, shake: 0 };
+    if (!o.zone) return o;
+    var banned = GRABS[st.hand + ':' + st.zone][0] === 'no';
+
+    if (banned) {
+      o.cross = reduced ? 1 : smooth((r - .8) / .4);
+      if (!reduced && r > T_SHAKE && r < T_SHAKE_END) {
+        var s = (r - T_SHAKE) / (T_SHAKE_END - T_SHAKE);
+        o.shake = Math.sin(s * Math.PI * 6) * .55 * Math.sin(s * Math.PI);
+      }
+      return o;
+    }
+
+    if (reduced) {  // the grab, held, with no jump to get there
+      o.air = 40; o.tuck = 1; o.grab = 1;
+      return o;
+    }
+
+    if (r < T_TAKEOFF) {
+      o.crouch = smooth((r - T_LOAD) / (T_TAKEOFF - T_LOAD));
+    } else if (r < T_LAND) {
+      var tau = (r - T_TAKEOFF) / AIRTIME;
+      o.air = 4 * 62 * tau * (1 - tau);
+      o.crouch = 1 - smooth(tau / .12);
+      var hold = smooth((tau - .08) / .2) * (1 - smooth((tau - .72) / .16));
+      o.tuck = hold; o.grab = hold;
+    } else {
+      var l = (r - T_LAND) / (T_END - T_LAND);
+      o.crouch = Math.sin(clamp01(l) * Math.PI) * .8;
+    }
+    return o;
+  }
+
+  function revealAt() {
+    if (reduced) return .1;
+    var g = GRABS[st.hand + ':' + st.zone][0];
+    return g === 'no' ? 1.3 : T_TAKEOFF + AIRTIME * .3;
+  }
+
+  /* --------------------------------------------------------------- render */
+
+  function measure() {
+    var r = svg.getBoundingClientRect();
+    W = Math.max(1, r.width); H = Math.max(1, r.height);
+    svg.setAttribute('viewBox', (-W / 2) + ' ' + (-H / 2) + ' ' + W + ' ' + H);
+    S_TOP = Math.min(.86 * W / 190, .5 * H / 34);
+    S_FRONT = Math.min(.9 * H / 200, .9 * W / 210);
+  }
+
+  function render(now) {
+    var p = st.p, ep = smooth(p);
+    var zone = st.zone ? ZONE[st.zone] : null;
+    var heel = zone && zone.side === -1;
+
+    // A heel-side grab happens behind the rider's legs, so the camera swings
+    // round to the heel side for those rather than watching a back.
+    var aFront = heel ? Math.PI - .32 : -.32;
+    cam.e = lerp(TOP, FRONT_E, ep);
+    cam.a = lerp(0, aFront, ep);
+    cam.S = lerp(S_TOP, S_FRONT, ep);
+    cam.m = Math.cos(st.flip);
+
+    var r = st.mode === 'ride' ? (now - st.runStart) / 1000 : 0;
+    var o = riderPose(r);
+    // The camera rides part of the way up with the jump, so the rider can
+    // fill the frame without leaving it at the top of the arc.
+    cam.cy = lerp(0, 92 + o.air * .6, ep);
+    var pose = rig(o);
+    var B = pose.B;
+
+    // shadow on the snow, fading as the board climbs away from it
+    var flat = boardFrame(null, 0, 0);
+    gShadow.setAttribute('d', pathOf(OUTLINE.map(function (q) { return proj(flat(q[0] * .96, 0, q[1] * .9)); })));
+    gShadow.setAttribute('opacity', fmt((1 - clamp01(pose.base / 120)) * ep));
+
+    boardBottom.setAttribute('d', pathOf(OUTLINE.map(function (q) { return proj(B(q[0], -1.4, q[1])); })));
+    boardTop.setAttribute('d', pathOf(OUTLINE.map(function (q) { return proj(B(q[0], 0, q[1])); })));
+
+    var picking = st.mode === 'pick';
+    ZONES.forEach(function (z) {
+      var el = zoneEls[z.id];
+      el.setAttribute('d', pathOf(zoneOutline(z).map(function (q) { return proj(B(q[0], .1, q[1])); })));
+      el.classList.toggle('hot', picking && (st.hover === z.id));
+    });
+
+    var seamPts = [];
+    [-60, -20, 20, 60].forEach(function (u) {
+      var a = proj(B(u, .2, -hw(u))), b = proj(B(u, .2, hw(u)));
+      seamPts.push('M' + fmt(a[0]) + ' ' + fmt(a[1]) + 'L' + fmt(b[0]) + ' ' + fmt(b[1]));
+    });
+    var c0 = proj(B(-60, .2, 0)), c1 = proj(B(60, .2, 0));
+    seamPts.push('M' + fmt(c0[0]) + ' ' + fmt(c0[1]) + 'L' + fmt(c1[0]) + ' ' + fmt(c1[1]));
+    seams.setAttribute('d', seamPts.join(''));
+    seams.setAttribute('opacity', fmt(1 - smooth(p * 2.5)));
+
+    // Bindings: front angled out toward the nose, back a touch the other way
+    // — a duck stance, which is also what makes the top view readable.
+    var under = '';
+    [[27, .26], [-27, -.1]].forEach(function (b) {
+      var c = Math.cos(b[1]), s = Math.sin(b[1]), pts = [];
+      [[-5, -12], [5, -12], [5, 12], [-5, 12]].forEach(function (q) {
+        pts.push(proj(B(b[0] + q[0] * c - q[1] * s, .6, q[0] * s + q[1] * c)));
+      });
+      under += '<path fill="' + HARDWARE + '" opacity=".9" stroke="' + HARDWARE + '" stroke-width="2" stroke-linejoin="round" d="' + pathOf(pts) + '"/>';
+    });
+    gUnder.innerHTML = under;
+
+    // marker where the hand goes
+    if (zone) {
+      var gp = grabPoint(zone, st.hand), mk = proj(B(gp[0], gp[1], gp[2]));
+      marker.setAttribute('cx', fmt(mk[0]));
+      marker.setAttribute('cy', fmt(mk[1]));
+      marker.setAttribute('r', fmt(Math.max(4, 4.5 * mk[3])));
+      marker.setAttribute('opacity', '1');
+    } else {
+      marker.setAttribute('opacity', '0');
+    }
+
+    // labels, top view only
+    var lo = fmt(1 - smooth(p * 2.5));
+    labels.forEach(function (l) {
+      var q = proj(B(l.at[0], l.at[1], l.at[2]));
+      l.el.setAttribute('x', fmt(q[0]));
+      l.el.setAttribute('y', fmt(q[1]));
+      // The nose/tail labels hang off the ends; mirrored, their anchors swap.
+      var anchor = l.anchor;
+      if (cam.m < 0 && anchor !== 'middle') anchor = anchor === 'start' ? 'end' : 'start';
+      l.el.setAttribute('text-anchor', anchor);
+      l.el.setAttribute('opacity', lo);
+    });
+
+    drawRider(pose, clamp01((p - .55) / .35));
+
+    if (st.mode === 'ride' && !st.revealed && r >= revealAt()) reveal();
+    if (st.mode === 'ride' && r >= (reduced ? .1 : T_END)) {
+      againBtn.disabled = false; againBtn.classList.add('on');
+    }
+  }
+
+  /* Each part is a stroke or a dot with a depth; painter's order does the
+     rest. Parts on the far side of the body are drawn a step darker, the
+     same way a block's core reads darker than its face. */
+  function drawRider(P, opacity) {
+    if (opacity <= 0) { gRider.innerHTML = ''; return; }
+    var parts = [], mid = proj(P.tor.chest)[2];
+
+    function seg(a, b, w, color, darkColor) {
+      var A = proj(a), Bq = proj(b), d = (A[2] + Bq[2]) / 2;
+      parts.push({ d: d, svg: '<line x1="' + fmt(A[0]) + '" y1="' + fmt(A[1]) + '" x2="' + fmt(Bq[0]) + '" y2="' + fmt(Bq[1]) +
+        '" stroke="' + (darkColor && d < mid - 2 ? darkColor : color) + '" stroke-width="' + fmt(w * (A[3] + Bq[3]) / 2) + '" stroke-linecap="round"/>' });
+    }
+    function dot(c, r, color, bias) {
+      var C = proj(c);
+      parts.push({ d: C[2] + (bias || 0), svg: '<circle cx="' + fmt(C[0]) + '" cy="' + fmt(C[1]) + '" r="' + fmt(r * C[3]) + '" fill="' + color + '"/>' });
+    }
+
+    var B = P.B, jacket = rgb(GREEN), jacketFar = rgb(GREEN, DARKEN);
+    [27, -27].forEach(function (u, i) {
+      seg(B(u, 4, -7), B(u, 4, 9), 10, INK);                 // boot
+      seg(B(u, 3, -11), B(u, 17, -13), 9, HARDWARE);         // highback
+      seg(P.hips[i], P.knees[i], 14, PANTS, '#3a332c');
+      seg(P.knees[i], P.feet[i], 12, PANTS, '#3a332c');
+    });
+    seg(P.hips[0], P.hips[1], 16, PANTS);
+    seg(P.hip, P.tor.chest, 24, jacket);
+    seg(P.tor.sf, P.tor.sb, 15, jacket);
+    P.arms.forEach(function (arm, i) {
+      var sh = i === 0 ? P.tor.sf : P.tor.sb;
+      seg(sh, arm[0], 11, jacket, jacketFar);
+      seg(arm[0], arm[1], 10, jacket, jacketFar);
+      dot(arm[1], 5, INK, 1);
+    });
+    dot(P.head, 11, rgb(YELLOW));
+    // goggles sit on the face, so they draw in front of the helmet only
+    // while the face is turned toward us
+    dot(add(P.head, mul(P.look, 8.5)), 4.6, INK, .5);
+
+    parts.sort(function (a, b) { return a.d - b.d; });
+    gRider.setAttribute('opacity', fmt(opacity));
+    gRider.innerHTML = parts.map(function (q) { return q.svg; }).join('');
+  }
+
+  /* ----------------------------------------------------------------- loop */
+
+  var raf = 0, last = 0;
+  function animating(now) {
+    var target = st.mode === 'ride' ? 1 : 0;
+    var flipTarget = st.stance === 'goofy' ? Math.PI : 0;
+    var r = (now - st.runStart) / 1000;
+    return st.p !== target || st.flip !== flipTarget || (st.mode === 'ride' && r < T_END + .1);
+  }
+
+  function frame(now) {
+    var dt = Math.min(64, now - (last || now)) / 1000;
+    last = now;
+    var target = st.mode === 'ride' ? 1 : 0;
+    var step = reduced ? 1 : dt / .8;
+    st.p = st.p < target ? Math.min(target, st.p + step) : Math.max(target, st.p - step);
+
+    var flipTarget = st.stance === 'goofy' ? Math.PI : 0;
+    var fstep = reduced ? 10 : dt * Math.PI / .5;
+    st.flip = st.flip < flipTarget ? Math.min(flipTarget, st.flip + fstep) : Math.max(flipTarget, st.flip - fstep);
+
+    render(now);
+    if (animating(now)) raf = requestAnimationFrame(frame);
+    else { raf = 0; last = 0; }
+  }
+
+  function kick() {
+    if (!raf) { last = 0; raf = requestAnimationFrame(frame); }
+  }
+
+  /* -------------------------------------------------------------- actions */
+
+  function setHover(id) {
+    if (st.hover === id) return;
+    st.hover = id;
+    if (st.mode === 'pick') promptEl.textContent = id ? ZONE[id].label : 'Pick a spot on the board';
+    kick();
+  }
+
+  function startRun() {
+    st.runStart = performance.now();
+    st.revealed = false;
+    verdictEl.classList.remove('on', 'banned');
+    againBtn.disabled = true; againBtn.classList.remove('on');
+    kick();
+  }
+
+  function choose(id, viaKeyboard) {
+    st.zone = id;
+    st.mode = 'ride';
+    st.hover = null;
+    svg.classList.remove('picking');
+    promptEl.classList.add('off');
+    ZONES.forEach(function (z) { zoneEls[z.id].setAttribute('tabindex', '-1'); });
+    gZones.setAttribute('aria-hidden', 'true');
+    repickBtn.disabled = false; repickBtn.classList.add('on');
+    // The zone that had focus has just left the tab order; hand focus to the
+    // way back so a keyboard user isn't dropped at the top of the page.
+    if (viaKeyboard) repickBtn.focus();
+    startRun();
+  }
+
+  function reveal() {
+    st.revealed = true;
+    var g = GRABS[st.hand + ':' + st.zone];
+    answerEl.textContent = ANSWER[g[0]];
+    nameEl.textContent = g[1];
+    noteEl.textContent = g[2];
+    verdictEl.classList.toggle('banned', g[0] === 'no');
+    verdictEl.classList.add('on');
+  }
+
+  function repick() {
+    var hadFocus = document.activeElement === repickBtn || document.activeElement === againBtn;
+    st.mode = 'pick';
+    st.zone = null;
+    svg.classList.add('picking');
+    verdictEl.classList.remove('on');
+    promptEl.textContent = 'Pick a spot on the board';
+    promptEl.classList.remove('off');
+    ZONES.forEach(function (z) { zoneEls[z.id].setAttribute('tabindex', '0'); });
+    gZones.removeAttribute('aria-hidden');
+    [againBtn, repickBtn].forEach(function (b) { b.disabled = true; b.classList.remove('on'); });
+    if (hadFocus) zoneEls.nose.focus();
+    kick();
+  }
+
+  againBtn.addEventListener('click', startRun);
+  repickBtn.addEventListener('click', repick);
+
+  function onField() {
+    st.stance = checked(stanceInputs);
+    st.hand = checked(handInputs);
+    if (st.mode === 'ride') startRun();   // same spot, new rider
+    kick();
+  }
+  [].forEach.call(stanceInputs, function (i) { i.addEventListener('change', onField); });
+  [].forEach.call(handInputs, function (i) { i.addEventListener('change', onField); });
+
+  /* Picking works off the whole stage, not just the painted board: on a
+     phone each half of the board is only a couple of dozen pixels tall, so
+     anything near an edge counts as that edge. The top view is a straight
+     overhead projection, so undoing it is just a divide. */
+  function zoneFromEvent(ev) {
+    if (st.mode !== 'pick' || st.p > .02 || Math.abs(cam.m) < .95) return null;
+    var rect = svg.getBoundingClientRect();
+    var u = (ev.clientX - rect.left - rect.width / 2) / cam.S / cam.m;
+    var v = (ev.clientY - rect.top - rect.height / 2) / cam.S;
+    if (Math.abs(u) > 90 || Math.abs(v) > 34) return null;
+    if (u >= 60) return 'nose';
+    if (u <= -60) return 'tail';
+    var edge = v >= 0 ? 'toe' : 'heel';
+    return edge + (u >= 20 ? '-front' : u <= -20 ? '-back' : '-mid');
+  }
+
+  svg.addEventListener('pointermove', function (ev) {
+    if (ev.pointerType === 'mouse') setHover(zoneFromEvent(ev));
+  });
+  svg.addEventListener('pointerleave', function () { setHover(null); });
+  svg.addEventListener('click', function (ev) {
+    var id = zoneFromEvent(ev);
+    if (id) choose(id, false);
+  });
+
+  window.addEventListener('resize', function () { measure(); kick(); });
+
+  measure();
+  kick();
+})();
+</script>
+</body>
+</html>
