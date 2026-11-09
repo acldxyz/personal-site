@@ -54,7 +54,7 @@
 </style>
 </head>
 <body>
-<canvas role="img" aria-label="A spiral. At its centre, pattern: a medallion from an oriental rug, whose woven border unwinds along the spiral, fraying as it goes, into novelty: a tangle of crayon scribbles at the outer end."></canvas>
+<canvas role="img" aria-label="A spiral. At its centre, pattern: a medallion from an oriental rug, and novelty at the outer end: a tangle of crayon scribbles. The scribbled lines travel inward, straighten into threads, and are knotted into the rug's border."></canvas>
 <h1 class="vh">Pattern and novelty</h1>
 <nav aria-label="Versions">
   <a href="spiral-words.html">Words</a>
@@ -78,7 +78,7 @@
   const BOIL_FPS = 8;   // crayon lines re-jitter at drawn-animation rate, not display rate
 
   let W, H, dpr, cx, cy, R, M, bandW, tangleR, path, cw;
-  let rugC, rugX, crayC, crayX, medC, knotPat, grainPat, tangle;
+  let crayC, crayX, medC, grainPat, tangle;
 
   const hash = n => { const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
   const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
@@ -126,8 +126,6 @@
     P.tx = path.TX[i]; P.ty = path.TY[i];
     return P;
   }
-  // A point offset n across the spiral at s, as plain numbers.
-  const off = (s, n) => { const p = at(s); return [p.x - p.ty * n, p.y + p.tx * n]; };
 
   /* ---------- the medallion ---------- */
 
@@ -271,11 +269,46 @@
 
   /* ---------- layout ---------- */
 
-  function canvasLike() {
-    const c = document.createElement('canvas');
-    c.width = cvs.width; c.height = cvs.height;
-    return c;
-  }
+  // The border, one knot per character, repeating along its length.
+  // R madder, B indigo, I ivory, G gold, E green.
+  const PAT = [
+    'RRRRRRRR',
+    'BBBBBBBB',
+    'IIIIIIII',
+    'IIIBIIII',
+    'IIBGBIII',
+    'IBGRGBIE',
+    'IIBGBIII',
+    'IIIBIIII',
+    'IIIIIIII',
+    'BBBBBBBB',
+    'RRRRRRRR',
+  ];
+  const ROWS = PAT.length, REPEAT = PAT[0].length;
+  const KNOT = { R: RUG.red, B: RUG.indigo, I: RUG.ivory, G: RUG.gold, E: RUG.green };
+
+  // Seven threads. Each is one continuous line from the scribble to the rug:
+  // a crayon colour at the loose end, a dye colour once it lies in its row of
+  // the border. Hues are paired so no thread has far to travel.
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const THREADS = [
+    { row: 0,  cray: '#d0392b', dye: RUG.red },
+    { row: 1,  cray: '#2d5db0', dye: RUG.indigo },
+    { row: 3,  cray: '#7b4c9f', dye: RUG.indigo },
+    { row: 5,  cray: '#e8862a', dye: RUG.gold },
+    { row: 7,  cray: '#3d9447', dye: RUG.green },
+    { row: 9,  cray: '#d9a91f', dye: RUG.gold },
+    { row: 10, cray: '#d9577a', dye: RUG.red },
+  ].map(t => ({ ...t, cray: rgb(t.cray), dye: rgb(t.dye) }));
+
+  const WEAVE_IN = 0.26;    // inside this the border is fully knotted
+  const WEAVE_OUT = 0.52;   // outside this there are no knots, only thread
+  // -1: everything travels inward, scribble becoming rug. +1 runs it the
+  // other way and the rug unravels instead.
+  const FLOW = -1;
+  const TURN = 0.045;       // rad/s, the whole figure winding with the flow
+
+  let kh, speed;
 
   function build() {
     W = innerWidth; H = innerHeight; dpr = Math.min(2, devicePixelRatio || 1);
@@ -283,136 +316,107 @@
     cx = W / 2; cy = (H - 40) / 2;
     R = Math.max(120, Math.min(W / 2 - 12, (H - 100) / 2));
     M = R * 0.2;
-    bandW = R * 0.085;
-    tangleR = R * 0.2;
+    bandW = R * 0.1;
+    kh = bandW / ROWS;
+    speed = bandW * 0.9;
+    tangleR = R * 0.19;
     cw = Math.max(1.8, R * 0.0085);
-    // The border starts under the medallion's edge, so it reads as coming
-    // out of it; the outer end stops short enough for the tangle to fit.
-    path = makePath(M * 0.6, R - tangleR * 1.25, TURNS);
+    // The border runs in under the medallion's edge; the outer end stops
+    // short enough that the tangle stays on screen all the way round.
+    path = makePath(M * 0.6, R - tangleR * 1.6, TURNS);
 
-    rugC = canvasLike(); rugX = rugC.getContext('2d');
-    crayC = canvasLike(); crayX = crayC.getContext('2d');
-    medC = document.createElement('canvas');
-    medC.width = medC.height = Math.ceil(M * 2 * dpr) + 4;
-    drawMedallion(medC.getContext('2d'), medC.width);
-    knotPat = makeKnot();
+    crayC = document.createElement('canvas');
+    crayC.width = cvs.width; crayC.height = cvs.height;
+    crayX = crayC.getContext('2d');
     grainPat = makeGrain();
     tangle = tangle || makeTangle();
+
+    // The pile texture is baked into the medallion, so it turns with it.
+    medC = document.createElement('canvas');
+    medC.width = medC.height = Math.ceil(M * 2 * dpr) + 4;
+    const mg = medC.getContext('2d');
+    drawMedallion(mg, medC.width);
+    mg.setTransform(1, 0, 0, 1, 0, 0);
+    mg.globalCompositeOperation = 'source-atop';
+    mg.fillStyle = makeKnot();
+    mg.fillRect(0, 0, medC.width, medC.height);
   }
 
   /* ---------- frame ---------- */
 
+  // The border is drawn knot by knot. Columns are fixed to the cloth and
+  // carried along the spiral; in the weaving zone each knot has its own
+  // threshold, so the pattern fills in a knot at a time over the bare threads
+  // rather than fading in as a sheet.
   function drawBand(g, t) {
-    const L = path.L, cl = bandW * 0.92, h = bandW / 2, v = bandW * 0.55;
-    const shift = t * v;
-    const BAND_END = 0.66;
-
-    // Cells are fixed to the cloth, numbered from the medallion out, and carried
-    // along the spiral. Each frays by its own amounts as it travels — drifts,
-    // turns, shrinks, and eventually drops out — so the loosening is ragged.
-    for (let i = Math.floor(-shift / cl) - 1; ; i++) {
-      const sc = i * cl + shift;
-      const u = sc / L;
-      if (u > BAND_END) break;
-      if (sc < -cl) continue;
-      const p = 1 - smooth(0.2, BAND_END, u);      // 1 = intact, 0 = gone
-      const f = 1 - p;
-      if (hash(i * 9.1 + 3) > p * 1.3) continue;
-      const alpha = Math.pow(p, 0.7);
-
-      const c = at(Math.max(0, sc));
-      const jn = f * bandW * 1.3 * (hash(i * 1.7) - 0.5) * 2;
-      const jt = f * cl * 0.6 * (hash(i * 2.9) - 0.5) * 2;
-      const rot = f * 1.4 * (hash(i * 4.3) - 0.5) * 2;
-      const sc2 = 1 - 0.4 * f;
-      const ox = c.x, oy = c.y;
-
-      g.save();
-      g.globalAlpha = alpha;
-      g.translate(ox - c.ty * jn + c.tx * jt, oy + c.tx * jn + c.ty * jt);
-      g.rotate(rot);
-      g.scale(sc2, sc2);
-      g.translate(-ox, -oy);
-
-      // Bands across the border are curved quads read straight off the
-      // spiral, so neighbouring cells meet without wedge gaps on the bend.
-      const sA = sc - cl / 2 - 0.6, sB = sc + cl / 2 + 0.6;
-      const quad = (n0, n1, fill) => {
-        const a = off(sA, n0), b = off(sB, n0), m1 = off(sc, n0),
-              d = off(sA, n1), e = off(sB, n1), m2 = off(sc, n1);
+    const L = path.L, h = bandW / 2, shift = FLOW * t * speed;
+    const sMax = WEAVE_OUT * L;
+    for (let i = Math.floor(-shift / kh) - 1; ; i++) {
+      const s = i * kh + shift;
+      if (s > sMax) break;
+      if (s < -kh) continue;
+      const p = 1 - smooth(WEAVE_IN, WEAVE_OUT, s / L);
+      const col = ((i % REPEAT) + REPEAT) % REPEAT;
+      const a = at(Math.max(0, s));
+      const ax = a.x, ay = a.y, anx = -a.ty, any = a.tx;
+      const b = at(s + kh + 0.3);            // a hair of overlap closes the seam between columns
+      const bx = b.x, by = b.y, bnx = -b.ty, bny = b.tx;
+      for (let r = 0; r < ROWS; r++) {
+        if (p < 1 && hash(i * 31.7 + r * 7.3) > p * p) continue;
+        const n0 = -h + r * kh, n1 = n0 + kh + 0.3;
+        g.fillStyle = KNOT[PAT[r][col]];
         g.beginPath();
-        g.moveTo(a[0], a[1]); g.lineTo(m1[0], m1[1]); g.lineTo(b[0], b[1]);
-        g.lineTo(e[0], e[1]); g.lineTo(m2[0], m2[1]); g.lineTo(d[0], d[1]);
-        g.closePath(); g.fillStyle = fill; g.fill();
-      };
-      quad(-h, h, RUG.ivory);
-      quad(-h, -h * 0.7, RUG.red);
-      quad(h * 0.7, h, RUG.red);
-      quad(-h * 0.62, -h * 0.54, RUG.indigo);
-      quad(h * 0.54, h * 0.62, RUG.indigo);
-
-      // Alternating motif, set in the cell's own frame.
-      const a = Math.atan2(c.ty, c.tx);
-      g.translate(ox, oy); g.rotate(a);
-      if (i % 2 === 0) {
-        diamond(g, 0, 0, 0, cl * 0.36, h * 0.44); g.fillStyle = RUG.indigo; g.fill();
-        diamond(g, 0, 0, 0, cl * 0.17, h * 0.21); g.fillStyle = RUG.gold; g.fill();
-      } else {
-        diamond(g, 0, 0, Math.PI / 4, h * 0.3, h * 0.3); g.fillStyle = RUG.green; g.fill();
-        g.fillStyle = RUG.red;
-        for (let q = 0; q < 4; q++) {
-          const b = q * Math.PI / 2;
-          g.beginPath(); g.arc(Math.cos(b) * h * 0.3, Math.sin(b) * h * 0.3, h * 0.1, 0, Math.PI * 2); g.fill();
-        }
+        g.moveTo(ax + anx * n0, ay + any * n0);
+        g.lineTo(bx + bnx * n0, by + bny * n0);
+        g.lineTo(bx + bnx * n1, by + bny * n1);
+        g.lineTo(ax + anx * n1, ay + any * n1);
+        g.fill();
       }
-      g.restore();
     }
   }
 
-  function drawCrayonTrail(g, t, boil) {
-    const L = path.L, v = bandW * 0.55;
-    // Each strand loosens out of the border at its own point, then wanders
-    // further and starts to loop. The loop radius outgrows its wavelength
-    // towards the tip, which is what turns waves into scribble.
-    for (let j = 0; j < 5; j++) {
-      const uStart = 0.2 + j * 0.055;
+  function drawThreads(g, t, boil) {
+    const L = path.L, h = bandW / 2, shift = FLOW * t * speed;
+    const sIn = (WEAVE_IN - 0.06) * L, step = 3;
+    THREADS.forEach((th, j) => {
+      const lane = -h + (th.row + 0.5) * kh;
+      const loose = 0.33 + hash(j + 31) * 0.17;   // each thread lets go of its row at its own point
       const f1 = 0.06 + hash(j + 1) * 0.04, f2 = 0.017 + hash(j + 5) * 0.01;
       const ph1 = hash(j + 9) * 40, ph2 = hash(j + 13) * 40, ph3 = hash(j + 17) * 40;
-      const lam = bandW * (1.3 + hash(j + 21) * 0.8), w3 = Math.PI * 2 / lam;
-      const lane = (hash(j + 25) - 0.5) * bandW * 0.8;
-      const color = CRAYONS[j];
+      const w3 = Math.PI * 2 / (bandW * (1.3 + hash(j + 21) * 0.8));
 
-      let prev = null;
-      const step = 3;
-      for (let s = uStart * L; s <= L; s += step) {
-        const u = s / L, m = s - t * v;
-        const q = smooth(uStart, 1, u);
+      let px = 0, py = 0, has = false;
+      for (let s = sIn; s <= L; s += step) {
+        const u = s / L, m = s - shift;
+        const q = smooth(loose, 1, u);            // 0 = lying in its row, 1 = scribble
         // Swell and loop rate both wander, so no two loops come out the same
         // size or spacing — even loops read as a garland, not a scribble.
         const swell = 0.55 + 0.45 * Math.sin(m * 0.021 + ph2) * Math.sin(m * 0.0083 + ph1);
-        const A = bandW * (0.12 + 1.1 * q * q) * swell;
-        const rho = bandW * 0.75 * smooth(uStart + 0.12, 1, u) * (0.35 + 0.65 * Math.abs(Math.sin(m * 0.013 + ph3)));
-        const th = m * w3 + ph3 + 2.4 * Math.sin(m * 0.017 + ph1) + 1.3 * Math.sin(m * 0.047 + ph2);
-        const n = lane * (1 - smooth(uStart, 0.9, u)) +
+        const A = bandW * (0.35 * q + 1.0 * q * q) * swell;
+        const rho = bandW * 0.75 * smooth(loose + 0.15, 1, u) * (0.35 + 0.65 * Math.abs(Math.sin(m * 0.013 + ph3)));
+        const ang = m * w3 + ph3 + 2.4 * Math.sin(m * 0.017 + ph1) + 1.3 * Math.sin(m * 0.047 + ph2);
+        const n = lane * (1 - 0.7 * smooth(loose, 0.95, u)) +
                   A * (Math.sin(m * f1 + ph1) * 0.5 + Math.sin(m * f2 + ph2) * 0.3 +
                        Math.sin(m * (f1 * 2.7) + ph3) * 0.2) +
-                  rho * Math.sin(th);
-        const tg = rho * 1.3 * Math.cos(th);
+                  rho * Math.sin(ang);
+        const tg = rho * 1.3 * Math.cos(ang);
+        // The hand-drawn wobble belongs to the crayon; a thread in the rug is still.
+        const wob = 1.4 * Math.min(1, q * 5);
+        const bi = Math.round(m / step);
         const p = at(s);
-        const bi = Math.round(s / step);
-        const jx = (hash(bi * 3.1 + boil * 17 + j) - 0.5) * 1.4;
-        const jy = (hash(bi * 5.7 + boil * 29 + j) - 0.5) * 1.4;
-        const x = p.x - p.ty * n + p.tx * tg + jx, y = p.y + p.tx * n + p.ty * tg + jy;
-        if (prev) {
-          const grow = smooth(uStart * L, uStart * L + bandW * 4, s);
-          g.globalAlpha = 0.9 * grow;
-          g.lineWidth = cw * (0.5 + 0.5 * grow);
-          g.strokeStyle = color;
-          g.beginPath(); g.moveTo(prev[0], prev[1]); g.lineTo(x, y); g.stroke();
+        const x = p.x - p.ty * n + p.tx * tg + (hash(bi * 3.1 + boil * 17 + j) - 0.5) * wob;
+        const y = p.y + p.tx * n + p.ty * tg + (hash(bi * 5.7 + boil * 29 + j) - 0.5) * wob;
+        if (has) {
+          const c = smooth(loose - 0.05, loose + 0.2, u);   // dye → crayon
+          const k = Math.round(c * 16) / 16;
+          g.strokeStyle = 'rgb(' + th.dye.map((d, i) => Math.round(d + (th.cray[i] - d) * k)) + ')';
+          g.lineWidth = kh * 0.95 + (cw - kh * 0.95) * c;
+          g.globalAlpha = smooth(sIn, sIn + bandW, s);
+          g.beginPath(); g.moveTo(px, py); g.lineTo(x, y); g.stroke();
         }
-        prev = [x, y];
+        px = x; py = y; has = true;
       }
-    }
+    });
     g.globalAlpha = 1;
   }
 
@@ -421,21 +425,21 @@
     const ox = tip.x + tip.tx * tangleR * 0.55, oy = tip.y + tip.ty * tangleR * 0.55;
     g.save();
     g.translate(ox, oy);
-    g.rotate(t * 0.06);
+    g.rotate(-FLOW * t * 0.22);    // turning like a ball of yarn being paid out
     g.lineWidth = cw * 0.85;
-    g.globalAlpha = 0.9;
+    g.globalAlpha = 0.92;
     for (const st of tangle) {
       const pts = st.pts, n = pts.length / 2;
       const P2 = i => {
         const k = i * 2;
         // Slow drift keeps the ball alive between boils.
-        const d = 0.03 * Math.sin(t * 0.7 + i * 0.13 + st.seed);
+        const d = 0.035 * Math.sin(t * 0.9 + i * 0.13 + st.seed);
         const jx = (hash(i * 3.3 + boil * 13 + st.seed) - 0.5) * 1.4 / tangleR;
         const jy = (hash(i * 7.1 + boil * 19 + st.seed) - 0.5) * 1.4 / tangleR;
         return [(pts[k] + d + jx) * tangleR, (pts[k + 1] - d + jy) * tangleR];
       };
       g.beginPath();
-      let a = P2(0); g.moveTo(a[0], a[1]);
+      const a = P2(0); g.moveTo(a[0], a[1]);
       for (let i = 1; i < n - 1; i++) {
         const b = P2(i), c = P2(i + 1);
         g.quadraticCurveTo(b[0], b[1], (b[0] + c[0]) / 2, (b[1] + c[1]) / 2);
@@ -448,31 +452,18 @@
 
   function frame(t) {
     const boil = Math.floor(t * BOIL_FPS) % 3;   // three drawings, cycled
+    const phi = FLOW * t * TURN;
+    const aim = g => { g.setTransform(dpr, 0, 0, dpr, cx * dpr, cy * dpr); g.rotate(phi); };
 
-    // Rug layer
-    rugX.setTransform(1, 0, 0, 1, 0, 0);
-    rugX.globalCompositeOperation = 'source-over';
-    rugX.clearRect(0, 0, rugC.width, rugC.height);
-    rugX.setTransform(dpr, 0, 0, dpr, cx * dpr, cy * dpr);
-    drawBand(rugX, t);
-    rugX.save();
-    rugX.rotate(-t * 0.035);
-    const ms = medC.width / dpr;
-    rugX.drawImage(medC, -ms / 2, -ms / 2, ms, ms);
-    rugX.restore();
-    rugX.setTransform(1, 0, 0, 1, 0, 0);
-    rugX.globalCompositeOperation = 'source-atop';
-    rugX.fillStyle = knotPat;
-    rugX.fillRect(0, 0, rugC.width, rugC.height);
-
-    // Crayon layer
+    // Threads and tangle go on their own layer so the paper grain can be
+    // punched out of them without touching the rug.
     crayX.setTransform(1, 0, 0, 1, 0, 0);
     crayX.globalCompositeOperation = 'source-over';
     crayX.clearRect(0, 0, crayC.width, crayC.height);
-    crayX.setTransform(dpr, 0, 0, dpr, cx * dpr, cy * dpr);
+    aim(crayX);
     crayX.lineCap = 'round';
     crayX.lineJoin = 'round';
-    drawCrayonTrail(crayX, t, boil);
+    drawThreads(crayX, t, boil);
     drawTangle(crayX, t, boil);
     crayX.setTransform(1, 0, 0, 1, 0, 0);
     crayX.globalCompositeOperation = 'destination-out';
@@ -480,13 +471,13 @@
     crayX.fillRect(0, 0, crayC.width, crayC.height);
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.globalCompositeOperation = 'source-over';
     ctx.clearRect(0, 0, cvs.width, cvs.height);
-    ctx.drawImage(rugC, 0, 0);
-    // Multiply, so crossing strokes darken where they overlap, as wax does.
-    ctx.globalCompositeOperation = 'multiply';
     ctx.drawImage(crayC, 0, 0);
-    ctx.globalCompositeOperation = 'source-over';
+    // Knots over threads: the pile covers the warp it is tied to.
+    aim(ctx);
+    drawBand(ctx, t);
+    const ms = medC.width / dpr;
+    ctx.drawImage(medC, -ms / 2, -ms / 2, ms, ms);
   }
 
   let t0 = null, raf = 0;
