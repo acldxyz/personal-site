@@ -191,16 +191,23 @@
   .spot:hover, .spot:focus-visible { transform: scale(1.22); }
   .spot:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
-  /* The pencilled circle a spot is painted into. A filtered-out book goes
-     back to it, so the grid stays whole; and the places past the last book,
-     there to square off the canvas, are left at it, unpainted, for the
-     books still to come. */
-  .spot.off, .spot.blank {
+  /* The places past the last book, there to square off the canvas, are left
+     at the pencilled circle a spot is painted into, unpainted, for the books
+     still to come. */
+  .spot.blank {
     background: transparent;
     box-shadow: inset 0 0 0 1px rgba(60,50,40,.16);
-    transform: none;
   }
-  .spot.off { pointer-events: none; }
+
+  /* A filtered-out book leaves nothing behind, not even the pencil, but
+     keeps its place so the spots that remain do not move. visibility goes
+     after the fade, taking it out of the pointer's and the tab order's way. */
+  .spot.off {
+    opacity: 0;
+    visibility: hidden;
+    transform: none;
+    transition: opacity .3s ease, visibility 0s linear .3s;
+  }
 
   /* The label is pinned to the window, on the side away from the spot it
      names, and carries the cover: the canvas shows only colour, so this is
