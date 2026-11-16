@@ -176,16 +176,16 @@
       0 18px 40px -18px rgba(40,30,20,.34);
   }
 
-  /* Flat household gloss, as Hirst's assistants lay it: one even coat, a
-     hairline edge so the palest covers still hold their circle on the white
-     ground, and no shading. */
+  /* Flat household gloss, as Hirst's assistants lay it: one even coat, no
+     edge and no shading. The palest spots hold their circle on the white
+     ground by colour alone, because the canvas is kept 10 clear of every
+     spot along with the spots themselves — see SPOT below. */
   .spot {
     display: block;
     width: var(--d);
     height: var(--d);
     border-radius: 50%;
     background: var(--k);
-    box-shadow: inset 0 0 0 1px rgba(40,30,20,.07);
     transition: transform .2s ease-out, background-color .3s ease, box-shadow .3s ease;
   }
   .spot:hover, .spot:focus-visible { transform: scale(1.22); }
@@ -473,7 +473,9 @@ var books = [
      hold to the eye, not just in the code: the covers are thick with near
      blacks and near whites that differ by a digit. So every pair of spots
      here is at least 10 apart in CIELAB (ΔE76), plainly different at a
-     glance, and every spot is still a colour taken from its own cover.
+     glance, and every spot is still a colour taken from its own cover. The
+     canvas counts as a colour already used: the spots carry no edge, so a
+     white cover's spot would otherwise be a hole in the grid.
 
      A book keeps its cover's main colour where that is already distinct,
      newest first. The rest, listed below, were found by reducing each cover
@@ -484,60 +486,59 @@ var books = [
      colour comes within 10 of a spot here, it takes another from its cover. */
 
   var SPOT = {
-    "A Little Life": "#535353",
-    "Sol Lewitt 100 Views": "#3a3a3a",
-    "The Paper Menagerie and Other Stories": "#9a5736",
-    "Trail Wise, Path Ways": "#dcdedd",
-    "The Creative Act: A Way of Being": "#c0c6bb",
-    "The Metamorphosis of Prime Intellect": "#777777",
-    "Blood Music": "#775b58",
-    "My Life at the Limit": "#b86624",
-    "Never Let Me Go": "#9d8f85",
-    "A River Runs Through It": "#ccba95",
-    "Beginner's Mind": "#b7a36f",
+    "The Metamorphosis of Prime Intellect": "#d1d1d1",
+    "The Creative Act: A Way of Being": "#b2b9ae",
+    "Trail Wise, Path Ways": "#828484",
+    "A Little Life": "#606060",
+    "Exhalation": "#5d727a",
     "Ender's Game": "#3a5763",
-    "Hidden Life of Trees": "#f5f4e2",
     "Who: The A Method for Hiring": "#357ec1",
+    "Beginner's Mind": "#b7a36f",
+    "Psychology of Money": "#ecd79a",
+    "The Paper Menagerie and Other Stories": "#9a5736",
+    "A Short Stay in Hell": "#534d3e",
+    "Blood Music": "#775b58",
     "Counter-Intelligence": "#e6795f",
-    "The Tao of Fundraising": "#e3d3c0",
     "How to Make a Few Billion Dollars": "#ed2127",
-    "The Road": "#617383",
+    "The Road": "#303b45",
     "Blood, Sweat, and Pixels": "#f6cb16",
     "There Is No Antimemetics Division": "#3c2514",
     "Permutation City": "#948d51",
+    "Never Let Me Go": "#9d8f85",
     "The Ocean at the End of the Lane": "#04072b",
     "Contact": "#ccf6e9",
     "Dungeon Crawler Carl": "#e41b59",
-    "Murderbot: Exit Strategy": "#112a2f",
-    "Project Hail Mary": "#0d4d56",
-    "Murderbot: Artificial Condition": "#5a4534",
+    "Murderbot: Exit Strategy": "#124435",
+    "Murderbot: Artificial Condition": "#6d4c32",
     "The Hobbit": "#94822f",
     "The Three Body Problem": "#1b3b7d",
     "Ringworld": "#9edfd8",
-    "Weed the People": "#ee6359",
-    "Boys in the Boat": "#ddc487",
+    "Weed the People": "#e2d2b7",
+    "Boys in the Boat": "#9a7b4e",
     "The Sounds of Life": "#bf8c51",
     "The Hard Thing About Hard Things": "#f47024",
+    "The Tao of Fundraising": "#cfb7a5",
     "Roadside Picnic": "#7b9683",
     "Concrete Island": "#2759a2",
     "Gate of the Feral Gods": "#f5fd04",
     "Food Rules: An Eater's Manual": "#172911",
     "The Ministry of Time": "#6b7635",
-    "Into Thin Air": "#3b475d",
-    "The Fall of Hyperion": "#446285",
-    "A Short Stay in Hell": "#262214",
+    "Into Thin Air": "#5b6a84",
+    "The Fall of Hyperion": "#d0a476",
     "Orbital": "#c57a71",
     "Semiosis": "#4e1d11",
     "Solaris": "#d5895c",
-    "I, Robot": "#70160d",
+    "I, Robot": "#3c2d2d",
     "Jurassic Park": "#ea3d54",
-    "Golden Son": "#725328",
+    "Golden Son": "#4f3c24",
     "Chapterhouse Dune": "#344f46",
-    "Hyperion": "#b65841",
+    "Hyperion": "#0c2a26",
     "The Return of the King": "#0c6b0c",
     "The Fellowship of the Ring": "#fbcb4d",
+    "A River Runs Through It": "#ccba95",
     "Murderbot: All Systems Red": "#f35a05",
     "The Man Who Solved the Market": "#5b5516",
+    "Hidden Life of Trees": "#eff9e3",
     "Billion Dollar Whale": "#d5eaf7",
     "The Kill Chain": "#546249",
     "Heretics of Dune": "#2f6567",
@@ -550,14 +551,13 @@ var books = [
     "Snow Crash": "#782836",
     "Kitchen Confidential": "#c19a91",
     "Merchants of Debt": "#2b1006",
-    "Stories of Your Life and Others": "#764730",
-    "Super Pumped": "#891721",
+    "Stories of Your Life and Others": "#bc866b",
+    "My Life at the Limit": "#b86624",
+    "Super Pumped": "#6a1118",
     "The Martian": "#c2492b",
-    "Exhalation": "#768f97",
-    "Dune": "#c8b4a9",
+    "Dune": "#aa4539",
     "Foundation": "#0c1909",
-    "The Corrections": "#dfb382",
-    "Freedom": "#839ab4"
+    "Freedom": "#2c342d"
   };
   books.forEach(function (b) { b.paint = SPOT[b.t] || b.k.toLowerCase(); });
 
