@@ -25,13 +25,15 @@
     --focus: #3d7ba8;
   }
 
+  /* The page is the canvas: one flat primed white, edge to edge, rather
+     than the site's warm paper with a painting hung on it. It has to be
+     exactly the white the spot colours were chosen against (see SPOT), or
+     the palest of them lose their 10 of separation from the ground. */
   body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background:
-      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%)
-      fixed;
+    background: #fcfbf8;
     color: var(--ink);
     font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -99,10 +101,9 @@
 
   /* ------------------------------------------------------------ gallery */
 
-  /* The painting is the page. It hangs in a pool of light in whatever the
-     window leaves below the bar, and everything else steps back: the only
-     other thing near it is its wall label, which is also where the filters
-     are folded away. */
+  /* The spots are the page. They sit in whatever the window leaves below
+     the bar, and everything else steps back: the only other thing near them
+     is the label, which is also where the filters are folded away. */
   .gallery {
     position: relative;
     flex: 1 0 auto;
@@ -110,16 +111,6 @@
     align-items: center;
     justify-content: center;
     padding: clamp(18px, 2.6vw, 40px) var(--margin);
-  }
-  /* Gallery lighting: a soft pool on the wall, centred on the painting
-     rather than on the window. */
-  .gallery::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(ellipse 52% 58% at 50% 46%,
-      rgba(255,254,250,.85) 0%, rgba(255,254,250,.35) 45%, rgba(255,254,250,0) 75%);
   }
 
   .work {
@@ -145,13 +136,8 @@
        the rest, so on a shrinking canvas it can stand past the edge. Clipped,
        as paint would be. A spot's hover growth stays well inside the margin. */
     overflow: hidden;
-    /* Primed canvas: whiter than the page, so it reads as a painting hung on
-       it rather than a panel of the page. */
-    background: #fcfbf8;
-    box-shadow:
-      0 0 0 1px rgba(60,48,32,.06),
-      0 2px 3px rgba(40,30,20,.06),
-      0 22px 48px -20px rgba(40,30,20,.36);
+    /* No ground of its own: the page is the canvas. The box remains, unseen,
+       to hold the one-spot margin that a saved image is cropped to. */
     transition: width .45s ease-out, height .45s ease-out;
   }
 
@@ -204,10 +190,14 @@
      left edge and no wider than the painting. It says what the work is and
      how many spots, and the filters fold away inside it, so they are there
      when wanted and otherwise one quiet word. */
+  /* With no canvas edge to hang from, the label lines up with the spots
+     themselves: its left edge under the first column, its right edge under
+     the last. */
   .label {
-    width: max(var(--cw, 0px), min(340px, 100%));
-    max-width: 100%;
-    padding-top: 16px;
+    width: max(calc(var(--cw, 0px) - 2 * var(--d)), min(340px, 100%));
+    max-width: calc(100% - var(--d));
+    margin-left: var(--d);
+    padding-top: 2px;
   }
 
   .label-row {
@@ -265,6 +255,7 @@
 
   .actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 1px;
     flex: none;
@@ -391,6 +382,7 @@
         <div class="actions">
           <button type="button" class="opt clear" id="clear" disabled>Clear</button>
           <button type="button" class="opt toggle" id="toggle" aria-expanded="false" aria-controls="drawer">Filter<span class="n" id="n"></span></button>
+          <button type="button" class="opt" id="save">Save image</button>
           <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send a rec</a>
         </div>
       </div>
@@ -843,6 +835,67 @@ var books = [
 
     layout();
   }
+
+  /* ---- save ----
+     The image is the spots alone, drawn afresh rather than captured from the
+     screen: the grid as it stands, its one-spot margin all round, on the
+     page's white, at a size that prints. It is drawn from where each spot is
+     going, not where it is, so a save pressed mid-transition still comes out
+     square. Where the device can share a file (most phones) it goes to the
+     share sheet; otherwise it downloads. */
+
+  var GROUND = '#fcfbf8';
+
+  function picture() {
+    var st = getComputedStyle(work);
+    var d = parseFloat(st.getPropertyValue('--d'));
+    var w = parseFloat(st.getPropertyValue('--cw')), h = parseFloat(st.getPropertyValue('--ch'));
+    var k = Math.max(2, 2400 / w);          // at least 2400px across
+    var c = document.createElement('canvas');
+    c.width = Math.round(w * k);
+    c.height = Math.round(h * k);
+    var g = c.getContext('2d');
+    g.fillStyle = GROUND;
+    g.fillRect(0, 0, c.width, c.height);
+    books.forEach(function (b) {
+      if (!b.on) return;
+      var x = parseFloat(b.el.style.getPropertyValue('--x')), y = parseFloat(b.el.style.getPropertyValue('--y'));
+      g.fillStyle = b.paint;
+      g.beginPath();
+      g.arc((x + d / 2) * k, (y + d / 2) * k, d / 2 * k, 0, Math.PI * 2);
+      g.fill();
+    });
+    return c;
+  }
+
+  function fileName() {
+    var parts = GROUPS.filter(function (g) { return active[g.key] !== 'all'; }).map(function (g) {
+      var v = active[g.key];
+      return g.key === 'r' ? (v === 'A' ? 'all-time' : 'recommended') : v;
+    });
+    var tag = parts.join('-').toLowerCase().replace(/≤\s*/g, 'to-').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return 'bookshelf-spots' + (tag ? '-' + tag : '') + '.png';
+  }
+
+  document.getElementById('save').addEventListener('click', function () {
+    if (!books.some(function (b) { return b.on; })) return;
+    picture().toBlob(function (blob) {
+      var name = fileName();
+      var file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'Bookshelf' }).catch(function () {});
+        return;
+      }
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }, 'image/png');
+  });
 
   var pending = 0;
   addEventListener('resize', function () {
