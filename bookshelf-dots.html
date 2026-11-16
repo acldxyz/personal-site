@@ -828,7 +828,7 @@ var books = [
       return g.key === 'r' ? (v === 'A' ? 'All-time' : 'Recommended') : v;
     });
     document.getElementById('which').textContent = names.length ? ' — ' + names.join(' · ') : '';
-    document.getElementById('count').textContent = 'Household gloss on canvas · ' +
+    document.getElementById('count').textContent =
       (shown === books.length ? books.length + ' spots' : shown + ' of ' + books.length + ' spots');
     document.getElementById('n').textContent = names.length ? ' · ' + names.length : '';
     clear.disabled = !names.length;
