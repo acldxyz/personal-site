@@ -751,8 +751,8 @@ var books = [
      both the width and the height allow, and the count that gives the
      largest spot wins. Fewer books make a smaller grid of larger spots, a
      single book one spot as large as the space allows. Where the last row
-     comes up short it is centred, as a hang would be, rather than leaving
-     blank places: the canvas only ever holds the books that are on it. */
+     comes up short it runs from the left like the rows above it, and simply
+     stops: no blank places, the canvas only ever holds the books on it. */
 
   var MIN_D = 12, MAX_D = 150;
 
@@ -803,11 +803,9 @@ var books = [
     work.style.setProperty('--d', D + 'px');
     work.style.setProperty('--cw', (2 * c + 1) * D + 'px');
     work.style.setProperty('--ch', (2 * r + 1) * D + 'px');
-    var lastRow = n - (r - 1) * c;
     shown.forEach(function (b, i) {
       var row = Math.floor(i / c), col = i % c;
-      var shift = row === r - 1 ? (c - lastRow) * D : 0;
-      b.el.style.setProperty('--x', D + col * 2 * D + shift + 'px');
+      b.el.style.setProperty('--x', D + col * 2 * D + 'px');
       b.el.style.setProperty('--y', D + row * 2 * D + 'px');
     });
 
