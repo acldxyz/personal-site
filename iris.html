@@ -10,16 +10,26 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; }
 
+  /* --d is the iris diameter. The script sizes the painted eye by the same
+     rule (IRIS_W / IRIS_H below); if one changes, change the other. */
+  :root { --d: min(86vw, 76vh); }
+
   html, body { height: 100%; margin: 0; }
 
   body {
     /* What shows before the first frame, and for good where WebGL2 is missing:
-       the same eye in four stops, so the page never flashes paper-white and
-       then turns dark. */
+       the eye in a few flat stops on the site's paper, which is close enough
+       to the white of an eye that the painted version fades in over it
+       without the page changing colour. */
     background:
-      radial-gradient(circle at 50% 50%,
-        #050505 0 13%, #7a4a12 15%, #b9812a 24%, #2f6f8c 38%, #123a55 62%, #06131f 100%);
-    background-color: #06131f;
+      radial-gradient(circle at 50% 48.5%,
+        #070606 0, #070606 calc(var(--d) * .133),
+        #7d5324 calc(var(--d) * .142), #a67a3c calc(var(--d) * .225),
+        #6f8798 calc(var(--d) * .285), #7f9bb0 calc(var(--d) * .40),
+        #33434f calc(var(--d) * .492), #c9c8c4 calc(var(--d) * .525),
+        rgba(242, 238, 229, 0) calc(var(--d) * .56)),
+      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%);
+    background-color: #f2eee5;
     overflow: hidden;
   }
 
@@ -29,15 +39,15 @@
     width: 100%;
     height: 100%;
     display: block;
-    /* Hidden while it paints tile by tile, then revealed whole. */
+    /* Hidden until the eye is fully painted, then revealed whole. */
     opacity: 0;
     transition: opacity .62s ease-out;
   }
 
   #iris.ready { opacity: 1; }
 
-  /* The interface register from index.html, with the ink inverted: the paper
-     tones become the text because the surface here is dark. */
+  /* The pill control from index.html, unchanged: the white of the eye is
+     near enough to the paper that the site's own ink works on it. */
   nav {
     position: fixed;
     left: 0; right: 0;
@@ -55,32 +65,34 @@
   }
 
   nav a {
-    color: rgba(250, 248, 243, .82);
+    color: #6f665d;
     text-decoration: none;
     padding: .78em 1.2em;
     border-radius: 999px;
     border: 1px solid transparent;
-    /* The iris behind is busy and changes from pale strand to dark crypt
-       within a letter's width; the shadow gives the text its own ground. */
-    text-shadow: 0 1px 6px rgba(0, 0, 0, .75), 0 0 2px rgba(0, 0, 0, .6);
     transition: color .2s ease, background-color .2s ease, border-color .2s ease;
   }
 
   nav a:hover {
-    color: #fff;
-    background: rgba(0, 0, 0, .38);
-    border-color: rgba(250, 248, 243, .34);
+    color: #2f2a24;
+    background: rgba(0, 0, 0, .05);
+    border-color: rgba(0, 0, 0, .14);
   }
 
   nav a:focus-visible {
-    outline: 2px solid #8cc4ea;   /* #3d7ba8 lifted: the house blue vanishes on the iris */
+    outline: 2px solid #3d7ba8;
     outline-offset: 2px;
   }
 
-  /* Narrow screens: tighten the pills so the row breaks 3 + 2 at worst,
-     not four and an orphan. */
+  /* Narrow screens: tighten the pills so all five stay on one row. At the
+     full padding a phone breaks them four and an orphan. */
   @media (max-width: 440px) {
-    nav a { padding: .78em .7em; }
+    nav { gap: 0; padding: 0 6px; }
+    nav a { padding: .78em .5em; }
+  }
+  @media (max-width: 374px) {
+    nav { font-size: 10px; }
+    nav a { padding: .78em .42em; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -91,7 +103,7 @@
 <body>
 
 <canvas id="iris" role="img"
-  aria-label="An extreme close-up of a human iris filling the page: an amber ring around the pupil breaking outward into blue fibres."></canvas>
+  aria-label="A close-up of a human eye seen straight on: a blue-grey iris with a hazel ring around the pupil, and the white of the eye, crossed by a few fine blood vessels, filling the rest of the page."></canvas>
 
 <nav aria-label="Site">
   <a href="index.html">Home</a>
@@ -101,17 +113,108 @@
   <a href="mailto:adam@acld.xyz">Contact</a>
 </nav>
 
-<script id="frag" type="x-shader/x-fragment">#version 300 es
+<!--
+  How the eye is made.
+
+  An iris photographs the way it does because it is a physical thing: layers
+  of pale collagen strands lying over one another above a dark back surface,
+  with pigment dusted on top. Noise that merely looks stringy does not survive
+  a second glance, so the strands here are real geometry.
+
+  1. The script grows the anatomy as centre lines: the thick radial
+     trabeculae, the arcades that join them into the collarette, the finer
+     layers beneath, the pupillary fibres, and the vessels of the sclera.
+  2. Every strand is drawn as a ribbon into an offscreen relief map, shaded
+     as a half-cylinder and depth-tested, so strands genuinely pass over and
+     under each other.
+  3. One full-page pass turns that relief into a photograph: colour by depth,
+     pigment, shadow, the limbus, the white of the eye.
+  4. The scleral vessels are drawn over the top.
+-->
+
+<script id="vs-ribbon" type="x-shader/x-vertex">#version 300 es
+layout(location = 0) in vec2  aPos;    // a point on the centre line
+layout(location = 1) in vec2  aSide;   // unit vector across the ribbon there
+layout(location = 2) in float aHw;     // half-width
+layout(location = 3) in float aU;      // -1 on one edge, +1 on the other
+layout(location = 4) in vec3  aD;      // payload; each fragment shader says what it holds
+uniform vec2  uScale, uOff;
+uniform float uMinHw;
+out float vU;
+out vec3  vD;
+out float vThin;
+
+void main() {
+  // A ribbon narrower than the raster can resolve breaks into dashes. It is
+  // drawn at the minimum width instead and told how much to fade.
+  float hw = max(aHw, uMinHw);
+  vThin = aHw / hw;
+  vU = aU;
+  vD = aD;
+  gl_Position = vec4((aPos + aSide * hw * aU) * uScale + uOff, 0.0, 1.0);
+}
+</script>
+
+<script id="fs-fibre" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in float vU;
+in vec3  vD;      // x: height of the strand's axis, y: its own relief, z: tint
+in float vThin;
+out vec4 o;
+
+void main() {
+  // Each strand is the top half of a cylinder lying on its side.
+  float c = sqrt(max(1.0 - vU * vU, 0.0));
+  float h = clamp(vD.x + vD.y * c * vThin, 0.0, 1.0);
+  vec2  g = vec2(dFdx(vU), dFdy(vU));            // points across the strand
+  vec3  n = normalize(vec3(g / max(length(g), 1e-6) * vU * 0.9, c + 0.28));
+  // Height is written as depth, so where strands cross the upper one wins
+  // whatever order they were drawn in.
+  gl_FragDepth = 1.0 - h;
+  o = vec4(h, n.xy * 0.5 + 0.5, vD.z);
+}
+</script>
+
+<script id="fs-vessel" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+in float vU;
+in vec3  vD;      // x: opacity, y: 0 arterial .. 1 venous, z: 0 on the surface .. 1 deep
+in float vThin;
+out vec4 o;
+
+void main() {
+  float e = 1.0 - abs(vU);
+  // Surface vessels have an edge; deep ones are seen through tissue and have none.
+  float prof = smoothstep(0.0, mix(0.85, 1.0, vD.z), e);
+  vec3 art  = vec3(0.770, 0.250, 0.205);
+  vec3 ven  = vec3(0.585, 0.180, 0.215);
+  vec3 deep = vec3(0.690, 0.400, 0.450);
+  o = vec4(mix(mix(art, ven, vD.y), deep, vD.z), vD.x * prof * vThin);
+}
+</script>
+
+<script id="vs-page" type="x-shader/x-vertex">#version 300 es
+layout(location = 0) in vec2 a;
+void main() { gl_Position = vec4(a, 0.0, 1.0); }
+</script>
+
+<script id="fs-page" type="x-shader/x-fragment">#version 300 es
 precision highp float;
 
-uniform vec2  uRes;    // backing-store size, px
-uniform float uR;      // limbus radius, px
+uniform vec2  uC;        // iris centre, px, GL axes (y up)
+uniform float uR;        // limbus radius, px
+uniform float uTex;      // relief-map texels per eye unit
+uniform float uExt;      // half-extent of the relief map, eye units
+uniform vec2  uPolarR;   // radius at the first row of uPolar, and the span to the last
 uniform float uSeed;
-uniform int   uTaps;   // always 4; see main()
+uniform sampler2D uMap;    // relief: r height, gb normal.xy, a tint
+uniform sampler2D uRing;   // by angle: r pupil radius, g collarette radius, b limbus wobble
+uniform sampler2D uPolar;  // by angle and radius: r pigment, g crypt, b furrow, a freckle
 out vec4 outColor;
 
-const float TAU   = 6.28318530718;
-const float PUPIL = 0.215;   // pupil radius as a share of the limbus radius
+const float TAU = 6.28318530718;
+// The site's light, (-0.40, -0.55, 0.73) in CSS axes, with y turned up for GL.
+const vec3 LIGHT = vec3(-0.4003, 0.5505, 0.7306);
 
 float hash(vec3 p) {
   p = fract(p * 0.3183099 + 0.1);
@@ -122,287 +225,898 @@ float hash(vec3 p) {
 float noise(vec3 x) {
   vec3 i = floor(x), f = fract(x);
   f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(mix(hash(i),                 hash(i + vec3(1,0,0)), f.x),
-                 mix(hash(i + vec3(0,1,0)),   hash(i + vec3(1,1,0)), f.x), f.y),
-             mix(mix(hash(i + vec3(0,0,1)),   hash(i + vec3(1,0,1)), f.x),
-                 mix(hash(i + vec3(0,1,1)),   hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+  return mix(mix(mix(hash(i),               hash(i + vec3(1,0,0)), f.x),
+                 mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+                 mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
 }
 
-/* Everything is sampled on a cylinder: angle wraps around it, radius runs
-   along it. That is what makes the fibres seamless at the atan2 cut, and it
-   keeps the strand count constant from pupil to limbus the way real stroma
-   radiates, instead of the strands thinning out as the circle widens. */
-vec3 cyl(float th, float F, float z) {
-  return vec3(cos(th) * F, sin(th) * F, z) + uSeed;
+// Angle wrapped onto a circle, so angular noise has no seam at the atan2 cut.
+vec3 cyl(float th, float F, float z) { return vec3(cos(th) * F, sin(th) * F, z) + uSeed; }
+
+vec4 relief(vec2 q, float lod) { return textureLod(uMap, q / uExt * 0.5 + 0.5, lod); }
+
+// Mean height over a disc of radius rad: four taps of the mip whose texels
+// are about that size. Cheap, and all the shadowing below is built on it.
+float meanHeight(vec2 q, float rad) {
+  float lod = max(log2(rad * uTex), 0.0);
+  vec2 o = rad * vec2(0.66, 0.27);
+  return 0.25 * (relief(q + o, lod).r + relief(q - o, lod).r
+               + relief(q + vec2(-o.y, o.x), lod).r + relief(q + vec2(o.y, -o.x), lod).r);
 }
 
-float ridge(float n) { n = 1.0 - abs(2.0 * n - 1.0); return n * n; }
-
-struct Surf { float h; float s; float crypt; float furr; float tc; float t; float th; float thw; float col; float rp; float rho; };
-
-Surf surface(vec2 p) {
-  Surf o;
-  float rho = length(p) / uR;
-  float th  = atan(p.y, p.x);
-
-  // The pupil is never a true circle.
-  float rp = PUPIL * (1.0 + 0.022 * (noise(cyl(th, 2.0, 0.0)) - 0.5)
-                          + 0.006 * (noise(cyl(th, 9.0, 4.0)) - 0.5));
-  float t  = (rho - rp) / (1.0 - rp);        // 0 at the pupil margin, 1 at the limbus
-  float tc = clamp(t, 0.0, 1.0);
-
-  // Collarette: the zigzag wreath where the pupillary and ciliary zones meet.
-  float col = 0.27 + 0.070 * (noise(cyl(th,  4.0, 7.0)) - 0.5)
-                   + 0.045 * (noise(cyl(th, 15.0, 2.0)) - 0.5)
-                   + 0.020 * (noise(cyl(th, 46.0, 5.0)) - 0.5);
-  float pz = 1.0 - smoothstep(col - 0.025, col + 0.025, tc);   // 1 inside the wreath
-
-  // Fibres wander on their way out; without this they read as a spoked wheel.
-  // Inside the wreath they run nearly straight, outside they rope and braid,
-  // so the meander is scaled by how far past the wreath we are.
-  float loose = smoothstep(col - 0.05, col + 0.25, tc);
-  float thw = th + 0.050 * (noise(cyl(th,  5.0, tc * 3.0)) - 0.5)
-                 + (0.012 + 0.020 * loose) * (noise(cyl(th, 17.0, tc * 7.0)) - 0.5)
-                 + (0.004 + 0.007 * loose) * (noise(cyl(th, 48.0, tc * 18.0)) - 0.5);
-
-  // Octaves above what a pixel can carry are faded out rather than left to alias.
-  float px = rho * uR;                       // pixels per radian at this radius
-  #define CARRY(F) smoothstep(1.3, 3.2, px / (F))
-
-  float coarse = ridge(noise(cyl(thw,  30.0, tc * 3.2)));
-  float wM = CARRY(80.0), wF = CARRY(190.0), wX = CARRY(420.0);
-  float mid    = ridge(noise(cyl(thw,  80.0, tc * 5.0 + 11.0))) * wM;
-  float fine   = ridge(noise(cyl(thw, 190.0, tc * 8.0 + 23.0))) * wF;
-  float xfine  = ridge(noise(cyl(thw, 420.0, tc * 14.0 + 31.0))) * wX;
-  // Cords come and go along their length instead of running rim to rim.
-  float gate   = 0.45 + 0.55 * noise(cyl(thw, 30.0, tc * 9.0 + 70.0));
-
-  // Crypts: lozenge pits, long in the radial direction, where the front
-  // layer is missing and the darker mesh behind shows.
-  float cn    = noise(cyl(thw, 13.0, tc * 4.2 + 40.0));
-  float band  = smoothstep(col - 0.02, col + 0.05, tc) * (1.0 - smoothstep(0.50, 0.78, tc));
-  float crypt = smoothstep(0.60, 0.76, cn) * band;
-  float cn2   = noise(cyl(thw, 27.0, tc * 11.0 + 60.0));
-  crypt = max(crypt, smoothstep(0.64, 0.78, cn2)
-                     * smoothstep(col - 0.01, col + 0.03, tc)
-                     * (1.0 - smoothstep(col + 0.10, col + 0.24, tc)));
-
-  // Contraction furrows: a few broad, broken concentric folds near the rim.
-  float fw   = tc + 0.040 * (noise(cyl(th, 3.0, 20.0)) - 0.5);
-  float furr = pow(0.5 + 0.5 * cos(TAU * fw * 6.5), 3.0)
-             * smoothstep(0.52, 0.68, tc) * (1.0 - smoothstep(0.88, 0.98, tc))
-             * smoothstep(0.40, 0.75, noise(cyl(th, 2.5, fw * 6.0 + 80.0)));
-
-  // Height of the front surface.
-  float hCil = (0.52 * coarse * gate + 0.26 * mid + 0.14 * fine + 0.08 * xfine) * 1.12;
-  // Renormalised by what survived, so a small screen that loses the fine
-  // octaves still gets full-contrast fibres from the ones it can show.
-  float pup44 = ridge(noise(cyl(thw, 46.0, tc * 2.4 + 17.0)));
-  float hPup = (0.06 * coarse + 0.22 * pup44 + 0.30 * mid + 0.26 * fine + 0.16 * xfine)
-             / (0.28 + 0.30 * wM + 0.26 * wF + 0.16 * wX);
-  float h    = mix(hCil, hPup, pz);
-  float wreath = exp(-pow((tc - col) / 0.024, 2.0)) * (0.50 + 0.50 * mid);
-  h += 0.34 * wreath;
-  h *= 1.0 - 0.66 * crypt;
-  // Inside a crypt the fine mesh of the back layer is what you see.
-  h += crypt * 0.20 * (0.6 * mid + fine + xfine);
-  h -= 0.10 * furr;
-
-  o.h = h; o.s = smoothstep(0.05, 0.95, h); o.crypt = crypt; o.furr = furr;
-  o.tc = tc; o.t = t; o.th = th; o.thw = thw; o.col = col; o.rp = rp; o.rho = rho;
-  return o;
-}
-
-vec3 shade(vec2 p) {
-  // surface() is big, and is needed three times here and four times over in
-  // main(). Written out, that is twelve inlined copies, which took some
-  // drivers long enough to compile that the context was dropped. Looping to a
-  // uniform bound keeps it to one copy.
-  Surf a;
-  float hx = 0.0, hy = 0.0;
-  float e = 1.5;
-  for (int k = 0; k < min(uTaps, 3); k++) {
-    Surf q = surface(p + (k == 1 ? vec2(e, 0.0) : k == 2 ? vec2(0.0, e) : vec2(0.0)));
-    if (k == 0) a = q; else if (k == 1) hx = q.h; else hy = q.h;
-  }
-  float tc = a.tc, th = a.th, thw = a.thw, s = a.s;
-
-  // Relief, by finite differences a pixel and a half apart: wide enough that
-  // the finest octave cannot beat against the pixel grid. Lit from the upper
-  // left, like everything else on the site.
-  vec2  g = vec2(hx - a.h, hy - a.h) / e * (uR / 520.0);
-  float lit = 1.0 + clamp(dot(g, vec2(-0.59, 0.81)) * 4.2, -0.50, 0.70);
-
-  // Colour. Each zone has a deep tone for the gaps and a pale one for strands.
-  vec3 amberDeep = vec3(0.250, 0.095, 0.020);
-  vec3 amberMid  = vec3(0.760, 0.430, 0.080);
-  vec3 amberPale = vec3(0.970, 0.790, 0.380);
-  vec3 blueDeep  = vec3(0.030, 0.115, 0.200);
-  vec3 blueMid   = vec3(0.130, 0.400, 0.550);
-  vec3 bluePale  = vec3(0.560, 0.770, 0.850);
-
-  vec3 amber = mix(mix(amberDeep, amberMid, smoothstep(0.0, 0.5, s)), amberPale, smoothstep(0.45, 1.0, s));
-  vec3 blue  = mix(mix(blueDeep,  blueMid,  smoothstep(0.0, 0.55, s)), bluePale,  smoothstep(0.55, 1.0, s));
-
-  // Central heterochromia: the amber does not stop at the wreath, it runs out
-  // along individual fibres as flames, some long, most short.
-  float tongue = noise(cyl(thw, 26.0, tc * 1.1 + 90.0));
-  float reach  = a.col + 0.02 + 0.30 * tongue * tongue
-                       + 0.10 * (noise(cyl(thw, 7.0, 95.0)) - 0.5);
-  float warm   = 1.0 - smoothstep(reach - 0.07, reach + 0.10, tc);
-  vec3  c      = mix(blue, amber, warm);
-
-  // A green cast where the two meet; pigment over blue stroma reads green.
-  float seam = exp(-pow((tc - reach) / 0.11, 2.0));
-  c = mix(c, c * vec3(0.80, 1.10, 0.62) + vec3(0.0, 0.03, 0.0), 0.55 * seam * (1.0 - warm * 0.6));
-
-  // The blue is not one blue: slow drifts of hue and value across the ciliary zone.
-  float drift = noise(cyl(th, 3.0, tc * 2.0 + 120.0));
-  c *= mix(vec3(0.84, 0.93, 1.06), vec3(1.06, 1.04, 0.95), drift);
-
-  // Freckles: small pigment spots that stain the fibres rather than cover them.
-  float fk = noise(cyl(thw, 15.0, tc * 16.0 + 150.0));
-  float freckle = smoothstep(0.78, 0.90, fk) * smoothstep(0.34, 0.44, tc) * (1.0 - smoothstep(0.78, 0.88, tc));
-  c = mix(c, vec3(0.50, 0.25, 0.07) * (0.45 + 0.9 * s), 0.42 * freckle);
-
-  c *= mix(1.0, 0.58, a.crypt);    // pits sit in their own shadow
-  c *= 1.0 - 0.16 * a.furr;
-  c *= lit;
-
-  // The iris dishes toward the pupil, and the ruff at the margin is near-black brown.
-  c *= 0.60 + 0.40 * smoothstep(0.0, 0.16, tc);
-  float ruffW = 0.016 + 0.020 * noise(cyl(th, 70.0, 0.0)) + 0.010 * noise(cyl(th, 190.0, 3.0));
-  c = mix(vec3(0.050, 0.022, 0.010), c, smoothstep(0.0, ruffW, a.t));
-
-  // Limbal ring: the rim darkens and loses its edge under the cornea's margin.
-  float limb = smoothstep(0.74, 1.0, tc);
-  c = mix(c, vec3(0.020, 0.050, 0.080) * (0.6 + 0.8 * s), limb * limb * 0.92);
-
-  // Sclera, for the viewports whose corners reach past the rim.
-  vec3 sclera = vec3(0.860, 0.835, 0.800) * (0.90 + 0.10 * noise(vec3(p / uR * 6.0, 3.0)));
-  c = mix(c, sclera, smoothstep(0.985, 1.05, a.rho));
-
-  // Pupil, antialiased in pixels so its edge is equally crisp at any size.
-  float edge = (a.rho - a.rp) * uR;
-  return mix(vec3(0.006, 0.005, 0.005), c, smoothstep(-1.0, 1.5, edge));
+vec3 ramp(float x, vec3 a, vec3 b, vec3 c, vec3 d) {
+  x = clamp(x, 0.0, 1.0) * 3.0;
+  return x < 1.0 ? mix(a, b, x) : x < 2.0 ? mix(b, c, x - 1.0) : mix(c, d, x - 2.0);
 }
 
 void main() {
-  vec2 p = gl_FragCoord.xy - 0.5 * uRes;
-  // Four rotated-grid samples. The fibres are finer than a pixel in places,
-  // and one sample per pixel turned them into a dotted moire.
-  const vec2 TAP[4] = vec2[4](vec2( 0.125,  0.375), vec2(-0.375,  0.125),
-                              vec2( 0.375, -0.125), vec2(-0.125, -0.375));
-  vec3 c = vec3(0.0);
-  for (int i = 0; i < uTaps; i++) c += shade(p + TAP[i]);
-  c /= float(uTaps);
+  vec2  q  = (gl_FragCoord.xy - uC) / uR;      // eye space: limbus at radius 1
+  float r  = length(q);
+  float th = atan(q.y, q.x);
+  float px = 1.0 / uR;
+  vec4  rg = texture(uRing, vec2(th / TAU, 0.5));
+  float rp = rg.r, rc = rg.g;
 
-  // A grain finer than the fibres stops the smooth passages looking rendered.
-  c += (hash(vec3(gl_FragCoord.xy, uSeed)) - 0.5) * 0.022;
+  // ---- The white of the eye ----------------------------------------------
+  // Brightest around the cornea and falling away, warmer, as the globe turns.
+  vec3 scl = mix(vec3(0.962, 0.955, 0.944), vec3(0.905, 0.884, 0.856), smoothstep(1.15, 3.6, r));
+  float mott = 0.6 * noise(vec3(q * 1.3, 5.0) + uSeed) + 0.4 * noise(vec3(q * 4.3, 9.0) + uSeed);
+  scl *= 0.972 + 0.056 * mott;
+  // The capillaries too fine to draw show as a flush, strongest to either
+  // side, where the vessels come in.
+  float flush_ = smoothstep(1.03, 1.30, r) * (1.0 - smoothstep(1.5, 3.3, r))
+               * (0.30 + 0.70 * abs(q.x) / max(r, 1e-4));
+  scl *= mix(vec3(1.0), vec3(1.0, 0.962, 0.950), flush_ * (0.25 + 0.75 * noise(vec3(q * 2.1, 13.0) + uSeed)));
+  // By the cornea the sclera thins over the dark tissue behind and greys.
+  scl *= mix(vec3(1.0), vec3(0.900, 0.925, 0.950), exp(-pow((r - 1.030) / 0.060, 2.0)));
 
-  outColor = vec4(pow(clamp(c, 0.0, 1.0), vec3(0.94)), 1.0);
+  vec3 col = scl;
+
+  // The cornea is wider than it is tall: the white laps further over the
+  // iris above and below than at the sides.
+  float rl = 1.0 - 0.030 * q.y * q.y / max(r * r, 1e-6) + (rg.b - 0.5) * 0.016;
+
+  if (r < rl + 0.10) {
+    // ---- Relief ----------------------------------------------------------
+    // The map is drawn finer than the page; four taps bring it down cleanly.
+    vec4 m = 0.25 * (relief(q + px * vec2( 0.25,  0.25), 0.0) + relief(q + px * vec2(-0.25,  0.25), 0.0)
+                   + relief(q + px * vec2( 0.25, -0.25), 0.0) + relief(q + px * vec2(-0.25, -0.25), 0.0));
+    // Depth of field. A macro lens holds the front of the stroma sharp and
+    // lets the layers behind it go soft; without that every depth is equally
+    // crisp and the eye reads as drawn.
+    float lodS = max(log2(0.0045 * uTex), 0.0);
+    vec4  ms   = 0.5 * (relief(q + px * vec2(0.7, 0.3), lodS) + relief(q - px * vec2(0.7, 0.3), lodS));
+    m = mix(ms, m, smoothstep(0.26, 0.50, m.r));
+    float h    = m.r;
+    vec2  nxy  = m.gb * 2.0 - 1.0;
+    vec3  n    = vec3(nxy, sqrt(max(1.0 - dot(nxy, nxy), 0.0)));
+    float tint = m.a;
+
+    vec4  pol   = texture(uPolar, vec2(th / TAU, (r - uPolarR.x) / uPolarR.y));
+    float grain = noise(vec3(q * 230.0, 1.0) + uSeed);
+    // Melanin is carried strand by strand and lies in clumps. So where the
+    // hazel gives out, brown strands run on among blue ones, and the edge is
+    // granular instead of a tide line.
+    float P = smoothstep(0.24, 0.76, pol.r + (tint - 0.5) * 0.62 + (grain - 0.5) * 0.22);
+
+    // A pigmented front layer is also a thicker one: it part-fills the gaps
+    // between strands, so they are never open to the back as the blue ones are.
+    float hf = max(h, P * (0.33 + 0.14 * grain));
+
+    // ---- Colour by depth -------------------------------------------------
+    // Unpigmented stroma: white collagen on top, and blue only by scattering
+    // from the depths, so the deeper a strand lies the bluer it is.
+    vec3 blue  = ramp(h,  vec3(0.075, 0.112, 0.160), vec3(0.215, 0.325, 0.440),
+                          vec3(0.445, 0.570, 0.665), vec3(0.760, 0.815, 0.845));
+    vec3 brown = ramp(hf, vec3(0.150, 0.085, 0.046), vec3(0.370, 0.238, 0.128),
+                          vec3(0.600, 0.435, 0.255), vec3(0.800, 0.695, 0.525));
+    // The hazel is not one colour either: rust by the pupil, ochre at the
+    // collarette, yellowing where it thins beyond; warmer in some sectors.
+    brown *= mix(vec3(0.90, 0.82, 0.74), vec3(1.05, 1.04, 1.00), smoothstep(rp, rc, r));
+    brown *= mix(vec3(1.0), vec3(1.00, 1.05, 0.88), smoothstep(rc, rc + 0.10, r));
+    brown *= mix(vec3(1.04, 0.97, 0.90), vec3(0.97, 1.02, 1.04), noise(cyl(th, 2.5, 11.0)));
+    vec3 alb = mix(blue, brown, P);
+    // A thin veil of pigment over blue stroma is the green of a hazel eye.
+    float veil = smoothstep(0.06, 0.42, pol.r) * (1.0 - P);
+    alb = mix(alb, alb * vec3(1.08, 1.03, 0.70), veil * 0.55);
+    // Here and there the pigment is heaped into darker clumps.
+    float clump = smoothstep(0.55, 0.80, noise(vec3(q * 34.0, 7.0) + uSeed)) * P;
+    alb *= mix(vec3(1.0), vec3(0.74, 0.66, 0.58), clump * 0.7);
+    // A freckle is flat and dark: pigment on the surface, hiding the strands.
+    alb = mix(alb, vec3(0.250, 0.145, 0.075) * (0.75 + 0.5 * h), pol.a * 0.88);
+    // No two strands are quite the same colour, nor one strand all one tone.
+    alb *= 0.93 + 0.14 * noise(vec3(q * 55.0, 3.0) + uSeed);
+    alb *= 0.92 + 0.16 * tint;
+    alb *= mix(vec3(0.975, 1.0, 1.035), vec3(1.04, 1.0, 0.95), tint);
+
+    // ---- Light -----------------------------------------------------------
+    // Soft: this is tissue under a cornea, not wire. Most of the modelling
+    // comes from depth, little from the direction of the light.
+    float lit = 0.88 + 0.165 * dot(n, LIGHT);        // 1.0 on a flat surface
+    // Shadowing: a point lower than its surroundings sees less of the light.
+    float near_ = meanHeight(q, 0.010);
+    float wide  = meanHeight(q, 0.034);
+    float ao = 1.0 - 0.36 * clamp((near_ - h) * 1.7, 0.0, 1.0)
+                   - 0.26 * clamp((wide  - h) * 1.3, 0.0, 1.0);
+    // And something taller on the lit side throws a shadow.
+    vec2  ld  = normalize(LIGHT.xy);
+    float occ = max(relief(q + ld * 0.0055, max(log2(0.0030 * uTex), 0.0)).r - h - 0.05, 0.0)
+              + max(relief(q + ld * 0.0120, max(log2(0.0065 * uTex), 0.0)).r - h - 0.09, 0.0);
+    float shadow = 1.0 - clamp(occ * 1.6, 0.0, 0.32);
+    // The larger swells, the collarette above all, catch the light too.
+    float e = 0.014;
+    vec2 slope = vec2(meanHeight(q + vec2(e, 0.0), 0.016) - meanHeight(q - vec2(e, 0.0), 0.016),
+                      meanHeight(q + vec2(0.0, e), 0.016) - meanHeight(q - vec2(0.0, e), 0.016));
+    lit += clamp(-dot(slope, LIGHT.xy) * 1.2, -0.12, 0.16);
+
+    ao = mix(ao, 1.0, P * 0.40);     // the filled, pigmented layer has less to fall into
+    vec3 c = alb * lit * ao * shadow;
+    // Some sectors are simply darker than others.
+    c *= 0.88 + 0.24 * (0.6 * noise(cyl(th, 2.0, r * 2.0 + 21.0)) + 0.4 * noise(cyl(th, 6.0, r * 5.0 + 23.0)));
+    c *= 1.0 - 0.13 * pol.b;                          // contraction furrows
+    c *= 1.0 - 0.14 * pol.g * (1.0 - smoothstep(0.2, 0.5, h));   // crypt floors
+
+    // The iris dishes toward the pupil.
+    c *= 0.78 + 0.22 * smoothstep(rp, rp + 0.13, r);
+
+    // Limbal ring: the last of the iris darkens and blues under the cornea's edge.
+    float rim = smoothstep(0.83, 1.0, r);
+    c = mix(c, c * vec3(0.42, 0.48, 0.56), rim * rim * 0.92);
+
+    // Pupillary ruff: the back surface curls round the margin as a dark,
+    // finely beaded frill.
+    float bead = noise(cyl(th, 60.0, 0.0));
+    float ruff = rp + 0.005 + 0.014 * bead;
+    vec3  ruffC = vec3(0.070, 0.036, 0.020) * (0.65 + 0.7 * noise(cyl(th, 150.0, 2.0)));
+    c = mix(ruffC, c, smoothstep(ruff - 0.004, ruff + 0.005, r));
+    // The pupil, antialiased in pixels so the edge is as crisp at any size.
+    float rpe = rp - 0.0035 * noise(cyl(th, 95.0, 6.0));
+    c = mix(vec3(0.010, 0.009, 0.009), c, smoothstep(-0.7, 0.9, (r - rpe) * uR));
+
+    // Limbus: no line, just the cornea's clear margin clouding into sclera.
+    vec3  haze = mix(vec3(0.215, 0.250, 0.300), scl, smoothstep(rl - 0.012, rl + 0.070, r));
+    col = mix(c, haze, smoothstep(rl - 0.034, rl + 0.034, r));
+  }
+
+  // A grain finer than anything drawn stops the smooth passages looking rendered.
+  col += (hash(vec3(gl_FragCoord.xy, uSeed)) - 0.5) * 0.014;
+  outColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 </script>
 
 <script>
 (function () {
-  var canvas = document.getElementById('iris');
-  var gl = canvas.getContext('webgl2', { antialias: false, alpha: false, preserveDrawingBuffer: true });
-  if (!gl) return;   // the CSS gradient on <body> stands in
+  // Growing the eye is a few hundred milliseconds of script. It waits for
+  // the first frame, so the menu and the flat stand-in are already on screen
+  // while it runs.
+  requestAnimationFrame(function () { setTimeout(grow, 0); });
 
-  function compile(type, src) {
-    var sh = gl.createShader(type);
-    gl.shaderSource(sh, src);
-    gl.compileShader(sh);
-    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-      console.error(gl.getShaderInfoLog(sh));
-      return null;
+  function grow() {
+    var canvas = document.getElementById('iris');
+    var gl = canvas.getContext('webgl2',
+      { antialias: false, alpha: false, depth: false, preserveDrawingBuffer: true });
+    if (!gl) return;   // the CSS gradients on <body> stand in
+
+    var TAU = Math.PI * 2;
+
+    // Must match --d in the stylesheet.
+    var IRIS_W = 0.86, IRIS_H = 0.76, CENTRE_Y = 0.485;
+
+    // The relief map covers the eye out to this radius. Strands end at 1.02.
+    var EXT = 1.04;
+
+    // ?seed=n grows a different eye. Fixed by default, so the page is the same
+    // iris on every visit, as a portrait would be.
+    var seed = parseInt(new URLSearchParams(location.search).get('seed'), 10);
+    if (!isFinite(seed)) seed = 7;
+    var S0 = seed * 1013 + 7;
+
+    /* ---------------------------------------------------------------------
+       Randomness. Everything is drawn from one seeded stream or from hashed
+       lattice noise, never Math.random, so the anatomy is reproducible.
+       --------------------------------------------------------------------- */
+
+    var rs = (seed * 7919 + 17) | 0;
+    function rnd() {
+      rs = (rs + 0x6D2B79F5) | 0;
+      var t = Math.imul(rs ^ (rs >>> 15), 1 | rs);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     }
-    return sh;
-  }
+    function rr(a, b) { return a + (b - a) * rnd(); }
 
-  var vs = compile(gl.VERTEX_SHADER,
-    '#version 300 es\nin vec2 a;void main(){gl_Position=vec4(a,0.,1.);}');
-  var fs = compile(gl.FRAGMENT_SHADER, document.getElementById('frag').textContent);
-  if (!vs || !fs) { canvas.remove(); return; }
+    function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+    function sm(t) { return t * t * (3 - 2 * t); }
+    function angd(a, b) {
+      var d = (a - b) % TAU;
+      return d > Math.PI ? d - TAU : d < -Math.PI ? d + TAU : d;
+    }
 
-  var prog = gl.createProgram();
-  gl.attachShader(prog, vs);
-  gl.attachShader(prog, fs);
-  gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { canvas.remove(); return; }
-  gl.useProgram(prog);
+    function hsh(x, y, s) {
+      var h = (Math.imul(x | 0, 0x27d4eb2d) ^ Math.imul(y | 0, 0x165667b1) ^ Math.imul(s | 0, 0x9e3779b1)) | 0;
+      h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+      h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+      return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    }
 
-  // One triangle that overshoots the viewport: no diagonal seam for the
-  // derivatives to stumble on, as two triangles would have.
-  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  var loc = gl.getAttribLocation(prog, 'a');
-  gl.enableVertexAttribArray(loc);
-  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    // Value noise that repeats every `per` cells in x, so it can run round a circle.
+    function pnoise(x, y, per, s) {
+      var ix = Math.floor(x), iy = Math.floor(y);
+      var fx = sm(x - ix), fy = sm(y - iy);
+      var x0 = ((ix % per) + per) % per, x1 = (x0 + 1) % per;
+      var a = hsh(x0, iy, s), b = hsh(x1, iy, s), c = hsh(x0, iy + 1, s), d = hsh(x1, iy + 1, s);
+      return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+    }
+    function ring(th, F, s) { return pnoise(th / TAU * F, 0, F, s); }
+    function polar(th, r, F, G, s) { return pnoise(th / TAU * F, r * G, F, s); }
 
-  var uRes = gl.getUniformLocation(prog, 'uRes');
-  var uR = gl.getUniformLocation(prog, 'uR');
-  var uSeed = gl.getUniformLocation(prog, 'uSeed');
+    /* ---------------------------------------------------------------------
+       Anatomy. Radii are fractions of the limbus radius; a real iris is about
+       12 mm across, so 0.01 here is roughly 60 microns.
+       --------------------------------------------------------------------- */
 
-  // ?seed=n paints a different eye. Fixed by default so the page is the same
-  // iris on every visit, as a portrait would be.
-  var seed = parseFloat(new URLSearchParams(location.search).get('seed'));
-  if (!isFinite(seed)) seed = 7;
+    // Pupil about 3.2 mm, a relaxed indoor size. It is never a true circle.
+    function pupilR(th) {
+      return 0.27 * (1 + 0.035 * (ring(th, 3, S0 + 1) - 0.5) + 0.014 * (ring(th, 8, S0 + 2) - 0.5));
+    }
 
-  // The picture is static, so it is painted once per size rather than per
-  // frame. A frame is expensive (twelve surface evaluations a pixel): drawn in
-  // one call it can stall a slow GPU long enough for the browser to kill the
-  // context. So it goes down in tiles, one per animation frame, behind a
-  // canvas that stays transparent until the last tile lands.
-  var TILE_W = 512, TILE_H = 256;
-  var job = 0;
+    // Collarette: the wreath a third of the way out, where the pupillary zone
+    // ends and the ciliary zone begins. The thickest part of the iris.
+    function collR(th) {
+      return 0.465 + 0.065 * (ring(th, 5, S0 + 3) - 0.5) + 0.030 * (ring(th, 13, S0 + 4) - 0.5);
+    }
 
-  function paint() {
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var w = Math.round(canvas.clientWidth * dpr);
-    var h = Math.round(canvas.clientHeight * dpr);
-    if (!w || !h || gl.isContextLost()) return;
-    var mine = ++job;
-    canvas.classList.remove('ready');
-    canvas.width = w;
-    canvas.height = h;
-    gl.viewport(0, 0, w, h);
-    gl.uniform2f(uRes, w, h);
-    // The limbus sits just past the corners: the iris covers the page at any
-    // aspect ratio, and the dark rim arrives in the corners as a vignette.
-    gl.uniform1f(uR, 0.5 * Math.hypot(w, h) * 1.03);
-    gl.uniform1f(uSeed, seed * 13.37);
-    gl.uniform1i(gl.getUniformLocation(prog, 'uTaps'), 4);
-    gl.enable(gl.SCISSOR_TEST);
+    // Strands do not run dead straight: whole neighbourhoods drift together.
+    // Everything is laid out in straight "canonical" angles and then displaced
+    // by this one shared field, which keeps neighbours parallel as they wander.
+    function flow(th, r) {
+      var k = 0.30 + 0.70 * sm(clamp01((r - 0.36) / 0.26));   // the pupillary zone stays taut
+      return k * (0.085 * (polar(th, r, 5, 2.2, S0 + 5) - 0.5) + 0.034 * (polar(th, r, 14, 5, S0 + 6) - 0.5)
+                + 0.012 * (polar(th, r, 41, 13, S0 + 7) - 0.5));
+    }
 
-    var x = 0, y = 0;
-    (function tile() {
-      if (mine !== job || gl.isContextLost()) return;   // superseded by a resize
-      gl.scissor(x, y, TILE_W, TILE_H);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-      x += TILE_W;
-      if (x >= w) { x = 0; y += TILE_H; }
-      if (y >= h) { canvas.classList.add('ready'); return; }
-      requestAnimationFrame(tile);
+    // Contraction furrows: concentric folds in the outer ciliary zone, where
+    // the iris creases as the pupil opens. Broken arcs, never full circles.
+    var furrows = [];
+    (function () {
+      var r = 0.69;
+      for (var k = 0; k < 3; k++) {
+        r += rr(0.065, 0.095);
+        furrows.push({ r: r, s: S0 + 70 + k * 3, t: rr(0.42, 0.60) });
+      }
     })();
+    function furrowAt(th, r) {
+      if (r < 0.68) return 0;
+      var f = 0;
+      for (var k = 0; k < furrows.length; k++) {
+        var F = furrows[k];
+        var d = (r - F.r - 0.034 * (ring(th, 4, F.s) - 0.5)) / 0.015;
+        if (d > -3 && d < 3) f += Math.exp(-d * d) * sm(clamp01((ring(th, 3, F.s + 1) - F.t) / 0.20));
+      }
+      return f > 1 ? 1 : f;
+    }
+
+    // Toward the root every strand dives under the limbus.
+    function dive(r) { return 0.30 * sm(clamp01((r - 0.86) / 0.15)); }
+
+    /* Trabeculae: the thick radial cords of the ciliary zone. Unevenly spaced
+       and of very uneven calibre; each is a bundle that frays into its
+       separate strands on the way out to the root. */
+    var NC = 66, cords = [], i, j, k, c;
+    for (i = 0; i < NC; i++) {
+      c = {
+        th: (i + rr(-0.42, 0.42)) / NC * TAU,
+        z: rr(0.70, 0.86),
+        a1: rr(0.003, 0.009), k1: TAU / rr(0.20, 0.38), p1: rr(0, TAU),    // slow wander
+        a2: rr(0.0006, 0.0018), k2: TAU / rr(0.05, 0.09), p2: rr(0, TAU),  // crimp
+        kt: TAU / rr(0.10, 0.20), tp: rr(0, TAU),                           // twist of the bundle
+        fray: rr(0.004, 0.016),
+        tint: rnd()
+      };
+      // Calibre varies strand to strand and, more slowly, sector to sector.
+      c.hw = 0.0056 * Math.exp(rr(-0.55, 0.55)) * (0.65 + 0.70 * ring(c.th, 8, S0 + 33));
+      c.rEnd = collR(c.th) + rr(0.0, 0.07);
+      cords.push(c);
+    }
+    function cordTh(c, r) {
+      return c.th + c.a1 * Math.sin(c.k1 * r + c.p1) + c.a2 * Math.sin(c.k2 * r + c.p2);
+    }
+
+    /* Between neighbouring cords an arcade may close the gap on the pupil
+       side; the broken row of arcades is the collarette. Where the layers
+       above are missing the gap is open down toward the back of the iris: a
+       Fuchs crypt. They come in runs, and no two are the same size. */
+    var gaps = [], crypts = [];
+    for (i = 0; i < NC; i++) {
+      var A = cords[i], B = cords[(i + 1) % NC];
+      var gw = angd(B.th, A.th);
+      var ga = A.th + gw * (0.5 + rr(-0.15, 0.15));
+      var gr = collR(ga) - rr(-0.012, 0.030);
+      gaps.push({ th: ga, r: gr });
+      var like = ring(ga, 11, S0 + 20);
+      if (like > 0.50 && rnd() < 0.78) {
+        var size = (like - 0.50) / 0.50;
+        crypts.push({
+          th: ga, r0: gr + 0.004,
+          len: 0.050 + 0.24 * size * rr(0.3, 1.0),
+          hw: gw * rr(0.40, 1.30),      // the wider ones run under their cords, which bridge them
+          d: clamp01(0.62 + 0.60 * size),
+          skew: rr(-0.5, 0.5) * gw
+        });
+      }
+    }
+    // A scatter of small crypts further out, most of them near the root.
+    for (i = 0; i < 12; i++) {
+      crypts.push({ th: rr(0, TAU), r0: rr(0.62, 0.90), len: rr(0.030, 0.080), hw: rr(0.010, 0.024),
+                    d: rr(0.30, 0.60), skew: rr(-0.01, 0.01) });
+    }
+
+    // Crypts are looked up per strand point and per texel, so bin them by angle.
+    var NB = 96, bins = [];
+    for (i = 0; i < NB; i++) bins.push([]);
+    crypts.forEach(function (cr) {
+      var b0 = Math.floor((cr.th - cr.hw) / TAU * NB), b1 = Math.floor((cr.th + cr.hw) / TAU * NB);
+      for (var b = b0; b <= b1; b++) bins[((b % NB) + NB) % NB].push(cr);
+    });
+    function cryptAt(th, r) {
+      var t = ((th % TAU) + TAU) % TAU;
+      var list = bins[Math.min(NB - 1, Math.floor(t / TAU * NB))], best = 0;
+      for (var n = 0; n < list.length; n++) {
+        var cr = list[n], v = (r - cr.r0) / cr.len;
+        if (v <= 0 || v >= 1) continue;
+        // A teardrop: rounded toward the pupil, where the arcade closes it,
+        // and drawn out to a point on the other side. Never symmetrical, and
+        // its edge is ragged, since it is only wherever the strands happen
+        // to part.
+        var w = Math.sin(Math.PI * Math.pow(v, 0.72));
+        var e = Math.abs(angd(th, cr.th + cr.skew * (v - 0.4))) / cr.hw / (w + 1e-4);
+        if (e > 1.2) continue;
+        e += 0.40 * (polar(th, r, 90, 14, S0 + 90) - 0.5);
+        if (e < 1) best = Math.max(best, cr.d * (1 - sm(clamp01((e - 0.30) / 0.70))));
+      }
+      return best;
+    }
+
+    /* Pigment. The hazel is melanin in the front layer: solid over the
+       pupillary zone, then running out past the collarette along the strands
+       in tongues of very different lengths, with the odd freckle beyond. */
+    function pigmentAt(th, r) {
+      var d = r - collR(th);
+      if (d > 0.38) return 0;                // further than any tongue reaches
+      var reach = 0.020 + 0.11 * Math.pow(ring(th, 7, S0 + 60), 1.6) + 0.06 * Math.pow(ring(th, 23, S0 + 61), 2.0);
+      var streak = 0.5 * polar(th, r, 170, 2.5, S0 + 62) + 0.5 * polar(th, r, 61, 2.0, S0 + 63);
+      var p = 1 - sm(clamp01((d - reach * (0.60 + 0.80 * streak) + 0.05) / 0.15));
+      return p * (0.80 + 0.20 * polar(th, r, 37, 8, S0 + 64));
+    }
+
+    // Freckles: a few flat, dark flecks of pigment out in the ciliary zone.
+    var freckles = [];
+    for (i = 0; i < 4; i++) {
+      freckles.push({ th: rr(0, TAU), r: rr(0.62, 0.86), a: rr(0.008, 0.018), b: rr(0.006, 0.013) });
+    }
+    function freckleAt(th, r) {
+      var p = 0;
+      for (var n = 0; n < freckles.length; n++) {
+        var f = freckles[n];
+        var u = (r - f.r) / f.a, v = angd(th, f.th) * f.r / f.b;
+        var e = u * u + v * v;
+        if (e >= 1) continue;
+        e += 0.5 * polar(th, r, 300, 90, S0 + 66 + n);     // ragged edge
+        if (e < 1) p = Math.max(p, 1 - sm(clamp01((e - 0.5) / 0.5)));
+      }
+      return p;
+    }
+
+    /* ---------------------------------------------------------------------
+       Ribbons. Every strand and vessel becomes a triangle strip two vertices
+       wide; strips are chained with repeated vertices so one draw call takes
+       the lot.
+       --------------------------------------------------------------------- */
+
+    function Mesh() { this.a = new Float32Array(1 << 18); this.n = 0; }
+    Mesh.prototype.vert = function (x, y, sx, sy, hw, u, d0, d1, d2) {
+      if (this.n + 9 > this.a.length) {
+        var b = new Float32Array(this.a.length * 2);
+        b.set(this.a);
+        this.a = b;
+      }
+      var a = this.a, n = this.n;
+      a[n] = x; a[n + 1] = y; a[n + 2] = sx; a[n + 3] = sy; a[n + 4] = hw;
+      a[n + 5] = u; a[n + 6] = d0; a[n + 7] = d1; a[n + 8] = d2;
+      this.n = n + 9;
+    };
+    // pts holds x, y, half-width, d0, d1 per point; d2 is constant along a ribbon.
+    Mesh.prototype.ribbon = function (pts, cnt, d2) {
+      if (cnt < 2) return;
+      for (var i = 0; i < cnt; i++) {
+        var o = i * 5, p = Math.max(i - 1, 0) * 5, q = Math.min(i + 1, cnt - 1) * 5;
+        var tx = pts[q] - pts[p], ty = pts[q + 1] - pts[p + 1], l = Math.sqrt(tx * tx + ty * ty) || 1;
+        var sx = -ty / l, sy = tx / l;
+        if (i === 0) this.vert(pts[o], pts[o + 1], sx, sy, pts[o + 2], -1, pts[o + 3], pts[o + 4], d2);
+        this.vert(pts[o], pts[o + 1], sx, sy, pts[o + 2], -1, pts[o + 3], pts[o + 4], d2);
+        this.vert(pts[o], pts[o + 1], sx, sy, pts[o + 2],  1, pts[o + 3], pts[o + 4], d2);
+        if (i === cnt - 1) this.vert(pts[o], pts[o + 1], sx, sy, pts[o + 2], 1, pts[o + 3], pts[o + 4], d2);
+      }
+    };
+
+    var P = new Float32Array(5 * 1024), pc = 0;
+
+    /* ---- The iris ------------------------------------------------------- */
+
+    var fibres = new Mesh();
+
+    // A strand point: canonical angle and radius in, displaced Cartesian out.
+    function pt(th, r, hw, z, relief) {
+      var a = th + flow(th, r), o = pc * 5;
+      P[o] = r * Math.cos(a); P[o + 1] = r * Math.sin(a); P[o + 2] = hw; P[o + 3] = z; P[o + 4] = relief;
+      pc++;
+    }
+    function flush(tint) { fibres.ribbon(P, pc, tint); pc = 0; }
+
+    var r, s, th, z, hw, e, n, u;
+    var dens = function (t) { return 0.45 + 1.10 * ring(t, 9, S0 + 40); };
+
+    // One mat of near-parallel strands. The stroma is several of these laid
+    // one on another; from the back forward each is sparser, thicker and
+    // paler than the one beneath, and that stacking is where the depth comes
+    // from. A crypt is cut through them from the top down: a strand is
+    // removed wherever it would stand above the crypt's floor.
+    function mat(o) {
+      for (var i = 0; i < o.n; i++) {
+        var th0;
+        do { th0 = rr(0, TAU); } while (o.patchy && rnd() * 1.55 > dens(th0));
+        var ra = rr(collR(th0) + o.rin, 0.93), rb = Math.min(ra + rr(o.len[0], o.len[1]), 1.02);
+        var slope = rr(-o.slope, o.slope);
+        var a1 = rr(o.a1[0], o.a1[1]), k1 = TAU / rr(o.lam[0], o.lam[1]), p1 = rr(0, TAU);
+        var a2 = rr(0.0004, 0.0016), k2 = TAU / rr(0.04, 0.08), p2 = rr(0, TAU);
+        var hw = rr(o.hw[0], o.hw[1]), z = rr(o.z[0], o.z[1]), tint = rnd();
+        var n = Math.ceil((rb - ra) / o.step) + 1;
+        // The collarette is the thickest part of the iris: a strand rooted
+        // there starts at nearly its full size instead of tapering in.
+        var rooted = ra < collR(th0) + 0.05;
+        for (var j = 0; j <= n; j++) {
+          var s = j / n, r = ra + (rb - ra) * s, e = Math.sin(Math.PI * s);
+          if (rooted && s < 0.5) e = 0.75 + 0.25 * e;
+          var th = th0 + slope * (s - 0.5) + a1 * Math.sin(k1 * r + p1) + a2 * Math.sin(k2 * r + p2);
+          var zz = (z - dive(r) * (0.4 + z) - 0.16 * furrowAt(th, r)) * (0.72 + 0.28 * e);
+          // The deepest strands always survive: a crypt has a floor, it is not a hole.
+          var over = (zz - Math.max(1 - 1.15 * cryptAt(th, r), 0.17)) / 0.10;
+          if (over > 1) { if (pc > 1) flush(tint); else pc = 0; continue; }
+          var keep = over > 0 ? 1 - over : 1;
+          pt(th, r, hw * (0.30 + 0.70 * e) * (0.35 + 0.65 * keep), zz * (0.6 + 0.4 * keep), o.relief);
+        }
+        if (pc > 1) flush(tint); else pc = 0;
+      }
+    }
+    mat({ n: 7000, hw: [0.0010, 0.0020], z: [0.08, 0.38], len: [0.14, 0.55], slope: 0.014,
+          a1: [0.001, 0.005], lam: [0.10, 0.24], rin: -0.03, step: 0.024, relief: 0.06 });
+    mat({ n: 4200, patchy: 1, hw: [0.0012, 0.0026], z: [0.36, 0.62], len: [0.14, 0.50], slope: 0.018,
+          a1: [0.002, 0.006], lam: [0.12, 0.30], rin: -0.01, step: 0.018, relief: 0.07 });
+    mat({ n: 1500, patchy: 1, hw: [0.0015, 0.0034], z: [0.58, 0.80], len: [0.18, 0.50], slope: 0.026,
+          a1: [0.002, 0.007], lam: [0.14, 0.32], rin: 0.0, step: 0.014, relief: 0.08 });
+
+    // Bridges: short strands that leave one cord and join the next, which is
+    // what closes the long gaps into a mesh.
+    for (i = 0; i < 160; i++) {
+      var ci = Math.floor(rnd() * NC), cA = cords[ci], cB = cords[(ci + (rnd() < 0.5 ? 1 : NC - 1)) % NC];
+      var ra = rr(cA.rEnd + 0.03, 0.88), rb = clamp01(ra + (rnd() < 0.5 ? -1 : 1) * rr(0.06, 0.22));
+      if (rb < cB.rEnd + 0.02) rb = cB.rEnd + 0.02;
+      var tA = cordTh(cA, ra), tB = tA + angd(cordTh(cB, rb), tA);
+      hw = rr(0.0016, 0.0030); z = rr(0.50, 0.66);
+      for (j = 0; j <= 14; j++) {
+        s = j / 14; r = ra + (rb - ra) * s; e = Math.sin(Math.PI * s);
+        pt(tA + (tB - tA) * sm(s), r, hw * (0.6 + 0.4 * e), z - dive(r) * 1.1 + 0.06 * (1 - e), 0.08);
+      }
+      flush(rnd());
+    }
+
+    // The cords themselves. Each is a loose bundle of fine strands, tight
+    // near the collarette and fraying apart toward the root, where it sinks
+    // back into the mat. Only a couple of strands in each run the whole way.
+    for (i = 0; i < NC; i++) {
+      c = cords[i];
+      var K = Math.max(3, Math.round(c.hw / 0.0010));
+      for (k = 0; k < K; k++) {
+        var lane = rr(-1, 1), ph = rr(0, TAU), kz = rr(-0.05, 0.05), shw = rr(0.0010, 0.0021);
+        var r1 = k < 2 ? 1.02 : rr(0.72, 1.02);
+        for (r = c.rEnd + (k < 2 ? 0 : rr(0, 0.05)); r <= r1; r += 0.011) {
+          u = (r - c.rEnd) / (1.02 - c.rEnd);
+          var body = c.hw * (1 - 0.35 * u) * (0.85 + 0.30 * pnoise(r * 26, i, 4096, S0 + 31));
+          var off = lane * body * 0.75 * Math.cos(c.kt * r * 0.5 + ph)    // strands trade places along the way
+                  + 0.35 * body * Math.sin(c.kt * r + ph)
+                  + lane * c.fray * Math.pow(u, 1.5);
+          th = cordTh(c, r) + off / r;
+          z = c.z + kz + 0.08 * Math.exp(-u * 8) - 0.20 * u - dive(r) * 1.1 - 0.18 * furrowAt(th, r);
+          var tail = sm(clamp01((r1 - r) / 0.05));
+          pt(th, r, shw * (0.5 + 0.5 * tail), z * (0.8 + 0.2 * tail), 0.09);
+        }
+        if (pc > 1) flush(clamp01(c.tint + rr(-0.15, 0.15))); else pc = 0;
+      }
+    }
+
+    // Arcades. A cord splits at its inner end and an arm swings away to meet
+    // the neighbour's, leaving along the cord's own line and arriving level:
+    // a round-bottomed arch toward the pupil. Not every cord has both arms.
+    function arm(c, g) {
+      var r0 = c.rEnd, t0 = cordTh(c, r0), dth = angd(g.th, t0);
+      var drop = Math.max(r0 - g.r, 0.006);
+      var K = Math.max(3, Math.round(c.hw / 0.0011));
+      for (var m = 0; m < K; m++) {
+        var lane = rr(-1, 1), shw = rr(0.0013, 0.0026), kz = rr(-0.05, 0.05), ph = rr(0, TAU);
+        for (var q = 0; q <= 12; q++) {
+          var s = q / 12, a = s * Math.PI / 2;
+          // Offset each strand across the arm: sideways where the arm still
+          // runs along the cord, radially once it has turned level.
+          var o = lane * c.hw * (0.55 - 0.15 * s) * (0.9 + 0.12 * Math.sin(4 * s + ph));
+          var rad = r0 - drop * Math.sin(a) + o * Math.sin(a);
+          pt(t0 + dth * (1 - Math.cos(a)) + o * Math.cos(a) / rad, rad, shw, c.z - 0.02 + kz, 0.09);
+        }
+        flush(clamp01(c.tint + rr(-0.15, 0.15)));
+      }
+    }
+    for (i = 0; i < NC; i++) {
+      var lace = 0.30 + 0.60 * ring(cords[i].th, 6, S0 + 34);     // the wreath is fuller in some sectors
+      if (rnd() < lace) arm(cords[i], gaps[(i + NC - 1) % NC]);
+      if (rnd() < lace) arm(cords[i], gaps[i]);
+    }
+
+    // And strands that run along the collarette rather than across it, lacing
+    // the arcades into a wreath.
+    for (i = 0; i < 44; i++) {
+      var w0 = rr(0, TAU), span = rr(0.08, 0.26) * (rnd() < 0.5 ? -1 : 1);
+      var lift = rr(-0.022, 0.024), zig = rr(0.002, 0.008), zf = rr(30, 60), zp = rr(0, TAU);
+      hw = rr(0.0020, 0.0040); z = rr(0.72, 0.88);
+      n = Math.ceil(Math.abs(span) / 0.009);
+      for (j = 0; j <= n; j++) {
+        s = j / n; th = w0 + span * s; e = Math.sin(Math.PI * s);
+        pt(th, collR(th) + lift + zig * Math.sin(zf * th + zp) + 0.03 * (s - 0.5) * (lift > 0 ? 1 : -1),
+           hw * (0.35 + 0.65 * e), z * (0.80 + 0.20 * e), 0.10);
+      }
+      flush(rnd());
+    }
+
+    // Pupillary zone: fine, close, nearly straight striations from the
+    // collarette to the pupil margin. Full-length ones, and shorter ones lying
+    // among them.
+    for (i = 0; i < 2400; i++) {
+      var th0 = rr(0, TAU);
+      var full = i < 1300;
+      var rin = pupilR(th0) - 0.004, rout = collR(th0) + rr(-0.030, 0.015);
+      ra = full ? rin : rr(rin, rout - 0.05);
+      rb = full ? rout : Math.min(ra + rr(0.05, 0.14), rout);
+      var slope = rr(-0.012, 0.012), a1 = rr(0.001, 0.004), k1 = TAU / rr(0.06, 0.16), p1 = rr(0, TAU);
+      hw = rr(0.0011, 0.0028); z = rr(0.30, 0.72);
+      n = Math.ceil((rb - ra) / 0.020) + 1;
+      for (j = 0; j <= n; j++) {
+        s = j / n; r = ra + (rb - ra) * s;
+        e = full ? 1 : Math.sin(Math.PI * s);
+        pt(th0 + slope * (s - 0.5) + a1 * Math.sin(k1 * r + p1), r,
+           hw * (0.55 + 0.45 * e) * (0.7 + 0.3 * s), z * (0.75 + 0.25 * e), 0.07);
+      }
+      flush(rnd());
+    }
+
+    /* ---- Fields the page shader reads rather than recomputes -------------
+       The anatomy lives here, in one place; the shader is only optics. */
+
+    // By angle: pupil radius, collarette radius (as displaced), limbus wobble.
+    var RW = 2048, ringData = new Float32Array(RW * 4);
+    for (i = 0; i < RW; i++) {
+      th = (i + 0.5) / RW * TAU;
+      ringData[i * 4]     = pupilR(th);
+      ringData[i * 4 + 1] = collR(th - flow(th, 0.47));
+      ringData[i * 4 + 2] = 0.6 * ring(th, 9, S0 + 80) + 0.4 * ring(th, 31, S0 + 81);
+      ringData[i * 4 + 3] = 1;
+    }
+
+    // By angle and radius: pigment, crypts, furrows, freckles.
+    var PW = 1024, PH = 192, PR0 = 0.20, PR1 = 1.05;
+    var polarData = new Uint8Array(PW * PH * 4);
+    for (j = 0; j < PH; j++) {
+      r = PR0 + (PR1 - PR0) * (j + 0.5) / PH;
+      for (i = 0; i < PW; i++) {
+        th = (i + 0.5) / PW * TAU;
+        var tc = th - flow(th, r);                 // back to canonical, to first order
+        var cry = cryptAt(tc, r), o = (j * PW + i) * 4;
+        polarData[o]     = 255 * clamp01(pigmentAt(tc, r) * (1 - 0.9 * cry));
+        polarData[o + 1] = 255 * cry;
+        polarData[o + 2] = 255 * furrowAt(tc, r);
+        polarData[o + 3] = 255 * freckleAt(tc, r);
+      }
+    }
+
+    /* ---- The white of the eye --------------------------------------------
+       Conjunctival vessels: bright, tortuous, on the surface, branching as
+       they run in toward the cornea and giving out before they reach it.
+       Episcleral vessels: fewer, straighter, deeper, seen through tissue as a
+       soft violet. Both are densest to either side, where they arrive along
+       the horizontal muscles. */
+
+    var vessels = new Mesh(), queue = [];
+
+    function trace(v) {
+      var x = v.x, y = v.y, ang = v.ang, hw = v.hw, kap = 0, ds = 0.02;
+      // Curvature is a mean-reverting random walk, which meanders the way a
+      // vessel does: never straight for long and never periodic. Veins wander
+      // more than arteries, and deep vessels hardly at all.
+      var tort = v.deep ? 0.35 : v.hue > 0.5 ? rr(1.3, 2.4) : rr(0.6, 1.3);
+      var stop = v.deep ? rr(1.22, 1.75) : v.level ? rr(1.06, 1.55) : rr(1.10, 1.35);
+      var steer = v.deep ? 1.8 : rr(1.5, 2.6);
+      var kph = rr(0, TAU), klam = rr(0.07, 0.14), kamp = v.deep ? 0 : rr(0.04, 0.13);   // the fine kinking
+      var base = v.deep ? rr(0.10, 0.17) : Math.min(0.72, 0.20 + hw / 0.0040 * 0.42) * v.vis;
+      pc = 0;
+      for (var k = 0; k < 600 && pc < 1000; k++) {
+        var r = Math.sqrt(x * x + y * y);
+        if (r < stop || hw < 0.0005 || k > v.max) break;
+        var end = sm(clamp01((r - stop) / 0.30)) * sm(clamp01((v.max - k) / 12));
+        var o = pc * 5;
+        P[o] = x; P[o + 1] = y; P[o + 2] = hw * (0.35 + 0.65 * end);
+        P[o + 3] = base * end * sm(clamp01(k / 6));
+        P[o + 4] = v.hue;
+        pc++;
+        kap += -kap * 8.0 * ds + rr(-1, 1) * 1.73 * tort * 4.0 * Math.sqrt(ds);
+        ang += kap * ds + angd(Math.atan2(-y, -x), ang) * steer * ds;
+        kph += ds * TAU / klam;
+        var ad = ang + kamp * Math.sin(kph);
+        x += Math.cos(ad) * ds; y += Math.sin(ad) * ds;
+        hw *= 1 - 0.09 * ds;
+        // Forks come more often as the vessel nears the cornea, and open
+        // toward it.
+        if (!v.deep && v.level < 2 && r < 3.2 && k > 8 && rnd() < ds * (r < 2.2 ? 1.25 : 0.5)) {
+          queue.push({ x: x, y: y, ang: ang + (rnd() < 0.5 ? -1 : 1) * rr(0.25, 0.60),
+                       hw: hw * rr(0.50, 0.72), level: v.level + 1, hue: v.hue, deep: 0,
+                       vis: v.vis * rr(0.7, 1.0), max: rr(18, 70) });
+          hw *= 0.90;
+        }
+      }
+      if (pc > 1) {
+        if (!v.deep) {
+          // Blood colours the tissue round a vessel: a wide, faint copy first.
+          var H = new Float32Array(pc * 5);
+          for (var m = 0; m < pc; m++) {
+            H[m * 5] = P[m * 5]; H[m * 5 + 1] = P[m * 5 + 1];
+            H[m * 5 + 2] = P[m * 5 + 2] * 5 + 0.004; H[m * 5 + 3] = P[m * 5 + 3] * 0.10; H[m * 5 + 4] = P[m * 5 + 4];
+          }
+          vessels.ribbon(H, pc, 1);
+        }
+        vessels.ribbon(P, pc, v.deep);
+      }
+      pc = 0;
+    }
+
+    function trunk(deep) {
+      // Rejection-sample the angle so the sides get more than top and bottom.
+      // Straight down is left clear: the menu sits there.
+      var a;
+      do { a = rr(0, TAU); }
+      while (rnd() * 3.4 > 1 + 2.4 * Math.cos(a) * Math.cos(a) || Math.abs(angd(a, -Math.PI / 2)) < 0.45);
+      var r0 = rr(3.7, 4.3);
+      queue.push({ x: r0 * Math.cos(a), y: r0 * Math.sin(a), ang: a + Math.PI + rr(-0.30, 0.30),
+                   hw: deep ? rr(0.006, 0.012) : rr(0.0026, 0.0058), level: 0,
+                   hue: deep ? 0.5 : rnd(), deep: deep, vis: rr(0.45, 1.0), max: 1e9 });
+    }
+    for (i = 0; i < 8; i++) trunk(1);
+    while (queue.length) trace(queue.pop());       // deep ones first, so they sit underneath
+    for (i = 0; i < 20; i++) trunk(0);
+    while (queue.length) trace(queue.shift());
+
+    // The limbal plexus: hair-fine vessels that reach in toward the cornea
+    // all the way round and stop just short of it.
+    for (i = 0; i < 54; i++) {
+      var la = rr(0, TAU), lr = rr(1.060, 1.090), lend = lr + rr(0.04, 0.15), lcurve = rr(-0.5, 0.5);
+      pc = 0;
+      for (j = 0; j <= 10; j++) {
+        s = j / 10;
+        var rad = lr + (lend - lr) * s, ta = la + lcurve * (rad - lr) * s, o = pc * 5;
+        P[o] = rad * Math.cos(ta); P[o + 1] = rad * Math.sin(ta); P[o + 2] = 0.0008;
+        P[o + 3] = rr(0.07, 0.15) * Math.sin(Math.PI * s); P[o + 4] = 0.0;
+        pc++;
+      }
+      vessels.ribbon(P, pc, 0);
+      pc = 0;
+    }
+
+    /* ---------------------------------------------------------------------
+       GL
+       --------------------------------------------------------------------- */
+
+    var G = null;      // everything that dies with the context
+
+    function shader(type, id) {
+      var sh = gl.createShader(type);
+      gl.shaderSource(sh, document.getElementById(id).textContent);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        console.error(id + ': ' + gl.getShaderInfoLog(sh));
+        return null;
+      }
+      return sh;
+    }
+
+    function program(vsId, fsId, uniforms) {
+      var vs = shader(gl.VERTEX_SHADER, vsId), fs = shader(gl.FRAGMENT_SHADER, fsId);
+      if (!vs || !fs) return null;
+      var p = gl.createProgram();
+      gl.attachShader(p, vs);
+      gl.attachShader(p, fs);
+      gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+        console.error(fsId + ': ' + gl.getProgramInfoLog(p));
+        return null;
+      }
+      var out = { p: p };
+      uniforms.forEach(function (name) { out[name] = gl.getUniformLocation(p, name); });
+      return out;
+    }
+
+    function ribbonVao(mesh) {
+      var vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, mesh.a.subarray(0, mesh.n), gl.STATIC_DRAW);
+      var sizes = [2, 2, 1, 1, 3], off = 0;
+      for (var a = 0; a < sizes.length; a++) {
+        gl.enableVertexAttribArray(a);
+        gl.vertexAttribPointer(a, sizes[a], gl.FLOAT, false, 36, off);
+        off += sizes[a] * 4;
+      }
+      return { vao: vao, count: mesh.n / 9 };
+    }
+
+    function texture(internal, w, h, format, type, data, wrapS) {
+      var t = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, internal, w, h, 0, format, type, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return t;
+    }
+
+    function init() {
+      var g = {
+        fibre:  program('vs-ribbon', 'fs-fibre',  ['uScale', 'uOff', 'uMinHw']),
+        vessel: program('vs-ribbon', 'fs-vessel', ['uScale', 'uOff', 'uMinHw']),
+        page:   program('vs-page',   'fs-page',
+                        ['uC', 'uR', 'uTex', 'uExt', 'uPolarR', 'uSeed', 'uMap', 'uRing', 'uPolar'])
+      };
+      if (!g.fibre || !g.vessel || !g.page) return null;
+
+      g.fibres = ribbonVao(fibres);
+      g.vessels = ribbonVao(vessels);
+
+      // One triangle that overshoots the viewport stands in for a quad.
+      g.tri = gl.createVertexArray();
+      gl.bindVertexArray(g.tri);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+      // Half-float is the one float format every WebGL2 device will filter.
+      g.ring = texture(gl.RGBA16F, RW, 1, gl.RGBA, gl.FLOAT, ringData, gl.REPEAT);
+      g.polar = texture(gl.RGBA8, PW, PH, gl.RGBA, gl.UNSIGNED_BYTE, polarData, gl.REPEAT);
+
+      g.fbo = gl.createFramebuffer();
+      g.size = 0;
+      return g;
+    }
+
+    // The relief map, (re)allocated when the eye changes size on screen.
+    function reliefTarget(size) {
+      if (G.size === size) return true;
+      if (G.map) { gl.deleteTexture(G.map); gl.deleteRenderbuffer(G.depth); }
+      G.map = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, G.map);
+      gl.texStorage2D(gl.TEXTURE_2D, Math.floor(Math.log2(size)) + 1, gl.RGBA8, size, size);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      G.depth = gl.createRenderbuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, G.depth);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, size, size);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, G.fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, G.map, 0);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, G.depth);
+      G.size = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE ? size : 0;
+      return G.size === size;
+    }
+
+    // The picture is static, so it is painted once per size, not per frame.
+    function paint() {
+      if (!G || gl.isContextLost()) return;
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var w = Math.round(canvas.clientWidth * dpr), h = Math.round(canvas.clientHeight * dpr);
+      if (!w || !h) return;
+      canvas.width = w;
+      canvas.height = h;
+
+      var R = 0.5 * Math.min(IRIS_W * w, IRIS_H * h);
+      var cx = 0.5 * w, cy = (1 - CENTRE_Y) * h;
+
+      // The relief is drawn finer than the page and filtered down, which is
+      // what antialiases the strands. Twice over at 1x; a little less on dense
+      // screens, where the pixels are already too small to see stair-steps.
+      var over = dpr > 1.5 ? 1.5 : 2;
+      var size = Math.min(Math.ceil(2 * R * EXT * over), Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), 3072));
+      if (!reliefTarget(size)) return;
+      var texPerUnit = size / (2 * EXT);
+
+      // 1. Strands into the relief map.
+      gl.bindFramebuffer(gl.FRAMEBUFFER, G.fbo);
+      gl.viewport(0, 0, size, size);
+      gl.disable(gl.BLEND);
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LESS);
+      gl.depthMask(true);
+      gl.clearColor(0, 0.5, 0.5, 0.5);     // the back surface: height 0, facing out
+      gl.clearDepth(1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.useProgram(G.fibre.p);
+      gl.uniform2f(G.fibre.uScale, 1 / EXT, 1 / EXT);
+      gl.uniform2f(G.fibre.uOff, 0, 0);
+      gl.uniform1f(G.fibre.uMinHw, 0.6 / texPerUnit);
+      gl.bindVertexArray(G.fibres.vao);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, G.fibres.count);
+      gl.bindTexture(gl.TEXTURE_2D, G.map);
+      gl.generateMipmap(gl.TEXTURE_2D);
+
+      // 2. The page.
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, w, h);
+      gl.disable(gl.DEPTH_TEST);
+      gl.useProgram(G.page.p);
+      gl.uniform2f(G.page.uC, cx, cy);
+      gl.uniform1f(G.page.uR, R);
+      gl.uniform1f(G.page.uTex, texPerUnit);
+      gl.uniform1f(G.page.uExt, EXT);
+      gl.uniform2f(G.page.uPolarR, PR0, PR1 - PR0);
+      gl.uniform1f(G.page.uSeed, (seed % 97) * 3.17);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, G.map);   gl.uniform1i(G.page.uMap, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, G.ring);  gl.uniform1i(G.page.uRing, 1);
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, G.polar); gl.uniform1i(G.page.uPolar, 2);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindVertexArray(G.tri);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      // 3. Vessels over the white.
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.useProgram(G.vessel.p);
+      gl.uniform2f(G.vessel.uScale, 2 * R / w, 2 * R / h);
+      gl.uniform2f(G.vessel.uOff, 2 * cx / w - 1, 2 * cy / h - 1);
+      gl.uniform1f(G.vessel.uMinHw, 1.0 / R);
+      gl.bindVertexArray(G.vessels.vao);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, G.vessels.count);
+      gl.disable(gl.BLEND);
+
+      canvas.classList.add('ready');
+    }
+
+    // If the context goes, step aside for the gradient; rebuild if it returns.
+    canvas.addEventListener('webglcontextlost', function (e) {
+      e.preventDefault();
+      G = null;
+      canvas.classList.remove('ready');
+    });
+    canvas.addEventListener('webglcontextrestored', function () {
+      G = init();
+      paint();
+    });
+
+    // Repaint once the window has settled, not on every resize tick.
+    var settle;
+    window.addEventListener('resize', function () {
+      clearTimeout(settle);
+      settle = setTimeout(paint, 140);
+    });
+
+    G = init();
+    paint();
   }
-
-  // If the context goes anyway, step aside for the gradient; repaint if it returns.
-  canvas.addEventListener('webglcontextlost', function (e) {
-    e.preventDefault();
-    job++;
-    canvas.classList.remove('ready');
-  });
-
-  // Repaint once the window has settled, not on every resize tick.
-  var settle;
-  window.addEventListener('resize', function () {
-    clearTimeout(settle);
-    settle = setTimeout(paint, 140);
-  });
-
-  paint();
 })();
 </script>
 </body>
