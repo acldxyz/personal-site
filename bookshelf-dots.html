@@ -40,14 +40,14 @@
   /* ------------------------------------------------------------- topbar */
 
   /* The same bar as bookshelf.html, so the draft can be swapped in without
-     the rest of the site noticing. */
+     the rest of the site noticing, less the rule beneath it: here the bar
+     steps back and leaves the painting the only edge on the page. */
   .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20px;
     padding: clamp(14px, 1.6vw, 20px) var(--margin);
-    border-bottom: 1px solid rgba(0,0,0,.08);
   }
 
   .wordmark {
@@ -97,83 +97,62 @@
   }
   .site-nav a:focus-visible, .opt:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-  /* -------------------------------------------------------------- lobby */
+  /* ------------------------------------------------------------ gallery */
 
-  /* The filters stand across the top rather than down a rail, so the
-     painting below gets the full width. */
-  .lobby {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 10px 28px;
-    padding: clamp(22px, 2.6vw, 34px) var(--margin) 0;
-  }
-
-  .page-label, .readout, .plaque p, .rec {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-  }
-  .page-label { color: var(--ink-strong); margin-right: 8px; }
-
-  /* min-width: 0 because a fieldset is otherwise at least as wide as its
-     contents, and would push the page sideways on a phone rather than let
-     its buttons wrap. */
-  .group { display: flex; align-items: center; gap: 1px; border: 0; min-width: 0; }
-  .group legend {
-    float: left;
-    margin-right: 6px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: #a49a8e;
-  }
-  .opt[aria-pressed="true"] {
-    color: var(--ink-strong);
-    background: rgba(0,0,0,.07);
-    border-color: rgba(0,0,0,.16);
-  }
-
-  .readout {
-    margin-left: auto;
-    color: var(--ink-quiet);
-    font-variant-numeric: tabular-nums;
-  }
-  .readout b { font-weight: 600; color: var(--ink-strong); }
-
-
-  /* ------------------------------------------------------------- canvas */
-
-  /* The painting hangs in whatever the window has left below the filters,
-     centred, and layout() sizes it to fill as much of that as the grid's
-     proportions allow. */
+  /* The painting is the page. It hangs in a pool of light in whatever the
+     window leaves below the bar, and everything else steps back: the only
+     other thing near it is its wall label, which is also where the filters
+     are folded away. */
   .gallery {
+    position: relative;
     flex: 1 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: clamp(18px, 2.4vw, 34px) var(--margin) clamp(18px, 2.4vw, 34px);
+    padding: clamp(18px, 2.6vw, 40px) var(--margin);
+  }
+  /* Gallery lighting: a soft pool on the wall, centred on the painting
+     rather than on the window. */
+  .gallery::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 52% 58% at 50% 46%,
+      rgba(255,254,250,.85) 0%, rgba(255,254,250,.35) 45%, rgba(255,254,250,0) 75%);
+  }
+
+  .work {
+    --d: 24px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   /* --d is the spot's diameter and the one number the painting is built
      from: Hirst's spacing is a spot's width, and so is the margin to the
-     canvas edge. --cols is set with it. */
+     canvas edge. layout() sets it and the canvas's size on the figure,
+     every spot's
+     place, and all of them transition, so when a filter changes the grid
+     the canvas resizes and the spots travel to their new places together
+     instead of the painting being torn down and rehung. */
   .canvas {
-    --d: 24px;
-    display: grid;
-    grid-template-columns: repeat(var(--cols, 10), var(--d));
-    grid-auto-rows: var(--d);
-    gap: var(--d);
-    padding: var(--d);
+    position: relative;
+    width: var(--cw, 0px);
+    height: var(--ch, 0px);
+    /* A book leaving fades where it stood, but takes the new spot size like
+       the rest, so on a shrinking canvas it can stand past the edge. Clipped,
+       as paint would be. A spot's hover growth stays well inside the margin. */
+    overflow: hidden;
     /* Primed canvas: whiter than the page, so it reads as a painting hung on
        it rather than a panel of the page. */
     background: #fcfbf8;
     box-shadow:
       0 0 0 1px rgba(60,48,32,.06),
       0 2px 3px rgba(40,30,20,.06),
-      0 18px 40px -18px rgba(40,30,20,.34);
+      0 22px 48px -20px rgba(40,30,20,.36);
+    transition: width .45s ease-out, height .45s ease-out;
   }
 
   /* Flat household gloss, as Hirst's assistants lay it: one even coat, no
@@ -181,85 +160,119 @@
      ground by colour alone, because the canvas is kept 10 clear of every
      spot along with the spots themselves — see SPOT below. */
   .spot {
-    display: block;
+    position: absolute;
+    left: var(--x, 0px);
+    top: var(--y, 0px);
     width: var(--d);
     height: var(--d);
     border-radius: 50%;
     background: var(--k);
-    transition: transform .2s ease-out, background-color .3s ease, box-shadow .3s ease;
+    transition:
+      left .45s ease-out, top .45s ease-out, width .45s ease-out, height .45s ease-out,
+      transform .2s ease-out, opacity .3s ease;
   }
+  .canvas.still, .canvas.still .spot { transition: none; }
   .spot:hover, .spot:focus-visible { transform: scale(1.22); }
   .spot:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
-  /* The places past the last book, there to square off the canvas, are left
-     at the pencilled circle a spot is painted into, unpainted, for the books
-     still to come. */
-  .spot.blank {
-    background: transparent;
-    box-shadow: inset 0 0 0 1px rgba(60,50,40,.16);
-  }
-
-  /* A filtered-out book leaves nothing behind, not even the pencil, but
-     keeps its place so the spots that remain do not move. visibility goes
-     after the fade, taking it out of the pointer's and the tab order's way. */
+  /* A filtered-out book leaves the painting: it fades where it stood while
+     the rest regroup without it. It stops answering the pointer at once
+     rather than after the fade, so nothing on the canvas responds that is
+     not in the picture. */
   .spot.off {
     opacity: 0;
     visibility: hidden;
-    transform: none;
-    transition: opacity .3s ease, visibility 0s linear .3s;
-  }
-
-  /* The label is pinned to the window, on the side away from the spot it
-     names, and carries the cover: the canvas shows only colour, so this is
-     where the book itself is seen. It holds nothing at rest. */
-  .plaque {
-    position: fixed;
-    left: var(--margin);
-    bottom: 18px;
-    z-index: 5;
-    display: flex;
-    align-items: flex-end;
-    gap: 14px;
-    max-width: min(520px, calc(100vw - 2 * var(--margin)));
-    padding: 10px 18px 10px 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(0,0,0,.10);
-    background: rgba(250,248,243,.94);
-    box-shadow: 0 10px 28px -10px rgba(40,30,20,.36);
-    color: var(--ink-strong);
-    opacity: 0;
-    transform: translateY(6px);
     pointer-events: none;
-    transition: opacity .3s ease-out, transform .3s ease-out;
-  }
-  .plaque.on { opacity: 1; transform: none; }
-  /* Held on the far side from the book it names, which it would otherwise
-     cover whenever that book was low on the left wall. */
-  .plaque.east { left: auto; right: var(--margin); }
-  .plaque img, .plaque .swatch {
-    flex: none;
-    height: 132px;
-    width: auto;
-    border-radius: 1.5px 2.5px 2.5px 1.5px;
-    box-shadow: 3px 4px 8px -3px rgba(40,30,20,.36), inset 0 0 0 1px rgba(60,48,32,.14);
-  }
-  .plaque .swatch { width: calc(132px * var(--s)); background: var(--k); }
-  .plaque p { min-width: 0; padding-bottom: 2px; line-height: 1.7; }
-  .plaque b, .plaque em { display: block; font-weight: 600; font-style: normal; }
-  .plaque em { color: var(--ink-quiet); }
-  @media (max-width: 860px) {
-    .plaque img, .plaque .swatch { height: 96px; }
-    .plaque .swatch { width: calc(96px * var(--s)); }
+    transform: none;
+    transition:
+      left .45s ease-out, top .45s ease-out, width .45s ease-out, height .45s ease-out,
+      opacity .3s ease, visibility 0s linear .3s;
   }
 
+  .empty {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
+  }
 
-  .foot {
+  /* --------------------------------------------------------------- label */
+
+  /* The wall label, as a gallery hangs one: small, below the painting's
+     left edge and no wider than the painting. It says what the work is and
+     how many spots, and the filters fold away inside it, so they are there
+     when wanted and otherwise one quiet word. */
+  .label {
+    width: max(var(--cw, 0px), min(340px, 100%));
+    max-width: 100%;
+    padding-top: 16px;
+  }
+
+  .label-row {
     display: flex;
-    justify-content: flex-end;
-    gap: 20px;
-    padding: 18px var(--margin) 40px;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 6px 18px;
   }
+
+  .label h1, .caption p, .rec, .empty, .group legend {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  /* The caption names the painting at rest and, while a spot is pointed
+     at, the book it is. Both are kept in one cell, cross-fading, and the
+     cell holds the taller one's height, so the label never jumps. */
+  .caption {
+    display: grid;
+    min-width: 0;
+    min-height: 52px;
+  }
+  .about, .book {
+    grid-area: 1 / 1;
+    min-width: 0;
+    transition: opacity .2s ease;
+  }
+  .caption.pointing .about, .book { opacity: 0; }
+  .caption.pointing .book { opacity: 1; }
+
+  .label h1 { color: var(--ink-strong); line-height: 1.7; }
+  .label h1 .which { color: var(--ink); }
+  .caption p { color: var(--ink-quiet); line-height: 1.7; font-variant-numeric: tabular-nums; }
+
+  .book { display: flex; align-items: flex-start; gap: 12px; }
+  .book img, .book .swatch {
+    flex: none;
+    height: 52px;
+    width: auto;
+    border-radius: 1px 2px 2px 1px;
+    box-shadow: 2px 3px 6px -3px rgba(40,30,20,.4), inset 0 0 0 1px rgba(60,48,32,.14);
+  }
+  .book .swatch { width: calc(52px * var(--s)); background: var(--k); }
+  .book p { min-width: 0; }
+  .book b {
+    display: block;
+    font-weight: 600;
+    color: var(--ink-strong);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    flex: none;
+    margin: -.45em -.9em 0 0;
+  }
+
   .rec {
+    padding: .52em .9em;
     color: var(--ink-quiet);
     text-decoration: underline;
     text-decoration-thickness: 1px;
@@ -270,24 +283,71 @@
   .rec:hover { color: var(--ink-strong); text-decoration-color: currentColor; }
   .rec:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-  .empty {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--ink-quiet);
-    text-align: center;
-    padding-bottom: 8px;
+  .opt[aria-pressed="true"], .opt[aria-expanded="true"] {
+    color: var(--ink-strong);
+    background: rgba(0,0,0,.07);
+    border-color: rgba(0,0,0,.16);
   }
+  /* The count of active filters rides on the toggle, so a folded label
+     still says the painting is showing less than the whole shelf. */
+  .toggle .n { color: var(--ink-strong); }
+
+  /* Shown only while a filter is on. */
+  .clear { transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .3s ease; }
+  .clear[disabled] { opacity: 0; pointer-events: none; }
+
+  /* The filters unfold beneath the caption. The row animates from nothing
+     to its own height, and while folded it is inert, so its buttons are out
+     of the tab order and unread. */
+  /* Pulled out by a pill's inset, so the buttons' text lines up with the
+     caption's while their hover pills have room inside the clip. */
+  .drawer {
+    margin-left: -.9em;
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .45s ease-out;
+  }
+  .drawer.open { grid-template-rows: 1fr; }
+  .drawer > div {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .filters {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 0 2px;
+    opacity: 0;
+    transition: opacity .3s ease;
+  }
+  .drawer.open .filters { opacity: 1; transition-delay: .12s; }
+
+  /* min-width: 0 because a fieldset is otherwise at least as wide as its
+     contents, and would push the page sideways on a phone rather than let
+     its buttons wrap. */
+  .group { display: flex; align-items: baseline; border: 0; min-width: 0; }
+  .group legend {
+    float: left;
+    flex: none;
+    width: 12.5em;
+    padding-left: .9em;
+    font-size: 10px;
+    color: #a49a8e;
+  }
+  /* The options wrap within their own column, so a second line starts under
+     the first option rather than under the group's name. */
+  .group .opts { display: flex; flex-wrap: wrap; gap: 1px; min-width: 0; }
 
   @media (max-width: 860px) {
     :root { --margin: 20px; }
     .topbar { flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px 20px 16px; }
     .site-nav { justify-content: flex-start; margin: 0 0 0 -.9em; }
-    .readout { margin-left: 0; width: 100%; }
-    .lobby { gap: 8px 18px; }
-    .group { flex-wrap: wrap; }
-    .group legend { width: 100%; margin: 4px 0 2px .9em; }
+  }
+  @media (max-width: 560px) {
+    .label-row { flex-direction: column; }
+    .actions { margin: 0 0 0 -.9em; }
+    .group { flex-direction: column; }
+    .group legend { width: 100%; margin: 6px 0 2px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -313,22 +373,33 @@
   </nav>
 </header>
 
-<div class="lobby">
-  <h1 class="page-label">Bookshelf</h1>
-  <div id="filters" style="display:contents"></div>
-  <p class="readout" id="readout" aria-live="polite"></p>
-</div>
-
 <main class="gallery" id="gallery">
-  <div class="canvas" id="canvas" role="list" aria-label="One spot per book, newest first"></div>
+  <figure class="work">
+    <div class="canvas" id="canvas" role="list" aria-label="One spot per book, newest first">
+      <p class="empty" id="empty" hidden>No book is all of those</p>
+    </div>
+
+    <figcaption class="label" id="label">
+      <div class="label-row">
+        <div class="caption" id="caption">
+          <div class="about">
+            <h1>Bookshelf<span class="which" id="which"></span></h1>
+            <p id="count" aria-live="polite"></p>
+          </div>
+          <div class="book" id="book" aria-hidden="true"></div>
+        </div>
+        <div class="actions">
+          <button type="button" class="opt clear" id="clear" disabled>Clear</button>
+          <button type="button" class="opt toggle" id="toggle" aria-expanded="false" aria-controls="drawer">Filter<span class="n" id="n"></span></button>
+          <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send a rec</a>
+        </div>
+      </div>
+      <div class="drawer" id="drawer">
+        <div><div class="filters" id="filters" inert></div></div>
+      </div>
+    </figcaption>
+  </figure>
 </main>
-<p class="empty" id="empty" hidden>No spots for that</p>
-
-<div class="plaque" id="plaque" aria-hidden="true"></div>
-
-<footer class="foot">
-  <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send me a rec</a>
-</footer>
 
 <script>
 /* t title · a author · y year · r recommendation · g genre · c colour family
@@ -464,9 +535,10 @@ var books = [
   var active = { g: 'all', y: 'all', r: 'all' };
   var buttons = [];
   var canvas = document.getElementById('canvas');
+  var work = canvas.parentNode;
   var gallery = document.getElementById('gallery');
-  var plaque = document.getElementById('plaque');
-  var blanks = [];
+  var caption = document.getElementById('caption');
+  var book = document.getElementById('book');
 
   // 'Yes' is a floor, not a tier: the all-time books were recommended too.
   function matches(b) {
@@ -568,15 +640,22 @@ var books = [
   };
   books.forEach(function (b) { b.paint = SPOT[b.t] || b.k.toLowerCase(); });
 
-  /* ---- lobby ---- */
+  /* ---- filters ---- */
 
   var filters = document.getElementById('filters');
+  var drawer = document.getElementById('drawer');
+  var toggle = document.getElementById('toggle');
+  var clear = document.getElementById('clear');
+
   GROUPS.forEach(function (grp) {
     var fs = document.createElement('fieldset');
     fs.className = 'group';
     var lg = document.createElement('legend');
     lg.textContent = grp.name;
     fs.appendChild(lg);
+    var opts = document.createElement('div');
+    opts.className = 'opts';
+    fs.appendChild(opts);
     ['all'].concat(grp.values).forEach(function (v) {
       var btn = document.createElement('button');
       btn.type = 'button';
@@ -588,18 +667,37 @@ var books = [
         active[grp.key] = active[grp.key] === v ? 'all' : v;
         render();
       });
-      fs.appendChild(btn);
+      opts.appendChild(btn);
       buttons.push(btn);
     });
     filters.appendChild(fs);
   });
 
-  /* ---- plaque ---- */
+  function setDrawer(open) {
+    drawer.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', open);
+    filters.inert = !open;
+    layout();
+  }
+  toggle.addEventListener('click', function () {
+    setDrawer(toggle.getAttribute('aria-expanded') !== 'true');
+  });
+  addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+      setDrawer(false);
+      toggle.focus();
+    }
+  });
+  clear.addEventListener('click', function () {
+    active = { g: 'all', y: 'all', r: 'all' };
+    render();
+    toggle.focus();     // the button just pressed is about to disappear
+  });
+
+  /* ---- caption ---- */
 
   function show(b) {
-    plaque.textContent = '';
-    var r = b.el.getBoundingClientRect();
-    plaque.classList.toggle('east', r.left + r.width / 2 < innerWidth / 2);
+    book.textContent = '';
     // The cover is only fetched when a spot is first pointed at: the canvas
     // itself shows none of them. Where it fails, the spot's colour in the
     // cover's shape stands in.
@@ -618,15 +716,13 @@ var books = [
     var p = document.createElement('p');
     var t = document.createElement('b');
     t.textContent = b.t;
-    var em = document.createElement('em');
-    em.textContent = b.a + ' · ' + b.y;
     p.appendChild(t);
-    p.appendChild(em);
-    plaque.appendChild(art);
-    plaque.appendChild(p);
-    plaque.classList.add('on');
+    p.appendChild(document.createTextNode(b.a + ' · ' + b.y));
+    book.appendChild(art);
+    book.appendChild(p);
+    caption.classList.add('pointing');
   }
-  function rest() { plaque.classList.remove('on'); }
+  function rest() { caption.classList.remove('pointing'); }
 
   /* ---- spots ---- */
 
@@ -648,54 +744,78 @@ var books = [
   });
 
   /* ---- layout ----
-     The painting is whatever grid of spots fills the space best. A canvas c
-     spots wide is (2c + 1) diameters across, a spot and a gap per column and
-     one more gap for the far margin; so for every column count the spot is
-     as large as both the width and the height allow, and the count that
-     gives the largest spot wins. On a phone that is a tall narrow canvas, on
-     a wide screen a long low one, and the spot shrinks or grows to match.
-     Where it would still come out too small to point at, the canvas keeps
-     the width and runs on down the page instead. */
+     The painting is whatever grid of the spots on show fills the space best,
+     worked out again every time the filters change. A canvas c spots wide is
+     (2c + 1) diameters across, a spot and a gap per column and one more gap
+     for the far margin; so for every column count the spot is as large as
+     both the width and the height allow, and the count that gives the
+     largest spot wins. Fewer books make a smaller grid of larger spots, a
+     single book one spot as large as the space allows. Where the last row
+     comes up short it is centred, as a hang would be, rather than leaving
+     blank places: the canvas only ever holds the books that are on it. */
 
-  var MIN_D = 12, MAX_D = 72;
+  var MIN_D = 12, MAX_D = 150;
 
-  function layout() {
+  // The label's own row, plus the filters' full height while they are open:
+  // the painting gives up room to them rather than being covered. The label
+  // takes the canvas's new width at once (only the canvas animates), so this
+  // reads the height it will settle at.
+  function labelHeight() {
+    var label = document.getElementById('label');
+    return label.querySelector('.label-row').offsetHeight + parseFloat(getComputedStyle(label).paddingTop) +
+           (drawer.classList.contains('open') ? filters.scrollHeight : 0);
+  }
+
+  function layout(again) {
+    var shown = books.filter(function (b) { return b.on; });
+    var n = shown.length;
     var cs = getComputedStyle(gallery);
     var W = gallery.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     var top = gallery.getBoundingClientRect().top + scrollY;
-    var foot = document.querySelector('.foot').offsetHeight;
-    var H = innerHeight - top - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - foot;
-    // On a phone the filters take half the screen, and fitting what is left
+    var lab = labelHeight();
+    var H = innerHeight - top - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - lab;
+    // On a phone the bar takes much of the screen, and fitting what is left
     // would leave spots too small to tap. There the painting may run on below
     // the fold, as tall as most of a screen.
-    if (W < 560) H = Math.max(H, innerHeight * 0.78);
-    var n = books.length, best = { d: 0 };
+    if (W < 560) H = Math.max(H, innerHeight * 0.72);
 
+    document.getElementById('empty').hidden = n > 0;
+    if (!n) return;            // an empty canvas keeps the size it had
+
+    var best = { d: 0 };
     for (var c = 1; c <= n; c++) {
       var r = Math.ceil(n / c);
       var d = Math.min(W / (2 * c + 1), H / (2 * r + 1));
-      // A near tie goes to the grid with fewer unpainted places.
+      // A near tie goes to the grid whose last row is fuller.
       if (d > best.d + 0.25 || (d > best.d - 0.25 && c * r - n < best.spare)) {
         best = { c: c, r: r, d: d, spare: c * r - n };
       }
     }
     if (best.d < MIN_D) {
       var cols = Math.max(1, Math.floor((W / MIN_D - 1) / 2));
-      best = { c: cols, r: Math.ceil(n / cols), d: MIN_D, spare: cols * Math.ceil(n / cols) - n };
+      best = { c: cols, r: Math.ceil(n / cols), d: MIN_D };
     }
-    var dd = Math.floor(Math.min(MAX_D, best.d) * 4) / 4;
-    canvas.style.setProperty('--d', dd + 'px');
-    canvas.style.setProperty('--cols', best.c);
+    c = best.c; r = best.r;
+    var D = Math.floor(Math.min(MAX_D, best.d) * 4) / 4;
 
-    while (blanks.length < best.spare) {
-      var e = document.createElement('span');
-      e.className = 'spot blank';
-      e.setAttribute('aria-hidden', 'true');
-      blanks.push(e);
-    }
-    blanks.forEach(function (e, i) {
-      if (i < best.spare) canvas.appendChild(e); else e.remove();
+    // Set on the figure, not the canvas, so the label beneath reads the
+    // canvas's width too and stays exactly as wide as the painting.
+    work.style.setProperty('--d', D + 'px');
+    work.style.setProperty('--cw', (2 * c + 1) * D + 'px');
+    work.style.setProperty('--ch', (2 * r + 1) * D + 'px');
+    var lastRow = n - (r - 1) * c;
+    shown.forEach(function (b, i) {
+      var row = Math.floor(i / c), col = i % c;
+      var shift = row === r - 1 ? (c - lastRow) * D : 0;
+      b.el.style.setProperty('--x', D + col * 2 * D + shift + 'px');
+      b.el.style.setProperty('--y', D + row * 2 * D + 'px');
     });
+
+    // The label is as wide as the canvas, so a new canvas width can rewrap
+    // the caption and change the height the painting was fitted around.
+    // Measured again once, at the label's new width — never more, or a
+    // borderline case could see-saw.
+    if (!again && labelHeight() !== lab) layout(true);
   }
 
   function render() {
@@ -704,16 +824,26 @@ var books = [
     });
     var shown = 0;
     books.forEach(function (b) {
-      var on = matches(b);
-      b.el.classList.toggle('off', !on);
-      // Back to pencil, so out of reach too: off the tab order and unread.
-      if (on) { b.el.removeAttribute('tabindex'); b.el.removeAttribute('aria-hidden'); shown++; }
+      b.on = matches(b);
+      b.el.classList.toggle('off', !b.on);
+      // Out of the painting, so out of reach too: off the tab order and unread.
+      if (b.on) { b.el.removeAttribute('tabindex'); b.el.removeAttribute('aria-hidden'); shown++; }
       else { b.el.tabIndex = -1; b.el.setAttribute('aria-hidden', 'true'); }
     });
     rest();
-    document.getElementById('empty').hidden = shown > 0;
-    document.getElementById('readout').innerHTML =
-      '<b>' + shown + '</b> of ' + books.length + ' books';
+
+    // The label reads as a gallery label would for this selection.
+    var names = GROUPS.filter(function (g) { return active[g.key] !== 'all'; }).map(function (g) {
+      var v = active[g.key];
+      return g.key === 'r' ? (v === 'A' ? 'All-time' : 'Recommended') : v;
+    });
+    document.getElementById('which').textContent = names.length ? ' — ' + names.join(' · ') : '';
+    document.getElementById('count').textContent = 'Household gloss on canvas · ' +
+      (shown === books.length ? books.length + ' spots' : shown + ' of ' + books.length + ' spots');
+    document.getElementById('n').textContent = names.length ? ' · ' + names.length : '';
+    clear.disabled = !names.length;
+
+    layout();
   }
 
   var pending = 0;
@@ -721,8 +851,13 @@ var books = [
     cancelAnimationFrame(pending);
     pending = requestAnimationFrame(layout);
   });
+
+  // Hung, not assembled: the first layout is placed without transitions.
+  canvas.classList.add('still');
   render();
-  layout();
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { canvas.classList.remove('still'); });
+  });
 })();
 </script>
 </body>
