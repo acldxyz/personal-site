@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Draft: keep it out of search until it ships. -->
+<meta name="robots" content="noindex">
+<title>Adam Dawson — Iris</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body { height: 100%; margin: 0; }
+
+  body {
+    /* What shows before the first frame, and for good where WebGL2 is missing:
+       the same eye in four stops, so the page never flashes paper-white and
+       then turns dark. */
+    background:
+      radial-gradient(circle at 50% 50%,
+        #050505 0 13%, #7a4a12 15%, #b9812a 24%, #2f6f8c 38%, #123a55 62%, #06131f 100%);
+    background-color: #06131f;
+    overflow: hidden;
+  }
+
+  #iris {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    /* Hidden while it paints tile by tile, then revealed whole. */
+    opacity: 0;
+    transition: opacity .62s ease-out;
+  }
+
+  #iris.ready { opacity: 1; }
+
+  /* The interface register from index.html, with the ink inverted: the paper
+     tones become the text because the surface here is dark. */
+  nav {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: max(22px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .2em;
+    padding: 0 12px;
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  nav a {
+    color: rgba(250, 248, 243, .82);
+    text-decoration: none;
+    padding: .78em 1.2em;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    /* The iris behind is busy and changes from pale strand to dark crypt
+       within a letter's width; the shadow gives the text its own ground. */
+    text-shadow: 0 1px 6px rgba(0, 0, 0, .75), 0 0 2px rgba(0, 0, 0, .6);
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+  }
+
+  nav a:hover {
+    color: #fff;
+    background: rgba(0, 0, 0, .38);
+    border-color: rgba(250, 248, 243, .34);
+  }
+
+  nav a:focus-visible {
+    outline: 2px solid #8cc4ea;   /* #3d7ba8 lifted: the house blue vanishes on the iris */
+    outline-offset: 2px;
+  }
+
+  /* Narrow screens: tighten the pills so the row breaks 3 + 2 at worst,
+     not four and an orphan. */
+  @media (max-width: 440px) {
+    nav a { padding: .78em .7em; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    nav a, #iris { transition-duration: .01s; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="iris" role="img"
+  aria-label="An extreme close-up of a human iris filling the page: an amber ring around the pupil breaking outward into blue fibres."></canvas>
+
+<nav aria-label="Site">
+  <a href="index.html">Home</a>
+  <a href="about.html">About</a>
+  <a href="bookshelf.html">Bookshelf</a>
+  <a href="links.html">Canon</a>
+  <a href="mailto:adam@acld.xyz">Contact</a>
+</nav>
+
+<script id="frag" type="x-shader/x-fragment">#version 300 es
+precision highp float;
+
+uniform vec2  uRes;    // backing-store size, px
+uniform float uR;      // limbus radius, px
+uniform float uSeed;
+uniform int   uTaps;   // always 4; see main()
+out vec4 outColor;
+
+const float TAU   = 6.28318530718;
+const float PUPIL = 0.215;   // pupil radius as a share of the limbus radius
+
+float hash(vec3 p) {
+  p = fract(p * 0.3183099 + 0.1);
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+float noise(vec3 x) {
+  vec3 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(hash(i),                 hash(i + vec3(1,0,0)), f.x),
+                 mix(hash(i + vec3(0,1,0)),   hash(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash(i + vec3(0,0,1)),   hash(i + vec3(1,0,1)), f.x),
+                 mix(hash(i + vec3(0,1,1)),   hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+}
+
+/* Everything is sampled on a cylinder: angle wraps around it, radius runs
+   along it. That is what makes the fibres seamless at the atan2 cut, and it
+   keeps the strand count constant from pupil to limbus the way real stroma
+   radiates, instead of the strands thinning out as the circle widens. */
+vec3 cyl(float th, float F, float z) {
+  return vec3(cos(th) * F, sin(th) * F, z) + uSeed;
+}
+
+float ridge(float n) { n = 1.0 - abs(2.0 * n - 1.0); return n * n; }
+
+struct Surf { float h; float s; float crypt; float furr; float tc; float t; float th; float thw; float col; float rp; float rho; };
+
+Surf surface(vec2 p) {
+  Surf o;
+  float rho = length(p) / uR;
+  float th  = atan(p.y, p.x);
+
+  // The pupil is never a true circle.
+  float rp = PUPIL * (1.0 + 0.022 * (noise(cyl(th, 2.0, 0.0)) - 0.5)
+                          + 0.006 * (noise(cyl(th, 9.0, 4.0)) - 0.5));
+  float t  = (rho - rp) / (1.0 - rp);        // 0 at the pupil margin, 1 at the limbus
+  float tc = clamp(t, 0.0, 1.0);
+
+  // Collarette: the zigzag wreath where the pupillary and ciliary zones meet.
+  float col = 0.27 + 0.070 * (noise(cyl(th,  4.0, 7.0)) - 0.5)
+                   + 0.045 * (noise(cyl(th, 15.0, 2.0)) - 0.5)
+                   + 0.020 * (noise(cyl(th, 46.0, 5.0)) - 0.5);
+  float pz = 1.0 - smoothstep(col - 0.025, col + 0.025, tc);   // 1 inside the wreath
+
+  // Fibres wander on their way out; without this they read as a spoked wheel.
+  // Inside the wreath they run nearly straight, outside they rope and braid,
+  // so the meander is scaled by how far past the wreath we are.
+  float loose = smoothstep(col - 0.05, col + 0.25, tc);
+  float thw = th + 0.050 * (noise(cyl(th,  5.0, tc * 3.0)) - 0.5)
+                 + (0.012 + 0.020 * loose) * (noise(cyl(th, 17.0, tc * 7.0)) - 0.5)
+                 + (0.004 + 0.007 * loose) * (noise(cyl(th, 48.0, tc * 18.0)) - 0.5);
+
+  // Octaves above what a pixel can carry are faded out rather than left to alias.
+  float px = rho * uR;                       // pixels per radian at this radius
+  #define CARRY(F) smoothstep(1.3, 3.2, px / (F))
+
+  float coarse = ridge(noise(cyl(thw,  30.0, tc * 3.2)));
+  float wM = CARRY(80.0), wF = CARRY(190.0), wX = CARRY(420.0);
+  float mid    = ridge(noise(cyl(thw,  80.0, tc * 5.0 + 11.0))) * wM;
+  float fine   = ridge(noise(cyl(thw, 190.0, tc * 8.0 + 23.0))) * wF;
+  float xfine  = ridge(noise(cyl(thw, 420.0, tc * 14.0 + 31.0))) * wX;
+  // Cords come and go along their length instead of running rim to rim.
+  float gate   = 0.45 + 0.55 * noise(cyl(thw, 30.0, tc * 9.0 + 70.0));
+
+  // Crypts: lozenge pits, long in the radial direction, where the front
+  // layer is missing and the darker mesh behind shows.
+  float cn    = noise(cyl(thw, 13.0, tc * 4.2 + 40.0));
+  float band  = smoothstep(col - 0.02, col + 0.05, tc) * (1.0 - smoothstep(0.50, 0.78, tc));
+  float crypt = smoothstep(0.60, 0.76, cn) * band;
+  float cn2   = noise(cyl(thw, 27.0, tc * 11.0 + 60.0));
+  crypt = max(crypt, smoothstep(0.64, 0.78, cn2)
+                     * smoothstep(col - 0.01, col + 0.03, tc)
+                     * (1.0 - smoothstep(col + 0.10, col + 0.24, tc)));
+
+  // Contraction furrows: a few broad, broken concentric folds near the rim.
+  float fw   = tc + 0.040 * (noise(cyl(th, 3.0, 20.0)) - 0.5);
+  float furr = pow(0.5 + 0.5 * cos(TAU * fw * 6.5), 3.0)
+             * smoothstep(0.52, 0.68, tc) * (1.0 - smoothstep(0.88, 0.98, tc))
+             * smoothstep(0.40, 0.75, noise(cyl(th, 2.5, fw * 6.0 + 80.0)));
+
+  // Height of the front surface.
+  float hCil = (0.52 * coarse * gate + 0.26 * mid + 0.14 * fine + 0.08 * xfine) * 1.12;
+  // Renormalised by what survived, so a small screen that loses the fine
+  // octaves still gets full-contrast fibres from the ones it can show.
+  float pup44 = ridge(noise(cyl(thw, 46.0, tc * 2.4 + 17.0)));
+  float hPup = (0.06 * coarse + 0.22 * pup44 + 0.30 * mid + 0.26 * fine + 0.16 * xfine)
+             / (0.28 + 0.30 * wM + 0.26 * wF + 0.16 * wX);
+  float h    = mix(hCil, hPup, pz);
+  float wreath = exp(-pow((tc - col) / 0.024, 2.0)) * (0.50 + 0.50 * mid);
+  h += 0.34 * wreath;
+  h *= 1.0 - 0.66 * crypt;
+  // Inside a crypt the fine mesh of the back layer is what you see.
+  h += crypt * 0.20 * (0.6 * mid + fine + xfine);
+  h -= 0.10 * furr;
+
+  o.h = h; o.s = smoothstep(0.05, 0.95, h); o.crypt = crypt; o.furr = furr;
+  o.tc = tc; o.t = t; o.th = th; o.thw = thw; o.col = col; o.rp = rp; o.rho = rho;
+  return o;
+}
+
+vec3 shade(vec2 p) {
+  // surface() is big, and is needed three times here and four times over in
+  // main(). Written out, that is twelve inlined copies, which took some
+  // drivers long enough to compile that the context was dropped. Looping to a
+  // uniform bound keeps it to one copy.
+  Surf a;
+  float hx = 0.0, hy = 0.0;
+  float e = 1.5;
+  for (int k = 0; k < min(uTaps, 3); k++) {
+    Surf q = surface(p + (k == 1 ? vec2(e, 0.0) : k == 2 ? vec2(0.0, e) : vec2(0.0)));
+    if (k == 0) a = q; else if (k == 1) hx = q.h; else hy = q.h;
+  }
+  float tc = a.tc, th = a.th, thw = a.thw, s = a.s;
+
+  // Relief, by finite differences a pixel and a half apart: wide enough that
+  // the finest octave cannot beat against the pixel grid. Lit from the upper
+  // left, like everything else on the site.
+  vec2  g = vec2(hx - a.h, hy - a.h) / e * (uR / 520.0);
+  float lit = 1.0 + clamp(dot(g, vec2(-0.59, 0.81)) * 4.2, -0.50, 0.70);
+
+  // Colour. Each zone has a deep tone for the gaps and a pale one for strands.
+  vec3 amberDeep = vec3(0.250, 0.095, 0.020);
+  vec3 amberMid  = vec3(0.760, 0.430, 0.080);
+  vec3 amberPale = vec3(0.970, 0.790, 0.380);
+  vec3 blueDeep  = vec3(0.030, 0.115, 0.200);
+  vec3 blueMid   = vec3(0.130, 0.400, 0.550);
+  vec3 bluePale  = vec3(0.560, 0.770, 0.850);
+
+  vec3 amber = mix(mix(amberDeep, amberMid, smoothstep(0.0, 0.5, s)), amberPale, smoothstep(0.45, 1.0, s));
+  vec3 blue  = mix(mix(blueDeep,  blueMid,  smoothstep(0.0, 0.55, s)), bluePale,  smoothstep(0.55, 1.0, s));
+
+  // Central heterochromia: the amber does not stop at the wreath, it runs out
+  // along individual fibres as flames, some long, most short.
+  float tongue = noise(cyl(thw, 26.0, tc * 1.1 + 90.0));
+  float reach  = a.col + 0.02 + 0.30 * tongue * tongue
+                       + 0.10 * (noise(cyl(thw, 7.0, 95.0)) - 0.5);
+  float warm   = 1.0 - smoothstep(reach - 0.07, reach + 0.10, tc);
+  vec3  c      = mix(blue, amber, warm);
+
+  // A green cast where the two meet; pigment over blue stroma reads green.
+  float seam = exp(-pow((tc - reach) / 0.11, 2.0));
+  c = mix(c, c * vec3(0.80, 1.10, 0.62) + vec3(0.0, 0.03, 0.0), 0.55 * seam * (1.0 - warm * 0.6));
+
+  // The blue is not one blue: slow drifts of hue and value across the ciliary zone.
+  float drift = noise(cyl(th, 3.0, tc * 2.0 + 120.0));
+  c *= mix(vec3(0.84, 0.93, 1.06), vec3(1.06, 1.04, 0.95), drift);
+
+  // Freckles: small pigment spots that stain the fibres rather than cover them.
+  float fk = noise(cyl(thw, 15.0, tc * 16.0 + 150.0));
+  float freckle = smoothstep(0.78, 0.90, fk) * smoothstep(0.34, 0.44, tc) * (1.0 - smoothstep(0.78, 0.88, tc));
+  c = mix(c, vec3(0.50, 0.25, 0.07) * (0.45 + 0.9 * s), 0.42 * freckle);
+
+  c *= mix(1.0, 0.58, a.crypt);    // pits sit in their own shadow
+  c *= 1.0 - 0.16 * a.furr;
+  c *= lit;
+
+  // The iris dishes toward the pupil, and the ruff at the margin is near-black brown.
+  c *= 0.60 + 0.40 * smoothstep(0.0, 0.16, tc);
+  float ruffW = 0.016 + 0.020 * noise(cyl(th, 70.0, 0.0)) + 0.010 * noise(cyl(th, 190.0, 3.0));
+  c = mix(vec3(0.050, 0.022, 0.010), c, smoothstep(0.0, ruffW, a.t));
+
+  // Limbal ring: the rim darkens and loses its edge under the cornea's margin.
+  float limb = smoothstep(0.74, 1.0, tc);
+  c = mix(c, vec3(0.020, 0.050, 0.080) * (0.6 + 0.8 * s), limb * limb * 0.92);
+
+  // Sclera, for the viewports whose corners reach past the rim.
+  vec3 sclera = vec3(0.860, 0.835, 0.800) * (0.90 + 0.10 * noise(vec3(p / uR * 6.0, 3.0)));
+  c = mix(c, sclera, smoothstep(0.985, 1.05, a.rho));
+
+  // Pupil, antialiased in pixels so its edge is equally crisp at any size.
+  float edge = (a.rho - a.rp) * uR;
+  return mix(vec3(0.006, 0.005, 0.005), c, smoothstep(-1.0, 1.5, edge));
+}
+
+void main() {
+  vec2 p = gl_FragCoord.xy - 0.5 * uRes;
+  // Four rotated-grid samples. The fibres are finer than a pixel in places,
+  // and one sample per pixel turned them into a dotted moire.
+  const vec2 TAP[4] = vec2[4](vec2( 0.125,  0.375), vec2(-0.375,  0.125),
+                              vec2( 0.375, -0.125), vec2(-0.125, -0.375));
+  vec3 c = vec3(0.0);
+  for (int i = 0; i < uTaps; i++) c += shade(p + TAP[i]);
+  c /= float(uTaps);
+
+  // A grain finer than the fibres stops the smooth passages looking rendered.
+  c += (hash(vec3(gl_FragCoord.xy, uSeed)) - 0.5) * 0.022;
+
+  outColor = vec4(pow(clamp(c, 0.0, 1.0), vec3(0.94)), 1.0);
+}
+</script>
+
+<script>
+(function () {
+  var canvas = document.getElementById('iris');
+  var gl = canvas.getContext('webgl2', { antialias: false, alpha: false, preserveDrawingBuffer: true });
+  if (!gl) return;   // the CSS gradient on <body> stands in
+
+  function compile(type, src) {
+    var sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(sh));
+      return null;
+    }
+    return sh;
+  }
+
+  var vs = compile(gl.VERTEX_SHADER,
+    '#version 300 es\nin vec2 a;void main(){gl_Position=vec4(a,0.,1.);}');
+  var fs = compile(gl.FRAGMENT_SHADER, document.getElementById('frag').textContent);
+  if (!vs || !fs) { canvas.remove(); return; }
+
+  var prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { canvas.remove(); return; }
+  gl.useProgram(prog);
+
+  // One triangle that overshoots the viewport: no diagonal seam for the
+  // derivatives to stumble on, as two triangles would have.
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(prog, 'a');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  var uRes = gl.getUniformLocation(prog, 'uRes');
+  var uR = gl.getUniformLocation(prog, 'uR');
+  var uSeed = gl.getUniformLocation(prog, 'uSeed');
+
+  // ?seed=n paints a different eye. Fixed by default so the page is the same
+  // iris on every visit, as a portrait would be.
+  var seed = parseFloat(new URLSearchParams(location.search).get('seed'));
+  if (!isFinite(seed)) seed = 7;
+
+  // The picture is static, so it is painted once per size rather than per
+  // frame. A frame is expensive (twelve surface evaluations a pixel): drawn in
+  // one call it can stall a slow GPU long enough for the browser to kill the
+  // context. So it goes down in tiles, one per animation frame, behind a
+  // canvas that stays transparent until the last tile lands.
+  var TILE_W = 512, TILE_H = 256;
+  var job = 0;
+
+  function paint() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.round(canvas.clientWidth * dpr);
+    var h = Math.round(canvas.clientHeight * dpr);
+    if (!w || !h || gl.isContextLost()) return;
+    var mine = ++job;
+    canvas.classList.remove('ready');
+    canvas.width = w;
+    canvas.height = h;
+    gl.viewport(0, 0, w, h);
+    gl.uniform2f(uRes, w, h);
+    // The limbus sits just past the corners: the iris covers the page at any
+    // aspect ratio, and the dark rim arrives in the corners as a vignette.
+    gl.uniform1f(uR, 0.5 * Math.hypot(w, h) * 1.03);
+    gl.uniform1f(uSeed, seed * 13.37);
+    gl.uniform1i(gl.getUniformLocation(prog, 'uTaps'), 4);
+    gl.enable(gl.SCISSOR_TEST);
+
+    var x = 0, y = 0;
+    (function tile() {
+      if (mine !== job || gl.isContextLost()) return;   // superseded by a resize
+      gl.scissor(x, y, TILE_W, TILE_H);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      x += TILE_W;
+      if (x >= w) { x = 0; y += TILE_H; }
+      if (y >= h) { canvas.classList.add('ready'); return; }
+      requestAnimationFrame(tile);
+    })();
+  }
+
+  // If the context goes anyway, step aside for the gradient; repaint if it returns.
+  canvas.addEventListener('webglcontextlost', function (e) {
+    e.preventDefault();
+    job++;
+    canvas.classList.remove('ready');
+  });
+
+  // Repaint once the window has settled, not on every resize tick.
+  var settle;
+  window.addEventListener('resize', function () {
+    clearTimeout(settle);
+    settle = setTimeout(paint, 140);
+  });
+
+  paint();
+})();
+</script>
+</body>
+</html>
