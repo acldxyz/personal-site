@@ -41,16 +41,22 @@
 
   /* ------------------------------------------------------------- topbar */
 
-  /* The same bar as bookshelf.html, so the draft can be swapped in without
-     the rest of the site noticing, less the rule beneath it: here the bar
-     steps back and leaves the painting the only edge on the page. */
+  /* The bar holds three things at rest: the wordmark, Filter beside it and
+     the menu at the far end. Both menus open sideways from their buttons as
+     overlays: the site links slide out leftward from the menu along the bar,
+     and the filters unroll rightward in a band beneath it. Neither takes
+     space from the page as it opens, so the spots never move for them. */
   .topbar {
+    position: relative;
+    z-index: 10;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 20px;
+    gap: clamp(14px, 2vw, 28px);
     padding: clamp(14px, 1.6vw, 20px) var(--margin);
+    background: #fcfbf8;
   }
+  .topbar .toggle { margin-left: -.9em; }
+  .menu { position: relative; margin-left: auto; display: flex; align-items: center; }
 
   .wordmark {
     display: inline-block;
@@ -67,14 +73,60 @@
   .wordmark:hover { opacity: 1; }
   .wordmark:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
+  /* Opens leftward from the menu button, on the page's white, over whatever
+     it reaches; on a phone that is the wordmark too, and the row scrolls
+     sideways rather than wrapping. Inert while closed. */
   .site-nav {
+    position: absolute;
+    right: calc(100% + 4px);
+    top: 50%;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    align-items: center;
     gap: 1px;
-    font-size: 11px;
-    margin-right: -.9em;
+    min-height: 44px;    /* as tall as the two-line wordmark it may cover */
+    /* Out to within 10px of the window's left edge, so on a phone its white
+       covers the wordmark entirely rather than leaving a sliver showing. */
+    max-width: calc(100vw - var(--margin) - 44px);
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: #fcfbf8;
+    transform: translateY(-50%);
+    clip-path: inset(-4px -4px -4px 100%);
+    opacity: 0;
+    transition: clip-path .45s ease-out, opacity .3s ease;
   }
+  .site-nav::-webkit-scrollbar { display: none; }
+  .site-nav.open { clip-path: inset(-4px -4px -4px 0); opacity: 1; }
+
+  /* Three rules that close into a cross. */
+  .burger {
+    position: relative;
+    width: 40px;
+    height: 34px;
+    margin-right: -10px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: none;
+    cursor: pointer;
+    transition: background-color .2s ease, border-color .2s ease;
+  }
+  .burger:hover { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.14); }
+  .burger:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .burger span {
+    position: absolute;
+    left: 12px;
+    width: 16px;
+    height: 1.5px;
+    background: var(--ink);
+    transition: transform .3s ease, opacity .2s ease, background-color .2s ease;
+  }
+  .burger span:nth-child(1) { top: 11px; }
+  .burger span:nth-child(2) { top: 16px; }
+  .burger span:nth-child(3) { top: 21px; }
+  .burger:hover span, .burger[aria-expanded="true"] span { background: var(--ink-strong); }
+  .burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+  .burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+  .burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
 
   .site-nav a, .opt {
     font-family: inherit;
@@ -110,7 +162,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: clamp(18px, 2.6vw, 40px) var(--margin);
+    /* --reserve is the filter band's height, kept free above the spots
+       whenever the band is short enough to spare it, open or not: see
+       layout(). */
+    padding: calc(clamp(18px, 2.6vw, 40px) + var(--reserve, 0px)) var(--margin) clamp(18px, 2.6vw, 40px);
   }
 
   .work {
@@ -279,39 +334,41 @@
     background: rgba(0,0,0,.07);
     border-color: rgba(0,0,0,.16);
   }
-  /* The count of active filters rides on the toggle, so a folded label
-     still says the painting is showing less than the whole shelf. */
+  /* The count of active filters rides on the toggle, so a closed band still
+     says the painting is showing less than the whole shelf. */
   .toggle .n { color: var(--ink-strong); }
 
-  /* Shown only while a filter is on. */
+  /* Shown only while a filter is on; it keeps its place while hidden, so
+     the band's height never changes with it. */
   .clear { transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .3s ease; }
   .clear[disabled] { opacity: 0; pointer-events: none; }
 
-  /* The filters unfold beneath the caption. The row animates from nothing
-     to its own height, and while folded it is inert, so its buttons are out
-     of the tab order and unread. */
-  /* Pulled out by a pill's inset, so the buttons' text lines up with the
-     caption's while their hover pills have room inside the clip. */
-  .drawer {
-    margin-left: -.9em;
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows .45s ease-out;
+  /* The filters, in one band under the bar that unrolls left to right from
+     the Filter button. It is laid out even while closed, only clipped away,
+     so its height is known before it opens and the room for it can be kept
+     free. Where it would take too much of a small screen it lies over the
+     top of the spots instead, on the page's white with a soft edge, and the
+     spots under it are left exactly as they were. Inert while closed. */
+  .band {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    padding: 2px var(--margin) 12px;
+    background: #fcfbf8;
+    clip-path: inset(0 100% -24px 0);
+    opacity: 0;
+    transition: clip-path .45s ease-out, opacity .3s ease;
   }
-  .drawer.open { grid-template-rows: 1fr; }
-  .drawer > div {
-    overflow: hidden;
-    min-height: 0;
-  }
+  .band.open { clip-path: inset(0 0 -24px 0); opacity: 1; }
+  .band.over { box-shadow: 0 14px 18px -14px rgba(40,30,20,.22); }
   .filters {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 12px 0 2px;
-    opacity: 0;
-    transition: opacity .3s ease;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px clamp(18px, 2.4vw, 34px);
+    margin-left: -.9em;
   }
-  .drawer.open .filters { opacity: 1; transition-delay: .12s; }
 
   /* min-width: 0 because a fieldset is otherwise at least as wide as its
      contents, and would push the page sideways on a phone rather than let
@@ -320,8 +377,7 @@
   .group legend {
     float: left;
     flex: none;
-    width: 12.5em;
-    padding-left: .9em;
+    padding: 0 .3em 0 .9em;
     font-size: 10px;
     color: #a49a8e;
   }
@@ -331,14 +387,12 @@
 
   @media (max-width: 860px) {
     :root { --margin: 20px; }
-    .topbar { flex-direction: column; align-items: flex-start; gap: 10px; padding: 22px 20px 16px; }
-    .site-nav { justify-content: flex-start; margin: 0 0 0 -.9em; }
   }
   @media (max-width: 560px) {
     .label-row { flex-direction: column; }
     .actions { margin: 0 0 0 -.9em; }
     .group { flex-direction: column; }
-    .group legend { width: 100%; margin: 6px 0 2px; }
+    .group legend { width: 100%; margin: 4px 0 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -355,13 +409,20 @@
 
 <header class="topbar">
   <a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
-  <nav class="site-nav" aria-label="Primary">
-    <a href="about.html">About</a>
-    <a href="fatherhood.html">Fatherhood</a>
-    <a href="research.html">Research</a>
-    <a href="links.html">Canon</a>
-    <a href="mailto:adam@acld.xyz">Contact</a>
-  </nav>
+  <button type="button" class="opt toggle" id="toggle" aria-expanded="false" aria-controls="band">Filter<span class="n" id="n"></span></button>
+  <div class="menu">
+    <nav class="site-nav" id="site-nav" aria-label="Primary" inert>
+      <a href="about.html">About</a>
+      <a href="fatherhood.html">Fatherhood</a>
+      <a href="research.html">Research</a>
+      <a href="links.html">Canon</a>
+      <a href="mailto:adam@acld.xyz">Contact</a>
+    </nav>
+    <button type="button" class="burger" id="burger" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+  <div class="band" id="band" inert>
+    <div class="filters" id="filters"></div>
+  </div>
 </header>
 
 <main class="gallery" id="gallery">
@@ -380,14 +441,9 @@
           <div class="book" id="book" aria-hidden="true"></div>
         </div>
         <div class="actions">
-          <button type="button" class="opt clear" id="clear" disabled>Clear</button>
-          <button type="button" class="opt toggle" id="toggle" aria-expanded="false" aria-controls="drawer">Filter<span class="n" id="n"></span></button>
           <button type="button" class="opt" id="save">Save image</button>
           <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send a rec</a>
         </div>
-      </div>
-      <div class="drawer" id="drawer">
-        <div><div class="filters" id="filters" inert></div></div>
       </div>
     </figcaption>
   </figure>
@@ -635,9 +691,15 @@ var books = [
   /* ---- filters ---- */
 
   var filters = document.getElementById('filters');
-  var drawer = document.getElementById('drawer');
+  var band = document.getElementById('band');
   var toggle = document.getElementById('toggle');
-  var clear = document.getElementById('clear');
+  var burger = document.getElementById('burger');
+  var siteNav = document.getElementById('site-nav');
+  var clear = document.createElement('button');
+  clear.type = 'button';
+  clear.className = 'opt clear';
+  clear.textContent = 'Clear';
+  clear.disabled = true;
 
   GROUPS.forEach(function (grp) {
     var fs = document.createElement('fieldset');
@@ -664,21 +726,29 @@ var books = [
     });
     filters.appendChild(fs);
   });
+  filters.appendChild(clear);
 
-  function setDrawer(open) {
-    drawer.classList.toggle('open', open);
-    toggle.setAttribute('aria-expanded', open);
-    filters.inert = !open;
-    layout();
+  // Opening and closing touch nothing but the band and the menu themselves:
+  // no layout(), so the spots stay exactly where they are.
+  function setOpen(btn, panel, open) {
+    panel.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open);
+    panel.inert = !open;
   }
   toggle.addEventListener('click', function () {
-    setDrawer(toggle.getAttribute('aria-expanded') !== 'true');
+    setOpen(toggle, band, toggle.getAttribute('aria-expanded') !== 'true');
+  });
+  burger.addEventListener('click', function () {
+    setOpen(burger, siteNav, burger.getAttribute('aria-expanded') !== 'true');
   });
   addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
-      setDrawer(false);
-      toggle.focus();
-    }
+    if (e.key !== 'Escape') return;
+    [[burger, siteNav], [toggle, band]].some(function (pair) {
+      if (pair[0].getAttribute('aria-expanded') !== 'true') return false;
+      setOpen(pair[0], pair[1], false);
+      pair[0].focus();
+      return true;     // one at a time, the most recently reached first
+    });
   });
   clear.addEventListener('click', function () {
     active = { g: 'all', y: 'all', r: 'all' };
@@ -748,17 +818,26 @@ var books = [
 
   var MIN_D = 12, MAX_D = 150;
 
-  // The label's own row, plus the filters' full height while they are open:
-  // the painting gives up room to them rather than being covered. The label
-  // takes the canvas's new width at once (only the canvas animates), so this
-  // reads the height it will settle at.
+  // The label takes the canvas's new width at once (only the canvas
+  // animates), so this reads the height it will settle at.
   function labelHeight() {
     var label = document.getElementById('label');
-    return label.querySelector('.label-row').offsetHeight + parseFloat(getComputedStyle(label).paddingTop) +
-           (drawer.classList.contains('open') ? filters.scrollHeight : 0);
+    return label.querySelector('.label-row').offsetHeight + parseFloat(getComputedStyle(label).paddingTop);
+  }
+
+  // The filter band's height is kept free above the spots, open or not, so
+  // opening it never moves them. Only while it is a slim band, though: on a
+  // small screen the filters wrap into a block that would cost the spots
+  // more than it is worth, and there the band lies over them instead.
+  function reserve() {
+    var h = band.offsetHeight;
+    var keep = h <= Math.max(72, innerHeight * 0.14);
+    band.classList.toggle('over', !keep);
+    gallery.style.setProperty('--reserve', (keep ? h : 0) + 'px');
   }
 
   function layout(again) {
+    if (!again) reserve();
     var shown = books.filter(function (b) { return b.on; });
     var n = shown.length;
     var cs = getComputedStyle(gallery);
