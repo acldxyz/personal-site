@@ -485,10 +485,11 @@ void main() {
     c = mix(c, c * vec3(0.44, 0.37, 0.30) + vec3(0.014, 0.010, 0.006), (1.0 - smoothstep(0.25, 1.0, fe)) * 0.78);
   }
 
-  // Limbal ring: a broad, soft darkening toward the rim, greyer than the
-  // rest, as the iris passes under the cornea's edge.
-  float rim = smoothstep(0.78, 0.98, r);
-  c = mix(c, c * vec3(0.88, 0.92, 0.98), rim * 0.90);
+  // Limbal ring. Many eyes darken toward the rim; this one barely does: in
+  // the photograph the iris keeps its brightness right out to the cornea's
+  // edge and then clouds into the white. Only a trace of greying is kept.
+  float rim = smoothstep(0.80, 0.98, r);
+  c = mix(c, c * vec3(0.95, 0.97, 0.99), rim * 0.90);
 
   // The white of the eye: brightest around the cornea and falling away,
   // warmer, as the globe turns. By the cornea it thins over the dark tissue
@@ -643,8 +644,9 @@ void main() {
                    + 0.8 * ECC * Math.cos(th - ECC_A);
     }
 
-    // Toward the root every strand dives under the limbus.
-    function dive(r) { return 0.12 * sm(clamp01((r - 0.90) / 0.11)); }
+    // Toward the root every strand dives under the limbus. Gently: the deeper
+    // a fibre lies the darker it is drawn, and in this eye the rim is not dark.
+    function dive(r) { return 0.05 * sm(clamp01((r - 0.92) / 0.09)); }
 
     // The pupillary zone lies over the sphincter and is held taut; the
     // displacements below act on it at a fraction of their strength.
