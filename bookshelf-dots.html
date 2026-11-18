@@ -956,25 +956,40 @@ var books = [
     return 'bookshelf-spots' + (tag ? '-' + tag : '') + '.png';
   }
 
+  // Inside a claude.ai artifact a page may not download for itself; the
+  // viewer offers the file instead, after a confirmation. Anywhere else there
+  // is no window.claude and the save goes the ordinary way.
+  var viaViewer = window.claude && window.claude.use ? window.claude.use('downloads') : Promise.resolve(null);
+
   document.getElementById('save').addEventListener('click', function () {
     if (!books.some(function (b) { return b.on; })) return;
     picture().toBlob(function (blob) {
       var name = fileName();
-      var file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
-      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file], title: 'Bookshelf' }).catch(function () {});
-        return;
-      }
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      viaViewer.then(function (downloads) {
+        if (downloads) {
+          downloads.save({ filename: name, data: blob }).catch(function () {});
+          return;
+        }
+        ordinary(blob, name);
+      });
     }, 'image/png');
   });
+
+  function ordinary(blob, name) {
+    var file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Bookshelf' }).catch(function () {});
+      return;
+    }
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
 
   var pending = 0;
   addEventListener('resize', function () {
