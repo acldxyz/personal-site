@@ -168,8 +168,8 @@
   // In bolt heights, from the bolt's top-left corner:
   //   TWIN  the upside-down twin is p -> TWIN - p
   //   PAIR  from a bolt to the next one along its row. Each pair sits a
-  //         little higher than the last, so the rows climb about 5° to the
-  //         right, as they do on the shirt.
+  //         little higher than the last, so on the shirt the rows climb
+  //         about 5° to the right.
   //   ROW   from a bolt to one in the row below
   // Together they leave both seams in a row about 0.05 wide, the zigzag
   // between a bolt and its twin and the looser one between the twin and
@@ -179,14 +179,23 @@
   var PAIR = [0.847, -0.071];
   var ROW = [-0.482, 1.152];
 
+  // Turning the whole pattern back by that climb lays the rows level and
+  // leans every bolt by the same ~5° instead. The gaps don't change.
+  var LEVEL = -Math.atan2(PAIR[1], PAIR[0]);
+  var COS = Math.cos(LEVEL), SIN = Math.sin(LEVEL);
+  var TWIN_L = level(TWIN), PAIR_L = level(PAIR), ROW_L = level(ROW);
+
+  function level(v) { return [v[0] * COS - v[1] * SIN, v[0] * SIN + v[1] * COS]; }
+
   var INK = 0.94;     // dye on cloth lets a little of the white through
   var BLEED = 0.25;   // and wicks a hair past the edge of the drawing
 
-  // Cut one bolt out of the paper with its top-left corner at x, y.
-  // turn = -1 sets it down upside down, turned about that same point.
+  // Cut one bolt out of the paper, leaned by LEVEL, with its top-left
+  // corner at x, y. turn = -1 sets it down upside down, turned about that
+  // same point.
   function stamp(x, y, turn) {
-    var s = turn * S / 1000;
-    ictx.setTransform(dpx * s, 0, 0, dpx * s, dpx * x, dpx * y);
+    var k = dpx * turn * S / 1000;
+    ictx.setTransform(k * COS, k * SIN, -k * SIN, k * COS, dpx * x, dpx * y);
     ictx.globalAlpha = BLEED;
     ictx.lineWidth = 1.4 * 1000 / S;   // ~1.4 CSS px at any size
     ictx.stroke(BOLT);
@@ -306,8 +315,8 @@
     S = Math.max(160, Math.min(0.30 * vh, 0.55 * vw, 330));
 
     // the centre of a pair (half of TWIN) on the centre of the screen
-    ax = vw / 2 - S * TWIN[0] / 2;
-    ay = vh / 2 - S * TWIN[1] / 2;
+    ax = vw / 2 - S * TWIN_L[0] / 2;
+    ay = vh / 2 - S * TWIN_L[1] / 2;
 
     // Ink at 2x, but a big screen at 2x is a 60MB canvas; past ~8M device
     // pixels the extra sharpness is not worth it.
@@ -343,26 +352,27 @@
     ictx.fillStyle = ictx.strokeStyle = '#000';
     ictx.lineJoin = 'round';
 
-    // The rows slope, so find the cells that can reach the screen by taking
-    // its corners, padded by a bolt, back into lattice steps.
-    var det = PAIR[0] * ROW[1] - PAIR[1] * ROW[0];
+    // Rows step sideways as they go down, so find the cells that can reach
+    // the screen by taking its corners, padded by a bolt, back into lattice
+    // steps.
+    var det = PAIR_L[0] * ROW_L[1] - PAIR_L[1] * ROW_L[0];
     var is = [], js = [];
     [[-S, -S], [vw + S, -S], [-S, vh + S], [vw + S, vh + S]].forEach(function (c) {
       var u = (c[0] - ax) / S, v = (c[1] - ay) / S;
-      is.push((u * ROW[1] - v * ROW[0]) / det);
-      js.push((v * PAIR[0] - u * PAIR[1]) / det);
+      is.push((u * ROW_L[1] - v * ROW_L[0]) / det);
+      js.push((v * PAIR_L[0] - u * PAIR_L[1]) / det);
     });
     var i0 = Math.floor(Math.min.apply(null, is)), i1 = Math.ceil(Math.max.apply(null, is));
     var j0 = Math.floor(Math.min.apply(null, js)), j1 = Math.ceil(Math.max.apply(null, js));
 
     for (var j = j0; j <= j1; j++) {
       for (var i = i0; i <= i1; i++) {
-        var x = ax + S * (i * PAIR[0] + j * ROW[0]);
-        var y = ay + S * (i * PAIR[1] + j * ROW[1]);
-        // a pair covers x .. x + 0.89, y - 0.06 .. y + 1 in bolt heights
-        if (x > vw || x < -0.9 * S || y > vh + 0.1 * S || y < -S) continue;
+        var x = ax + S * (i * PAIR_L[0] + j * ROW_L[0]);
+        var y = ay + S * (i * PAIR_L[1] + j * ROW_L[1]);
+        // leaned, a pair covers x - 0.09 .. x + 0.89, y - 0.03 .. y + 1.04 in bolt heights
+        if (x > vw + 0.1 * S || x < -0.9 * S || y > vh + 0.05 * S || y < -1.05 * S) continue;
         stamp(x, y, 1);
-        stamp(x + S * TWIN[0], y + S * TWIN[1], -1);
+        stamp(x + S * TWIN_L[0], y + S * TWIN_L[1], -1);
       }
     }
     ictx.setTransform(1, 0, 0, 1, 0, 0);
