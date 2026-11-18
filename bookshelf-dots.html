@@ -284,64 +284,37 @@
      themselves: its left edge under the first column, its right edge under
      the last. */
   .label {
-    width: max(calc(var(--cw, 0px) - 2 * var(--d)), min(340px, 100%));
+    /* Exactly the spots' span, so the actions end under the last column.
+       Under a grid narrower than they are, they spill out to the left. */
+    width: calc(var(--cw, 0px) - 2 * var(--d));
     max-width: calc(100% - var(--d));
     margin-left: var(--d);
     padding-top: 2px;
   }
 
+  /* Only the two actions now, at the right, under the last column. */
   .label-row {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 6px 18px;
+    justify-content: flex-end;
   }
 
-  .label h1, .caption p, .rec, .empty, .group legend {
+  /* The painting's name and count stay on the page for a screen reader,
+     which also hears the count change as the filters do; nobody else needs
+     them, with the filters' own phrase in the bar above. */
+  .unseen {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .rec, .empty, .group legend {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
     text-transform: uppercase;
-  }
-
-  /* The caption names the painting at rest and, while a spot is pointed
-     at, the book it is. Both are kept in one cell, cross-fading, and the
-     cell holds the taller one's height, so the label never jumps. */
-  .caption {
-    display: grid;
-    min-width: 0;
-    min-height: 52px;
-  }
-  .about, .book {
-    grid-area: 1 / 1;
-    pointer-events: none;    /* the faded one must not catch the other's clicks */
-    min-width: 0;
-    transition: opacity .2s ease;
-  }
-  .caption.pointing .about, .book { opacity: 0; }
-  .caption.pointing .book { opacity: 1; }
-
-  .label h1 { color: var(--ink-strong); line-height: 1.7; }
-  .label h1 .which { color: var(--ink); }
-  .caption p { color: var(--ink-quiet); line-height: 1.7; font-variant-numeric: tabular-nums; }
-
-  .book { display: flex; align-items: flex-start; gap: 12px; }
-  .book img, .book .swatch {
-    flex: none;
-    height: 52px;
-    width: auto;
-    border-radius: 1px 2px 2px 1px;
-    box-shadow: 2px 3px 6px -3px rgba(40,30,20,.4), inset 0 0 0 1px rgba(60,48,32,.14);
-  }
-  .book .swatch { width: calc(52px * var(--s)); background: var(--k); }
-  .book p { min-width: 0; }
-  .book b {
-    display: block;
-    font-weight: 600;
-    color: var(--ink-strong);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .actions {
@@ -430,8 +403,7 @@
     :root { --margin: 20px; }
   }
   @media (max-width: 560px) {
-    .label-row { flex-direction: column; }
-    .actions { margin: 0 0 0 -.9em; }
+    .actions { margin: 0 -.9em 0 0; }
     .group { flex-direction: column; }
     .group legend { width: 100%; margin: 4px 0 0; }
   }
@@ -570,14 +542,11 @@
     </div>
 
     <figcaption class="label" id="label">
+      <div class="unseen">
+        <h1>Bookshelf<span id="which"></span></h1>
+        <p id="count" aria-live="polite"></p>
+      </div>
       <div class="label-row">
-        <div class="caption" id="caption">
-          <div class="about">
-            <h1>Bookshelf<span class="which" id="which"></span></h1>
-            <p id="count" aria-live="polite"></p>
-          </div>
-          <div class="book" id="book" aria-hidden="true"></div>
-        </div>
         <div class="actions">
           <button type="button" class="opt" id="save">Save image</button>
           <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send a rec</a>
@@ -748,8 +717,6 @@ var books = [
   var canvas = document.getElementById('canvas');
   var work = canvas.parentNode;
   var gallery = document.getElementById('gallery');
-  var caption = document.getElementById('caption');
-  var book = document.getElementById('book');
 
   // 'Yes' is a floor, not a tier: the all-time books were recommended too.
   function matches(b) {
@@ -934,36 +901,6 @@ var books = [
     toggle.focus();     // the button just pressed is about to disappear
   });
 
-  /* ---- caption ---- */
-
-  function show(b) {
-    book.textContent = '';
-    // The cover is only fetched when a spot is first pointed at: the canvas
-    // itself shows none of them. Where it fails, the spot's colour in the
-    // cover's shape stands in.
-    var swatch = document.createElement('span');
-    swatch.className = 'swatch';
-    swatch.style.setProperty('--k', b.paint);
-    swatch.style.setProperty('--s', b.s);
-    var art = swatch;
-    if (!b.noCover) {
-      art = document.createElement('img');
-      art.alt = '';
-      art.src = b.u;
-      art.addEventListener('error', function () { b.noCover = true; if (art.parentNode) art.replaceWith(swatch); });
-      art.addEventListener('load', function () { if (art.naturalWidth < 8) art.dispatchEvent(new Event('error')); });
-    }
-    var p = document.createElement('p');
-    var t = document.createElement('b');
-    t.textContent = b.t;
-    p.appendChild(t);
-    p.appendChild(document.createTextNode(b.a + ' · ' + b.y));
-    book.appendChild(art);
-    book.appendChild(p);
-    caption.classList.add('pointing');
-  }
-  function rest() { caption.classList.remove('pointing'); }
-
   /* The pointer is a field the spots lean away from, wherever it is over
      the painting: on a spot, between two, or in the white around them. Each
      spot is pushed straight away from the pointer by an amount that rises
@@ -972,7 +909,7 @@ var books = [
      of a diameter; then it falls off with the square of the distance and
      tapers to nothing at REACH pitches. Between two spots both part; in the
      white, the nearest lean back. Only the spot the pointer is actually on,
-     judged from the resting grid, grows and names itself in the label.
+     judged from the resting grid, grows.
      Everything eases as the rest of the page does; nothing springs. */
   var spotD = 0, pushed = [], lit = null;
   // PUSH is before the taper, which at one pitch leaves about two thirds
@@ -1005,7 +942,7 @@ var books = [
     if (lit === b) return;
     if (lit) lit.el.classList.remove('lit');
     lit = b;
-    if (b) { b.el.classList.add('lit'); show(b); } else rest();
+    if (b) b.el.classList.add('lit');
   }
 
   // Read against the canvas's resting box, a frame at a time. The reach runs
@@ -1203,13 +1140,11 @@ var books = [
     // The keyboard gets the same push, from the focused spot's own centre;
     // only the keyboard, though. Focus also lands here when a card closes
     // and hands it back, and after a tap that is no reason to hold the
-    // neighbours apart or keep the book named.
+    // neighbours apart.
     a.addEventListener('focus', function () {
-      if (!a.matches(':focus-visible')) return;
-      show(b);
-      field(b.cx, b.cy, b);
+      if (a.matches(':focus-visible')) field(b.cx, b.cy, b);
     });
-    a.addEventListener('blur', function () { rest(); calm(); });
+    a.addEventListener('blur', calm);
     a.addEventListener('click', function () { openCard(b); });
     b.el = a;
     canvas.appendChild(a);
@@ -1298,7 +1233,7 @@ var books = [
     });
 
     // The label is as wide as the canvas, so a new canvas width can rewrap
-    // the caption and change the height the painting was fitted around.
+    // its actions and change the height the painting was fitted around.
     // Measured again once, at the label's new width — never more, or a
     // borderline case could see-saw.
     if (!again && labelHeight() !== lab) layout(true);
@@ -1332,9 +1267,8 @@ var books = [
     // until the pointer moves again.
     light(null);
     calm();
-    rest();
 
-    // The label reads as a gallery label would for this selection.
+    // The unseen label names the selection for a screen reader.
     var names = GROUPS.filter(function (g) { return active[g.key] !== 'all'; }).map(function (g) {
       var v = active[g.key];
       if (g.key === 'r') return v === 'A' ? 'All-time' : 'Recommended';
