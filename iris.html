@@ -669,12 +669,13 @@ void main() {
     // goes with it.
     var ECC = 0.014, ECC_A = rr(2.6, 3.7);
 
-    // Pupil about 4.3 mm: wide, as it is in the photograph. Never a true
-    // circle, and in the photograph its edge is lumpy: twice as far from a
-    // circle as it was drawn at first, mostly in waves a few to a quarter turn.
+    // Pupil about 4.3 mm: wide, as it is in the photograph. Close to round.
+    // Its edge looks irregular because of the ruff laid over it, not because
+    // the opening is: waviness on the scale of the pupil itself makes it read
+    // as misshapen (tried, at about twice this, and it looked like a potato).
     function pupilR(th) {
-      return 0.36 * (1 + 0.050 * (ring(th, 3, S0 + 1) - 0.5) + 0.080 * (ring(th, 7, S0 + 2) - 0.5)
-                       + 0.065 * (ring(th, 13, S0 + 9) - 0.5) + 0.032 * (ring(th, 29, S0 + 8) - 0.5))
+      return 0.36 * (1 + 0.024 * (ring(th, 3, S0 + 1) - 0.5) + 0.018 * (ring(th, 7, S0 + 2) - 0.5)
+                       + 0.012 * (ring(th, 13, S0 + 9) - 0.5) + 0.010 * (ring(th, 29, S0 + 8) - 0.5))
              + ECC * Math.cos(th - ECC_A);
     }
 
