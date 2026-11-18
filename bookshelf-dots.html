@@ -179,9 +179,8 @@
 
   /* ------------------------------------------------------------ gallery */
 
-  /* The spots are the page. They sit in whatever the window leaves below
-     the bar, and everything else steps back: the only other thing near them
-     is the label, which is also where the filters are folded away. */
+  /* The spots are the page. They sit in whatever the window leaves between
+     the bar and the foot, and everything else steps back. */
   .gallery {
     position: relative;
     flex: 1 0 auto;
@@ -321,30 +320,6 @@
     text-align: center;
   }
 
-  /* --------------------------------------------------------------- label */
-
-  /* The wall label, as a gallery hangs one: small, below the painting's
-     left edge and no wider than the painting. It says what the work is and
-     how many spots, and the filters fold away inside it, so they are there
-     when wanted and otherwise one quiet word. */
-  /* With no canvas edge to hang from, the label lines up with the spots
-     themselves: its left edge under the first column, its right edge under
-     the last. */
-  .label {
-    /* Exactly the spots' span, from the first column to the last. */
-    width: calc(var(--cw, 0px) - 2 * var(--d));
-    max-width: calc(100% - var(--d));
-    margin-left: var(--d);
-    padding-top: 2px;
-  }
-
-  /* Only the two actions, at the left, their text starting under the
-     first column. */
-  .label-row {
-    display: flex;
-    justify-content: flex-start;
-  }
-
   /* The painting's name and count stay on the page for a screen reader,
      which also hears the count change as the filters do; nobody else needs
      them, with the filters' own phrase in the bar above. */
@@ -357,6 +332,8 @@
     white-space: nowrap;
   }
 
+  /* ---------------------------------------------------------------- foot */
+
   .rec, .empty, .group legend {
     font-size: 11px;
     font-weight: 600;
@@ -364,14 +341,20 @@
     text-transform: uppercase;
   }
 
+  /* Save image and Send a rec belong to the page, not the painting: a row
+     at the foot of the window, lined up with the name and Filter, that
+     stays put however the grid reshapes. layout() keeps the grid clear of
+     it. */
+  .foot {
+    padding: 0 var(--margin) clamp(14px, 1.8vw, 24px);
+  }
   .actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 1px;
-    flex: none;
     /* Pulled out by a button's inset, in the buttons' 11px. */
-    margin: -.45em 0 0 calc(-11px * .9);
+    margin-left: calc(-11px * .9);
   }
 
   .rec {
@@ -451,7 +434,6 @@
     :root { --margin: 20px; }
   }
   @media (max-width: 560px) {
-    .actions { margin: 0 0 0 calc(-11px * .9); }
     .group { flex-direction: column; }
     .group legend { width: 100%; margin: 4px 0 0; }
   }
@@ -590,20 +572,19 @@
       <p class="empty" id="empty" hidden>No book is all of those</p>
     </div>
 
-    <figcaption class="label" id="label">
-      <div class="unseen">
-        <h1>Bookshelf<span id="which"></span></h1>
-        <p id="count" aria-live="polite"></p>
-      </div>
-      <div class="label-row">
-        <div class="actions">
-          <button type="button" class="opt" id="save">Save image</button>
-          <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send a rec</a>
-        </div>
-      </div>
-    </figcaption>
+    <div class="unseen">
+      <h1>Bookshelf<span id="which"></span></h1>
+      <p id="count" aria-live="polite"></p>
+    </div>
   </figure>
 </main>
+
+<footer class="foot" id="foot">
+  <div class="actions">
+    <button type="button" class="opt" id="save">Save image</button>
+    <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send a rec</a>
+  </div>
+</footer>
 
 <dialog class="card" id="card" aria-labelledby="card-title">
   <div class="card-body">
@@ -1243,12 +1224,8 @@ var books = [
 
   var MIN_D = 12, MAX_D = 150;
 
-  // The label takes the canvas's new width at once (only the canvas
-  // animates), so this reads the height it will settle at.
-  function labelHeight() {
-    var label = document.getElementById('label');
-    return label.querySelector('.label-row').offsetHeight + parseFloat(getComputedStyle(label).paddingTop);
-  }
+  // The foot's row of actions, which the grid is fitted above.
+  function footHeight() { return document.getElementById('foot').offsetHeight; }
 
   // The filter band's height is kept free above the spots, open or not, so
   // opening it never moves them. Only while it is a slim band, though: on a
@@ -1274,15 +1251,17 @@ var books = [
     gallery.style.setProperty('--reserve', r + 'px');
   }
 
-  function layout(again) {
-    if (!again) reserve();
+  function layout() {
+    reserve();
     var shown = books.filter(function (b) { return b.on; });
     var n = shown.length;
     var cs = getComputedStyle(gallery);
     var W = gallery.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     var top = gallery.getBoundingClientRect().top + scrollY;
-    var lab = labelHeight();
-    var H = innerHeight - top - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - lab;
+    var lab = footHeight();
+    // A pixel short, so fractional sizes can never add up to more than the
+    // room and nudge the foot down.
+    var H = innerHeight - top - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - lab - 1;
     // On a phone the bar takes much of the screen, and fitting what is left
     // would leave spots too small to tap. There the painting may run on below
     // the fold, as tall as most of a screen.
@@ -1308,8 +1287,7 @@ var books = [
     var D = Math.floor(Math.min(MAX_D, best.d) * 4) / 4;
     spotD = D;
 
-    // Set on the figure, not the canvas, so the label beneath reads the
-    // canvas's width too and stays exactly as wide as the painting.
+    // Set on the figure, which the canvas and its spots both read.
     work.style.setProperty('--d', D + 'px');
     work.style.setProperty('--cw', (2 * c + 1) * D + 'px');
     work.style.setProperty('--ch', (2 * r + 1) * D + 'px');
@@ -1320,12 +1298,6 @@ var books = [
       b.cx = D + col * 2 * D + D / 2;     // resting centre, for the field
       b.cy = D + row * 2 * D + D / 2;
     });
-
-    // The label is as wide as the canvas, so a new canvas width can rewrap
-    // its actions and change the height the painting was fitted around.
-    // Measured again once, at the label's new width — never more, or a
-    // borderline case could see-saw.
-    if (!again && labelHeight() !== lab) layout(true);
   }
 
   // The active filters as a phrase, read in the order a person would say
@@ -1362,8 +1334,8 @@ var books = [
     var names = GROUPS.filter(function (g) { return active[g.key] !== 'all'; }).map(function (g) {
       var v = active[g.key];
       if (g.key === 'r') return v === 'A' ? 'All-time' : 'Recommended';
-      // In the label a bare 25 could be read as a count beside the count
-      // below it, so a year there takes its apostrophe: ’25, ≤ ’21.
+      // Read aloud beside the count, a bare 25 could be heard as a second
+      // count, so a year here takes its apostrophe: ’25, ≤ ’21.
       if (g.key === 'y') return g.labels[v].replace(/(\d+)/, '\u2019$1');
       return v;
     });
