@@ -56,16 +56,15 @@
     padding: clamp(14px, 1.6vw, 20px) var(--margin);
     background: #fcfbf8;
   }
-  .topbar .toggle { margin-left: -.9em; }
-
-  /* Filter sits under the name rather than in the bar, at the start of the
-     row kept free for the filters. Opened, it gives way to them: it fades as
-     they unroll from the same place, and comes back when they are closed.
-     A long phrase of active filters wraps rather than running off a phone's
-     edge. */
+  /* Filter sits on its own line under the name rather than in the bar.
+     Opened, it gives way to the filters: it fades as they unroll from the
+     same place, and comes back when they are closed. A long phrase of
+     active filters wraps rather than running off a phone's edge. Pulled
+     out by its own inset so its text starts under the name. */
   .topbar .toggle {
     position: absolute;
     left: var(--margin);
+    margin-left: -.9em;
     top: calc(100% + 2px);
     z-index: 11;
     max-width: calc(100vw - 2 * var(--margin));
@@ -207,12 +206,11 @@
   }
 
   /* --d is the spot's diameter and the one number the painting is built
-     from: Hirst's spacing is a spot's width, and so is the margin to the
-     canvas edge. layout() sets it and the canvas's size on the figure,
-     every spot's
-     place, and all of them transition, so when a filter changes the grid
-     the canvas resizes and the spots travel to their new places together
-     instead of the painting being torn down and rehung. */
+     from: Hirst's spacing is a spot's width, between spots and from the
+     outer spots to the page's edges. layout() sets it, the canvas's size
+     and every spot's place, and all of them transition, so when a filter
+     changes the grid the spots travel to their new places together instead
+     of the painting being torn down and rehung. */
   .canvas {
     position: relative;
     width: var(--cw, 0px);
@@ -387,18 +385,16 @@
      count, so a closed band still says what the painting is showing. */
   .toggle .n { color: var(--ink-strong); }
 
-
   /* Shown only while a filter is on; it keeps its place while hidden, so
      the band's height never changes with it. */
   .clear { transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .3s ease; }
   .clear[disabled] { opacity: 0; pointer-events: none; }
 
   /* The filters, in one band under the bar that unrolls left to right from
-     the Filter button. It is laid out even while closed, only clipped away,
-     so its height is known before it opens and the room for it can be kept
-     free. Where it would take too much of a small screen it lies over the
-     top of the spots instead, on the page's white with a soft edge, and the
-     spots under it are left exactly as they were. Inert while closed. */
+     where Filter stands. Opened, it lies over the preview's strip (and on a
+     phone, where the filters wrap into a block, over the top of the spots)
+     on the page's white with a soft edge, and the spots under it are left
+     exactly as they were. Inert while closed. */
   .band {
     position: absolute;
     left: 0;
@@ -406,12 +402,12 @@
     top: 100%;
     padding: 2px var(--margin) 12px;
     background: #fcfbf8;
+    box-shadow: 0 14px 18px -14px rgba(40,30,20,.22);
     clip-path: inset(0 100% -24px 0);
     opacity: 0;
     transition: clip-path .45s ease-out, opacity .3s ease;
   }
   .band.open { clip-path: inset(0 0 -24px 0); opacity: 1; }
-  .band.over { box-shadow: 0 14px 18px -14px rgba(40,30,20,.22); }
   .filters {
     display: flex;
     flex-wrap: wrap;
@@ -1225,9 +1221,9 @@ var books = [
      worked out again every time the filters change. On screen a grid c spots
      wide is (2c - 1) diameters across, a spot and a gap per column less the
      last gap (the canvas's own margin is pulled back into the page; see
-     .canvas); so for every column count the spot is as large as
-     both the width and the height allow, and the count that gives the
-     largest spot wins. Fewer books make a smaller grid of larger spots, a
+     .canvas); so for every column count the spot is as large as both the
+     width and the height allow, and the count that gives the largest spot
+     wins. Fewer books make a smaller grid of larger spots, a
      single book one spot as large as the space allows. Where the last row
      comes up short it runs from the left like the rows above it, and simply
      stops: no blank places, the canvas only ever holds the books on it. */
@@ -1237,10 +1233,6 @@ var books = [
   // The foot's row of actions, which the grid is fitted above.
   function footHeight() { return document.getElementById('foot').offsetHeight; }
 
-  // The filter band's height is kept free above the spots, open or not, so
-  // opening it never moves them. Only while it is a slim band, though: on a
-  // small screen the filters wrap into a block that would cost the spots
-  // more than it is worth, and there the band lies over them instead.
   // The preview's 52px cover and the gap around it, with room for a top-row
   // spot to grow toward it on hover without touching it.
   var PEEK = 70;
@@ -1252,7 +1244,6 @@ var books = [
   // line's height follows the phrase on it, which changes only with the
   // filters, when the painting is being rearranged anyway.
   function reserve() {
-    band.classList.add('over');
     var r = toggle.offsetHeight + 8;
     // The preview hangs just under Filter.
     document.querySelector('.topbar').style.setProperty('--peek-top', r + 4 + 'px');
