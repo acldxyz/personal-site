@@ -213,7 +213,10 @@
       transform .2s ease-out, opacity .3s ease;
   }
   .canvas.still, .canvas.still .spot { transition: none; }
-  .spot:hover, .spot:focus-visible { transform: scale(1.22); }
+  /* --px/--py are a nudge from a hovered neighbour (see bump()); the spot
+     pointed at grows in place on top of whatever nudge it already has. */
+  .spot { transform: translate(var(--px, 0px), var(--py, 0px)); }
+  .spot:hover, .spot:focus-visible { transform: translate(var(--px, 0px), var(--py, 0px)) scale(1.22); }
   .spot:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
   /* A filtered-out book leaves the painting: it fades where it stood while
@@ -783,8 +786,41 @@ var books = [
     book.appendChild(art);
     book.appendChild(p);
     caption.classList.add('pointing');
+    bump(b);
   }
-  function rest() { caption.classList.remove('pointing'); }
+  function rest() { caption.classList.remove('pointing'); unbump(); }
+
+  /* A spot that grows makes room for itself: the spots around it are
+     nudged straight away from its centre, the nearest most. The push falls
+     off with the square of the distance and stops after two spots, and at
+     its strongest, on a spot's four touching neighbours, is an eighth of a
+     diameter, a touch more than the hovered spot grows into the gap. It
+     eases like every other move here; nothing springs back past its place. */
+  var spotD = 0, bumped = [];
+  var PUSH = 0.125, REACH = 2.3;      // in diameters, and in spot pitches
+
+  function bump(b) {
+    unbump();
+    if (!spotD || !b.on) return;
+    var pitch = 2 * spotD;
+    books.forEach(function (o) {
+      if (o === b || !o.on) return;
+      var dx = o.cx - b.cx, dy = o.cy - b.cy;
+      var dist = Math.sqrt(dx * dx + dy * dy) / pitch;
+      if (dist > REACH) return;
+      var push = PUSH * spotD / (dist * dist);
+      o.el.style.setProperty('--px', (dx / (dist * pitch)) * push + 'px');
+      o.el.style.setProperty('--py', (dy / (dist * pitch)) * push + 'px');
+      bumped.push(o);
+    });
+  }
+  function unbump() {
+    bumped.forEach(function (o) {
+      o.el.style.removeProperty('--px');
+      o.el.style.removeProperty('--py');
+    });
+    bumped = [];
+  }
 
   /* ---- spots ---- */
 
@@ -868,6 +904,7 @@ var books = [
     }
     c = best.c; r = best.r;
     var D = Math.floor(Math.min(MAX_D, best.d) * 4) / 4;
+    spotD = D;
 
     // Set on the figure, not the canvas, so the label beneath reads the
     // canvas's width too and stays exactly as wide as the painting.
@@ -878,6 +915,8 @@ var books = [
       var row = Math.floor(i / c), col = i % c;
       b.el.style.setProperty('--x', D + col * 2 * D + 'px');
       b.el.style.setProperty('--y', D + row * 2 * D + 'px');
+      b.cx = D + col * 2 * D + D / 2;     // centre, for bump()
+      b.cy = D + row * 2 * D + D / 2;
     });
 
     // The label is as wide as the canvas, so a new canvas width can rewrap
