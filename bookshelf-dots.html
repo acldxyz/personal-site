@@ -401,6 +401,103 @@
     .group legend { width: 100%; margin: 4px 0 0; }
   }
 
+  /* ---------------------------------------------------------------- card */
+
+  /* A spot's first click opens its card over the painting: the cover, and
+     when it was read, what kind of book it is and whether it is
+     recommended. The painting stays where it is behind a veil of the page's
+     white; the cover itself is the way through to buying it. */
+  .card {
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: #fcfbf8;
+    color: var(--ink);
+    box-shadow:
+      0 0 0 1px rgba(60,48,32,.08),
+      0 24px 60px -18px rgba(40,30,20,.38);
+    max-width: min(620px, calc(100vw - 2 * var(--margin)));
+    max-height: calc(100vh - 2 * var(--margin));
+    opacity: 0;
+    transform: translateY(8px) scale(.98);
+    transition: opacity .3s ease-out, transform .3s ease-out, overlay .3s allow-discrete, display .3s allow-discrete;
+  }
+  .card[open] { opacity: 1; transform: none; }
+  @starting-style { .card[open] { opacity: 0; transform: translateY(8px) scale(.98); } }
+  .card::backdrop {
+    background: rgba(252,251,248,.72);
+    opacity: 0;
+    transition: opacity .3s ease-out, overlay .3s allow-discrete, display .3s allow-discrete;
+  }
+  .card[open]::backdrop { opacity: 1; }
+  @starting-style { .card[open]::backdrop { opacity: 0; } }
+
+  .card-body {
+    display: flex;
+    gap: clamp(20px, 3vw, 32px);
+    padding: clamp(20px, 3vw, 30px);
+  }
+
+  /* The cover is the link. It lifts a little when pointed at, as a book
+     picked up would, and says where it goes underneath. */
+  .buy {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink-quiet);
+  }
+  .buy .art {
+    display: block;
+    height: clamp(200px, 34vh, 290px);
+    width: auto;
+    border-radius: 1.5px 3px 3px 1.5px;
+    box-shadow: 3px 5px 12px -4px rgba(40,30,20,.42), inset 0 0 0 1px rgba(60,48,32,.14);
+    transition: transform .3s ease-out, box-shadow .3s ease-out;
+  }
+  .buy .art.swatch { width: calc(clamp(200px, 34vh, 290px) * var(--s)); background: var(--k); }
+  .buy:hover .art { transform: translateY(-3px); box-shadow: 6px 12px 22px -6px rgba(40,30,20,.42), inset 0 0 0 1px rgba(60,48,32,.14); }
+  .buy:hover { color: var(--ink-strong); }
+  .buy:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 3px; }
+  .buy span, .facts dt, .card-close, .card h2, .card .by {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+  .buy span { transition: color .2s ease; }
+
+  .card-text { min-width: 0; display: flex; flex-direction: column; padding-top: 2px; }
+  .card h2 { color: var(--ink-strong); font-size: 13px; line-height: 1.45; }
+  .card .by { color: var(--ink-quiet); margin-top: 4px; }
+  .facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 22px;
+    margin-top: 28px;
+    font-size: 13px;
+    color: var(--ink-strong);
+  }
+  .facts dt { font-size: 10px; color: #a49a8e; padding-top: 2px; }
+
+  .card-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
+
+  @media (max-width: 560px) {
+    /* Full width, so the cover at its top left stays clear of the close
+       button at the top right. */
+    .card { width: calc(100vw - 2 * var(--margin)); }
+    .card-body { flex-direction: column; align-items: flex-start; }
+    .buy .art { height: 220px; }
+    .buy .art.swatch { width: calc(220px * var(--s)); }
+    .facts { margin-top: 18px; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: .01s !important;
@@ -454,6 +551,22 @@
     </figcaption>
   </figure>
 </main>
+
+<dialog class="card" id="card" aria-labelledby="card-title">
+  <div class="card-body">
+    <a class="buy" id="card-buy" target="_blank" rel="noopener"></a>
+    <div class="card-text">
+      <h2 id="card-title"></h2>
+      <p class="by" id="card-by"></p>
+      <dl class="facts">
+        <dt>Read</dt><dd id="card-read"></dd>
+        <dt>Genre</dt><dd id="card-genre"></dd>
+        <dt>Recommended</dt><dd id="card-rec"></dd>
+      </dl>
+    </div>
+  </div>
+  <button type="button" class="opt card-close" id="card-close" aria-label="Close">✕</button>
+</dialog>
 
 <script>
 /* t title · a author · y year · r recommendation · g genre · c colour family
@@ -757,7 +870,8 @@ var books = [
     setOpen(burger, siteNav, burger.getAttribute('aria-expanded') !== 'true');
   });
   addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
+    // An open card takes Escape for itself and leaves the menus as they are.
+    if (e.key !== 'Escape' || card.open) return;
     [[burger, siteNav], [toggle, band]].some(function (pair) {
       if (pair[0].getAttribute('aria-expanded') !== 'true') return false;
       setOpen(pair[0], pair[1], false);
@@ -873,13 +987,66 @@ var books = [
     light(null);
   });
 
+  /* ---- card ---- */
+
+  // The book's own page where its ISBN is known (the Amazon covers carry
+  // it in their address); otherwise Amazon's search for the title and
+  // author, in books.
+  function buyUrl(b) {
+    var isbn = /\/images\/P\/([0-9]{9}[0-9X])\./.exec(b.u);
+    return isbn ? 'https://www.amazon.com/dp/' + isbn[1]
+                : 'https://www.amazon.com/s?k=' + encodeURIComponent(b.t + ' ' + b.a) + '&i=stripbooks';
+  }
+
+  var card = document.getElementById('card');
+  var REC = { A: 'All-time', Y: 'Yes', '': 'No' };
+
+  function openCard(b) {
+    light(null);
+    calm();
+    var buy = document.getElementById('card-buy');
+    buy.textContent = '';
+    buy.href = buyUrl(b);
+    buy.setAttribute('aria-label', 'Buy ' + b.t + ' on Amazon (opens in a new tab)');
+    var swatch = document.createElement('span');
+    swatch.className = 'art swatch';
+    swatch.style.setProperty('--k', b.paint);
+    swatch.style.setProperty('--s', b.s);
+    var art = swatch;
+    if (!b.noCover) {
+      art = document.createElement('img');
+      art.className = 'art';
+      art.alt = '';
+      art.src = b.u;
+      art.addEventListener('error', function () { b.noCover = true; if (art.parentNode) art.replaceWith(swatch); });
+      art.addEventListener('load', function () { if (art.naturalWidth < 8) art.dispatchEvent(new Event('error')); });
+    }
+    var where = document.createElement('span');
+    where.textContent = 'Buy on Amazon ↗';
+    buy.appendChild(art);
+    buy.appendChild(where);
+    document.getElementById('card-title').textContent = b.t;
+    document.getElementById('card-by').textContent = b.a;
+    document.getElementById('card-read').textContent = b.y === '≤ 2021' ? '2021 or earlier' : b.y;
+    document.getElementById('card-genre').textContent = b.g;
+    document.getElementById('card-rec').textContent = REC[b.r];
+    card.showModal();
+  }
+
+  document.getElementById('card-close').addEventListener('click', function () { card.close(); });
+  // A click on the veil around the card, rather than on the card, closes it.
+  card.addEventListener('click', function (e) {
+    var r = card.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) card.close();
+  });
+
   /* ---- spots ---- */
 
   books.forEach(function (b) {
     var a = document.createElement('a');
     a.className = 'spot';
     a.setAttribute('role', 'listitem');
-    a.href = 'https://www.amazon.com/s?k=' + encodeURIComponent(b.t + ' ' + b.a) + '&i=stripbooks';
+    a.href = buyUrl(b);
     a.target = '_blank';
     a.rel = 'noopener';
     a.setAttribute('aria-label', b.t + ' by ' + b.a);
@@ -887,6 +1054,13 @@ var books = [
     // The keyboard gets the same push, from the focused spot's own centre.
     a.addEventListener('focus', function () { show(b); field(b.cx, b.cy, b); });
     a.addEventListener('blur', function () { rest(); calm(); });
+    // A plain click opens the card; a click with a modifier, or a middle
+    // click, still goes straight to the shop, as a link should.
+    a.addEventListener('click', function (e) {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      openCard(b);
+    });
     b.el = a;
     canvas.appendChild(a);
   });
