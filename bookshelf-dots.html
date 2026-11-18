@@ -579,7 +579,10 @@ var books = [
 
   var GROUPS = [
     { key: 'g', name: 'Genre', values: ['Sci-Fi', 'Fiction', 'Non-Fiction'] },
-    { key: 'y', name: 'Year', values: ['2026', '2025', '2024', '2023', '2022', '≤ 2021'] },
+    // Shown by their last two digits; the data and saved file names keep
+    // the full year.
+    { key: 'y', name: 'Year', values: ['2026', '2025', '2024', '2023', '2022', '≤ 2021'],
+      labels: { '2026': '26', '2025': '25', '2024': '24', '2023': '23', '2022': '22', '≤ 2021': '≤ 21' } },
     { key: 'r', name: 'Recommended', values: ['A', 'Y'], labels: { A: 'All-Time', Y: 'Yes' } }
   ];
 
@@ -994,7 +997,11 @@ var books = [
     // The label reads as a gallery label would for this selection.
     var names = GROUPS.filter(function (g) { return active[g.key] !== 'all'; }).map(function (g) {
       var v = active[g.key];
-      return g.key === 'r' ? (v === 'A' ? 'All-time' : 'Recommended') : v;
+      if (g.key === 'r') return v === 'A' ? 'All-time' : 'Recommended';
+      // In the label a bare 25 could be read as a count beside the count
+      // below it, so a year there takes its apostrophe: ’25, ≤ ’21.
+      if (g.key === 'y') return g.labels[v].replace(/(\d+)/, '\u2019$1');
+      return v;
     });
     document.getElementById('which').textContent = names.length ? ' — ' + names.join(' · ') : '';
     document.getElementById('count').textContent =
