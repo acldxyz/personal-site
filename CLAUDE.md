@@ -27,7 +27,7 @@ When redesigning a page, target the new language unless told otherwise.
 | `index.html` | **Live home page, and the style reference for the new language.** Self-contained apart from the favicon and the analytics tag. |
 | `bookshelf.html` | The reading list. New language. Book data is the `books` array near the end, one object per book; the comment above it names the fields. |
 | `reading.html` | Redirect stub to `bookshelf.html`, kept because the old address was linked and bookmarked. Don't add books here. |
-| `bolts.html` | The bolt pattern off a hand-painted shirt, redrawn as interlocking marker bolts with the shirt's rainbow wash drifting through them. New language; not linked from the menu. The ink is cut once out of a paper canvas and only the small colour canvas beneath it repaints, at 30fps. `LEAN`, `TWIN` and `PERIOD` were solved together so the bolts nest without touching — change one and re-check the gaps. |
+| `bolts.html` | The bolt pattern off a printed shirt, with the shirt's rainbow wash drifting through it. New language; not linked from the menu. The shirt repeats one drawing, upright and turned half a revolution, so the page does too: `BOLT` is that drawing traced (the median of ten copies off a photo, lettering left out) and every bolt is a stamp of it. `TWIN`, `PAIR` and `ROW` place the copies as measured off the shirt, rows climbing ~5° to the right; change one and re-check the gaps, which are only ~0.05 bolt heights. The ink is cut once out of a paper canvas and only the small colour canvas beneath it repaints, at 30fps. |
 | `favicon-block.svg` | Tab icon: the red "A" block, flattened from its live pose. |
 | `styles.css` | Old design language only. |
 

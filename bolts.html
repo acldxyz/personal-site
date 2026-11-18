@@ -35,8 +35,8 @@
 
   /* Two layers. .wash is the colour: worked out small and stretched to fill,
      since it only changes over hundreds of pixels. .ink is the paper on top,
-     with every marker stroke cut out of it, so the wash shows through the
-     lines and nowhere else. The ink is drawn once; a frame only repaints the
+     with every bolt cut out of it, so the wash shows through the lines and
+     nowhere else. The ink is drawn once; a frame only repaints the
      wash. */
   .field { position: fixed; inset: 0; }
 
@@ -133,157 +133,65 @@
 
   /* ---------------------------------------------------------------- bolt */
 
-  // Traced off the shirt, in the photo's own pixels (a bolt stands 468 tall
-  // there), so any point can be checked against it. Clockwise from the top
-  // left of the head, the wide part where "DFA" was printed: down the right
-  // side's two barbs to the point, then back up the left side's two jogs.
-  var TRACE = [
-    [0, 0], [158, 0], [122, 134], [182, 152], [90, 314], [138, 320],
-    [-8, 468], [-2, 384], [-36, 380], [34, 224], [-40, 218]
-  ];
-  var BARBS = [3, 5];
-
-  // Everything from here on is in bolt heights.
+  // The shirt has one bolt on it. Every copy is the same drawing, and the
+  // upside-down ones are that drawing turned half a revolution, so this
+  // trace was taken from ten copies at once: each bent onto the clearest
+  // copy to take out the drape of the cloth, then the median of all ten,
+  // so the edge is what the copies agree on rather than one copy's photo
+  // noise. The blots and wobbles are the drawing's own. The lettering in
+  // the head is left out.
   //
-  // Each bolt locks against a twin turned half a revolution, p -> TWIN - p.
-  // Stood upright, the twin's head and the next bolt's head reach for the
-  // same spot at the same height, and a row can't close up tighter than 0.9
-  // without them colliding. On the shirt each pair sits a touch higher than
-  // the one before it; leaning every bolt 3.5° does the same job and keeps
-  // the rows level. A period of 0.855 then leaves both seams about 0.06
-  // wide: the zigzag between a bolt and its twin, and the looser one between
-  // the twin and the next bolt along.
-  var LEAN = 3.5;
-  var TWIN = [0.69, 0.965];
-  var PERIOD = 0.855;
-  var ROW = 1.12;        // rows clear each other from 1.05; the shirt leaves more air
-  var ROW_SHIFT = 0.5;   // in periods: alternate rows sit half a pair over, as on the shirt
+  // Outer edge of the ink, then its inner edge, filled even-odd. The bolt
+  // is 1000 units tall and its bounding box starts at 0,0.
+  var BOLT = new Path2D(
+    'M78 1000l-5 0l-4 -3l-2 -4l0 -6l1 -7l7 -27l6 -54l3 -37l-1 -5l-2 -4l-6 -2l-22 0l-17 2l-4 0l-2 -2' +
+    'l-2 -3l-1 -4l1 -6l19 -54l14 -37l19 -45l9 -27l37 -84l17 -45l11 -41l1 -13l-2 -4l-6 -1l-39 2l-27 0' +
+    'l-40 -6l-27 -6l-7 -2l-5 -4l-2 -3l0 -4l17 -86l4 -38l1 -19l7 -35l14 -53l8 -24l15 -37l5 -22l11 -30' +
+    'l11 -49l5 -43l4 -12l3 -7l2 -2l3 -1l4 1l8 4l8 3l37 2l45 -2l13 -2l15 -3l26 -5l32 -3l54 -1l46 4' +
+    'l16 3l21 9l3 2l2 3l1 8l-5 37l-21 80l-15 47l-23 64l-9 27l-3 14l-2 12l2 4l4 1l31 4l21 1l30 0l24 -2' +
+    'l8 1l4 1l3 3l5 9l0 5l-3 4l-12 4l-3 4l-2 5l-3 12l-2 7l-11 21l-11 18l-14 25l-52 81l-37 52l-40 71' +
+    'l0 5l3 2l16 0l7 3l2 3l3 7l2 4l3 2l15 6l3 2l2 4l2 4l-2 4l-3 3l-7 3l-2 2l-1 3l2 10l-1 5l-3 4' +
+    'l-21 28l-15 17l-36 38l-37 42l-10 10l-31 34l-24 25l-47 43l-13 14l-11 10l-7 8l-7 8l-4 3z' +
+    'M105 948l10 -9l33 -34l14 -13l39 -41l10 -8l10 -11l8 -9l9 -8l38 -44l16 -22l11 -10l5 -5l14 -19' +
+    'l8 -13l7 -7l0 -3l-3 -2l-4 -2l-5 -1l-19 0l-22 -1l-21 5l-12 -2l-8 0l-3 -1l-2 -2l-1 -6l1 -4l4 -4' +
+    'l6 -5l10 -6l8 -7l21 -23l11 -17l32 -53l69 -102l27 -44l7 -10l20 -37l14 -22l0 -3l-1 -1l-2 -2l-3 -1' +
+    'l-33 0l-44 -4l-10 -2l-15 -4l-19 0l-3 -2l-1 -4l0 -7l6 -27l19 -47l26 -72l12 -37l7 -28l12 -34l2 -18' +
+    'l0 -10l-2 -5l-2 -4l-2 -2l-4 -2l-6 -2l-14 1l-12 -7l-5 -1l-15 -1l-20 -2l-52 1l-45 5l-21 0l-22 5' +
+    'l-35 3l-23 6l-13 4l-3 2l-3 4l-8 21l-7 22l-7 28l-13 48l-31 98l-7 31l-2 11l-1 13l1 8l4 9l1 8l-2 5' +
+    'l-8 6l-3 6l-1 8l-1 16l-10 49l-1 11l1 7l5 4l23 7l17 4l25 1l20 -1l59 -6l4 0l4 2l3 2l1 3l-1 6l-5 14' +
+    'l-9 34l-13 41l-10 23l-4 13l-8 19l-13 32l-19 49l-10 24l-34 89l-4 12l1 3l1 2l5 3l13 -1l25 -3l4 1' +
+    'l3 3l1 6l0 7l-5 56l-5 39l1 6l2 1z'
+  );
 
-  var INK_W = 0.023;     // marker width, matched against the photo at the same scale
+  // Where the copies sit, measured off the shirt the same way: between
+  // neighbouring copies, in each one's own frame, so the drape cancels.
+  // In bolt heights, from the bolt's top-left corner:
+  //   TWIN  the upside-down twin is p -> TWIN - p
+  //   PAIR  from a bolt to the next one along its row. Each pair sits a
+  //         little higher than the last, so the rows climb about 5° to the
+  //         right, as they do on the shirt.
+  //   ROW   from a bolt to one in the row below
+  // Together they leave both seams in a row about 0.05 wide, the zigzag
+  // between a bolt and its twin and the looser one between the twin and
+  // the next bolt, and the rows 0.15 apart at their closest. Change one and
+  // re-check the others: the bolts start touching quickly.
+  var TWIN = [0.884, 0.945];
+  var PAIR = [0.847, -0.071];
+  var ROW = [-0.482, 1.152];
 
-  var BOLT = lean(TRACE.map(function (p) { return [p[0] / 468, p[1] / 468]; }), LEAN);
-  var TURNED = BOLT.map(function (p) { return [TWIN[0] - p[0], TWIN[1] - p[1]]; });
+  var INK = 0.94;     // dye on cloth lets a little of the white through
+  var BLEED = 0.25;   // and wicks a hair past the edge of the drawing
 
-  function centroid(poly) {
-    var x = 0, y = 0;
-    poly.forEach(function (p) { x += p[0]; y += p[1]; });
-    return [x / poly.length, y / poly.length];
-  }
-
-  function lean(poly, deg) {
-    var a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), m = centroid(poly);
-    return poly.map(function (p) {
-      var x = p[0] - m[0], y = p[1] - m[1];
-      return [m[0] + x * c - y * s, m[1] + x * s + y * c];
-    });
-  }
-
-  /* ------------------------------------------------------------ the hand */
-
-  // Seeded from the bolt's place in the lattice, so a bolt keeps its wobble
-  // through a resize instead of being redrawn by a different hand.
-  function hand(r, k, side) {
-    var h = Math.imul(r, 0x27d4eb2d) ^ Math.imul(k, 0x165667b1) ^ Math.imul(side + 1, 0x9e3779b9);
-    return function () {   // mulberry32
-      h = h + 0x6d2b79f5 | 0;
-      var t = Math.imul(h ^ h >>> 15, 1 | h);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-  }
-
-  // Strokes are cut out of the paper, so ink builds up the way it does on
-  // cloth: where two strokes cross, or the tip rests, the line goes deeper.
-  var BLEED = 0.24;   // the faint halo where dye wicks past the tip
-  var CORE = 0.92;
-  var POOL = 0.55;
-
-  function drawBolt(ctx, shape, ox, oy, rand) {
-    var m = centroid(shape);
-
-    // each bolt was placed by hand: never quite square, never quite the same size
-    var turn = (rand() - .5) * 0.035;
-    var grow = 1 + (rand() - .5) * 0.05;
-    var c = Math.cos(turn) * grow, s = Math.sin(turn) * grow;
-    var dx = (rand() - .5) * 0.02, dy = (rand() - .5) * 0.02;
-
-    var pts = shape.map(function (p) {
-      var x = p[0] - m[0], y = p[1] - m[1];
-      return [
-        ax + S * (ox + m[0] + dx + x * c - y * s + (rand() - .5) * 0.014),
-        ay + S * (oy + m[1] + dy + x * s + y * c + (rand() - .5) * 0.014)
-      ];
-    });
-
-    // The outline goes down in two to four strokes, lifting at corners.
-    var n = pts.length;
-    var count = 2 + (rand() < .55 ? 1 : 0) + (rand() < .15 ? 1 : 0);
-    var start = Math.floor(rand() * n), at = [start];
-    for (var i = 1; i < count; i++) {
-      at.push(start + Math.round(i * n / count + (rand() - .5) * 1.6));
-    }
-    at.push(start + n);
-
-    for (i = 0; i < count; i++) {
-      var run = [];
-      for (var j = at[i]; j <= at[i + 1]; j++) run.push(pts[j % n]);
-      stroke(ctx, run, rand);
-    }
-
-    // ink pools at the barbs, where the tip turns back on itself
-    BARBS.forEach(function (b) {
-      if (rand() < .6) pool(ctx, pts[b], S * INK_W * (.55 + rand() * .25));
-    });
-  }
-
-  function stroke(ctx, run, rand) {
-    var w = S * INK_W * (.88 + rand() * .24);
-
-    // a stroke rarely stops dead on its corner; half the time it runs on a little
-    var path = [past(run[0], run[1], rand), run[0]];
-
-    for (var e = 0; e < run.length - 1; e++) {
-      var a = run[e], b = run[e + 1];
-      var ex = b[0] - a[0], ey = b[1] - a[1], len = Math.hypot(ex, ey);
-      var nx = -ey / len, ny = ex / len;
-      var bow = (rand() - .5) * 2 * Math.min(S * 0.012, len * 0.035);
-      var tremor = S * 0.0018, waves = 1 + rand() * 2, phase = rand() * 6.283;
-      var steps = Math.max(2, Math.ceil(len / (S * 0.02)));
-      for (var k = 1; k <= steps; k++) {
-        var t = k / steps, env = Math.sin(Math.PI * t);
-        var off = env * (bow + tremor * Math.sin(6.283 * waves * t + phase));
-        path.push([a[0] + ex * t + nx * off, a[1] + ey * t + ny * off]);
-      }
-    }
-    path.push(past(run[run.length - 1], run[run.length - 2], rand));
-
-    ctx.beginPath();
-    ctx.moveTo(path[0][0], path[0][1]);
-    for (var p = 1; p < path.length; p++) ctx.lineTo(path[p][0], path[p][1]);
-
-    ctx.globalAlpha = BLEED;
-    ctx.lineWidth = w * 1.3;
-    ctx.stroke();
-    ctx.globalAlpha = CORE;
-    ctx.lineWidth = w;
-    ctx.stroke();
-
-    // heavier where the tip landed and where it lifted off
-    pool(ctx, path[0], w * (.45 + rand() * .15));
-    pool(ctx, path[path.length - 1], w * (.45 + rand() * .15));
-  }
-
-  function past(end, from, rand) {
-    var d = rand() < .5 ? 0 : S * rand() * 0.022;
-    var ex = end[0] - from[0], ey = end[1] - from[1], len = Math.hypot(ex, ey) || 1;
-    return [end[0] + ex / len * d, end[1] + ey / len * d];
-  }
-
-  function pool(ctx, p, r) {
-    ctx.globalAlpha = POOL;
-    ctx.beginPath();
-    ctx.arc(p[0], p[1], r, 0, 6.283);
-    ctx.fill();
+  // Cut one bolt out of the paper with its top-left corner at x, y.
+  // turn = -1 sets it down upside down, turned about that same point.
+  function stamp(x, y, turn) {
+    var s = turn * S / 1000;
+    ictx.setTransform(dpx * s, 0, 0, dpx * s, dpx * x, dpx * y);
+    ictx.globalAlpha = BLEED;
+    ictx.lineWidth = 1.4 * 1000 / S;   // ~1.4 CSS px at any size
+    ictx.stroke(BOLT);
+    ictx.globalAlpha = INK;
+    ictx.fill(BOLT, 'evenodd');
   }
 
   /* ---------------------------------------------------------------- wash */
@@ -388,7 +296,7 @@
   var wctx = wash.getContext('2d', { alpha: false });
   var ictx = ink.getContext('2d');
 
-  var vw, vh, S, ax, ay, washW, washH, washData;
+  var vw, vh, S, ax, ay, dpx, washW, washH, washData;
 
   function build() {
     vw = window.innerWidth;
@@ -406,7 +314,7 @@
     var dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(8e6 / (vw * vh)));
     ink.width = Math.round(vw * dpr);
     ink.height = Math.round(vh * dpr);
-    ictx.setTransform(ink.width / vw, 0, 0, ink.height / vh, 0, 0);
+    dpx = ink.width / vw;
     drawInk();
 
     var cell = Math.max(8, Math.round(Math.max(vw, vh) / 160));
@@ -417,6 +325,7 @@
   }
 
   function drawInk() {
+    ictx.setTransform(dpx, 0, 0, dpx, 0, 0);
     ictx.globalCompositeOperation = 'source-over';
     ictx.globalAlpha = 1;
     ictx.save();
@@ -433,20 +342,30 @@
     ictx.globalCompositeOperation = 'destination-out';
     ictx.fillStyle = ictx.strokeStyle = '#000';
     ictx.lineJoin = 'round';
-    ictx.lineCap = 'round';
 
-    var r0 = Math.floor(-ay / (S * ROW)) - 1;
-    var r1 = Math.ceil((vh - ay) / (S * ROW)) + 1;
-    for (var r = r0; r <= r1; r++) {
-      var shift = r * ROW_SHIFT * PERIOD;
-      var k0 = Math.floor((-ax / S - shift) / PERIOD) - 2;
-      var k1 = Math.ceil(((vw - ax) / S - shift) / PERIOD) + 1;
-      for (var k = k0; k <= k1; k++) {
-        var ox = k * PERIOD + shift, oy = r * ROW;
-        drawBolt(ictx, BOLT, ox, oy, hand(r, k, 0));
-        drawBolt(ictx, TURNED, ox, oy, hand(r, k, 1));
+    // The rows slope, so find the cells that can reach the screen by taking
+    // its corners, padded by a bolt, back into lattice steps.
+    var det = PAIR[0] * ROW[1] - PAIR[1] * ROW[0];
+    var is = [], js = [];
+    [[-S, -S], [vw + S, -S], [-S, vh + S], [vw + S, vh + S]].forEach(function (c) {
+      var u = (c[0] - ax) / S, v = (c[1] - ay) / S;
+      is.push((u * ROW[1] - v * ROW[0]) / det);
+      js.push((v * PAIR[0] - u * PAIR[1]) / det);
+    });
+    var i0 = Math.floor(Math.min.apply(null, is)), i1 = Math.ceil(Math.max.apply(null, is));
+    var j0 = Math.floor(Math.min.apply(null, js)), j1 = Math.ceil(Math.max.apply(null, js));
+
+    for (var j = j0; j <= j1; j++) {
+      for (var i = i0; i <= i1; i++) {
+        var x = ax + S * (i * PAIR[0] + j * ROW[0]);
+        var y = ay + S * (i * PAIR[1] + j * ROW[1]);
+        // a pair covers x .. x + 0.89, y - 0.06 .. y + 1 in bolt heights
+        if (x > vw || x < -0.9 * S || y > vh + 0.1 * S || y < -S) continue;
+        stamp(x, y, 1);
+        stamp(x + S * TWIN[0], y + S * TWIN[1], -1);
       }
     }
+    ictx.setTransform(1, 0, 0, 1, 0, 0);
     ictx.globalAlpha = 1;
     ictx.globalCompositeOperation = 'source-over';
   }
