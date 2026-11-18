@@ -216,7 +216,7 @@
   /* --px/--py are a nudge from a hovered neighbour (see bump()); the spot
      pointed at grows in place on top of whatever nudge it already has. */
   .spot { transform: translate(var(--px, 0px), var(--py, 0px)); }
-  .spot:hover, .spot:focus-visible { transform: translate(var(--px, 0px), var(--py, 0px)) scale(1.22); }
+  .spot:hover, .spot:focus-visible { transform: translate(var(--px, 0px), var(--py, 0px)) scale(1.3); }
   .spot:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
   /* A filtered-out book leaves the painting: it fades where it stood while
@@ -793,11 +793,12 @@ var books = [
   /* A spot that grows makes room for itself: the spots around it are
      nudged straight away from its centre, the nearest most. The push falls
      off with the square of the distance and stops after two spots, and at
-     its strongest, on a spot's four touching neighbours, is an eighth of a
-     diameter, a touch more than the hovered spot grows into the gap. It
-     eases like every other move here; nothing springs back past its place. */
+     its strongest, on a spot's four touching neighbours, is three tenths of
+     a diameter: enough to read as a shove from across the room, where an
+     eighth was too subtle to see. It eases like every other move here;
+     nothing springs back past its place. */
   var spotD = 0, bumped = [];
-  var PUSH = 0.125, REACH = 2.3;      // in diameters, and in spot pitches
+  var PUSH = 0.3, REACH = 2.3;      // in diameters, and in spot pitches
 
   function bump(b) {
     unbump();
