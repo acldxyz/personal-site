@@ -225,8 +225,8 @@
   ];
 
   var ANGLE = 40 * Math.PI / 180;   // the sweep runs down and right, as across the shirt
-  var CROSSING = 36;                // seconds for the wash to cross the screen once
-  var FPS = 30;                     // it moves a pixel or two a frame; 60 buys nothing
+  var CROSSING = 12;                // seconds for the wash to cross the screen once; at 36 it read as standing still
+  var FPS = 30;                     // a few pixels a frame through soft gradients; 60 buys nothing
 
   // Mixed in OKLab: in sRGB, purple into orange goes through mud.
   var LUT = (function () {
@@ -305,11 +305,15 @@
   var wctx = wash.getContext('2d', { alpha: false });
   var ictx = ink.getContext('2d');
 
-  var vw, vh, S, ax, ay, dpx, washW, washH, washData;
+  var field = document.querySelector('.field');
+  var vw, vh, S, ax, ay, dpx, washW, washH, washData, ready = false;
 
   function build() {
-    vw = window.innerWidth;
-    vh = window.innerHeight;
+    // In a frame (an embed, a preview pane) the page can start before it has
+    // been given a size. Drawing at 0 × 0 bakes in a blank page, so wait.
+    vw = field.clientWidth;
+    vh = field.clientHeight;
+    if (!vw || !vh) return;
 
     // S, the bolt's height, sets every other measure on the page
     S = Math.max(160, Math.min(0.30 * vh, 0.55 * vw, 330));
@@ -331,6 +335,7 @@
     washH = wash.height = Math.ceil(vh / cell) + 1;
     washData = wctx.createImageData(washW, washH);
     paintWash(clock);
+    ready = true;
   }
 
   function drawInk() {
@@ -392,7 +397,7 @@
     // capped, so coming back to a background tab doesn't jump the wash
     if (last) clock += Math.min(250, now - last) / 1000;
     last = now;
-    if (now - lastPaint >= 1000 / FPS - 4) {
+    if (ready && now - lastPaint >= 1000 / FPS - 4) {
       lastPaint = now;
       paintWash(clock);
     }
@@ -417,9 +422,13 @@
   else if (motion.addListener) motion.addListener(onMotionPref);
 
   var resizing = 0;
-  window.addEventListener('resize', function () {
+  function rebuild() {
     if (!resizing) resizing = requestAnimationFrame(function () { resizing = 0; build(); });
-  });
+  }
+  window.addEventListener('resize', rebuild);
+  // A host frame can hand the page its size after load without a resize
+  // event, so watch the field itself as well.
+  if (window.ResizeObserver) new ResizeObserver(rebuild).observe(field);
 
   build();
   onMotionPref();
