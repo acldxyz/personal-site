@@ -993,12 +993,110 @@ var books = [
 
   /* ---- card ---- */
 
-  // The book's own page where its ISBN is known (the Amazon covers carry
-  // it in their address); otherwise Amazon's search for the title and
-  // author, in books.
+  /* Each book's own Amazon page, by its ISBN-10. Looked up on Open Library:
+     the most recent English print edition of the work, its title checked
+     against the book's, so a box set, study guide, translation or book-club
+     printing is never the link. A book with no edition that passed stays
+     off this list and falls back to Amazon's search for its title and
+     author, which finds it reliably. The four Amazon covers carry their
+     ISBN in their own address. */
+  var ISBN = {
+    "Echopraxia": "1784080489",
+    "Roadside Picnic": "1399617206",
+    "Ubik": "1857988531",
+    "The Road": "0330513001",
+    "The Raw and the Cooked": "080213937X",
+    "Blood, Sweat, and Pixels": "0062651242",
+    "How to Change Your Mind": "0735224153",
+    "The Art of Learning": "0743277457",
+    "Blood Music": "1596871067",
+    "Concrete Island": "031242034X",
+    "Who: The A Method for Hiring": "0345504194",
+    "Gate of the Feral Gods": "0593955978",
+    "Among Friends": "0593854195",
+    "There Is No Antimemetics Division": "1529953170",
+    "Breakneck": "1324106034",
+    "Permutation City": "185798174X",
+    "The Thinking Machine": "0593832698",
+    "The Metamorphosis of Prime Intellect": "1411602196",
+    "Never Let Me Go": "057122413X",
+    "The Ministry of Time": "1668045168",
+    "Blindsight": "0765319640",
+    "Into Thin Air": "0330353977",
+    "The Sense of an Ending": "0099570335",
+    "The Ocean at the End of the Lane": "1472200322",
+    "Einstein's Dreams": "140007780X",
+    "Contact": "1501197983",
+    "The Fall of Hyperion": "0553288202",
+    "A Short Stay in Hell": "0983748446",
+    "Orbital": "1529922933",
+    "Semiosis": "0765391368",
+    "The Dungeon Anarchist's Cookbook": "0593820282",
+    "Solaris": "0571219721",
+    "Carl's Doomsday Scenario": "0593820274",
+    "Dungeon Crawler Carl": "059382024X",
+    "I, Robot": "0008279551",
+    "Jurassic Park": "1784752223",
+    "Project Hail Mary": "1804953695",
+    "Upgrade": "0593157532",
+    "Annie Bot": "0008584605",
+    "Golden Son": "1444759027",
+    "The Left Hand of Darkness": "1473225949",
+    "Counter-Intelligence": "0008398577",
+    "The Return of the King": "0345339738",
+    "The Two Towers": "0593500490",
+    "The Fellowship of the Ring": "0345339703",
+    "A River Runs Through It": "0226500578",
+    "The Hobbit": "0618260307",
+    "Do Androids Dream of Electric Sheep": "1780220383",
+    "The Man Who Solved the Market": "0241309727",
+    "The Sounds of Life": "0691240973",
+    "Hidden Life of Trees": "1778401651",
+    "Billion Dollar Whale": "031643647X",
+    "The Kill Chain": "031653353X",
+    "Heretics of Dune": "0575074892",
+    "Red Rising": "0593871529",
+    "Troy": "1797207075",
+    "Speaker for the Dead": "1250773067",
+    "Ender's Game": "1250773024",
+    "A View from the Bridge": "0553234064",
+    "The Paper Menagerie and Other Stories": "148142436X",
+    "The Creative Act: A Way of Being": "0593652886",
+    "God Emperor of Dune": "0575075066",
+    "Rocket Men": "081298871X",
+    "The Moon is a Harsh Mistress": "0340837942",
+    "Barbarian Days: A Surfing Life": "0143109391",
+    "Psychology of Money": "1804090115",
+    "Neuromancer": "0143111604",
+    "Damascus Station": "0393881040",
+    "Foundation and the Empire": "0008117500",
+    "Ardennes 1944": "0670025313",
+    "Ringworld": "0575077026",
+    "Kitchen Confidential": "0060934913",
+    "Beginner's Mind": "1590308492",
+    "Merchants of Debt": "1587981254",
+    "Weed the People": "1618936085",
+    "Bad Blood": "0525431993",
+    "Children of Dune": "0593098242",
+    "Stories of Your Life and Others": "1101972122",
+    "The Hard Thing About Hard Things": "0062273213",
+    "My Life at the Limit": "1594858527",
+    "The Cold Start Problem": "0062969749",
+    "Super Pumped": "0393358615",
+    "Exhalation": "1101947888",
+    "Dune Messiah": "0593098234",
+    "Boys in the Boat": "0143136968",
+    "Dune": "059343837X",
+    "Foundation": "0553382578",
+    "A Little Life": "1447294831",
+    "Curious Case of the Dog in the Nighttime": "0385678835",
+    "Sol Lewitt 100 Views": "0300152825"
+  };
+
   function buyUrl(b) {
-    var isbn = /\/images\/P\/([0-9]{9}[0-9X])\./.exec(b.u);
-    return isbn ? 'https://www.amazon.com/dp/' + isbn[1]
+    var fromCover = /\/images\/P\/([0-9]{9}[0-9X])\./.exec(b.u);
+    var isbn = ISBN[b.t] || (fromCover && fromCover[1]);
+    return isbn ? 'https://www.amazon.com/dp/' + isbn
                 : 'https://www.amazon.com/s?k=' + encodeURIComponent(b.t + ' ' + b.a) + '&i=stripbooks';
   }
 
@@ -1057,8 +1155,15 @@ var books = [
     a.setAttribute('aria-label', b.t + ' by ' + b.a);
     a.setAttribute('aria-haspopup', 'dialog');
     a.style.setProperty('--k', b.paint);
-    // The keyboard gets the same push, from the focused spot's own centre.
-    a.addEventListener('focus', function () { show(b); field(b.cx, b.cy, b); });
+    // The keyboard gets the same push, from the focused spot's own centre;
+    // only the keyboard, though. Focus also lands here when a card closes
+    // and hands it back, and after a tap that is no reason to hold the
+    // neighbours apart or keep the book named.
+    a.addEventListener('focus', function () {
+      if (!a.matches(':focus-visible')) return;
+      show(b);
+      field(b.cx, b.cy, b);
+    });
     a.addEventListener('blur', function () { rest(); calm(); });
     a.addEventListener('click', function () { openCard(b); });
     b.el = a;
