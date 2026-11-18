@@ -56,6 +56,28 @@
     background: #fcfbf8;
   }
   .topbar .toggle { margin-left: -.9em; }
+
+  /* On a desktop, Filter steps down out of the bar to sit under the name,
+     at the start of the row kept free for the filters. Opened, it gives way
+     to them: it fades as they unroll from the same place, and comes back
+     when they are closed. */
+  @media (min-width: 861px) {
+    .topbar .toggle {
+      position: absolute;
+      left: var(--margin);
+      top: calc(100% + 2px);
+      z-index: 11;
+      transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .2s ease, visibility 0s;
+    }
+    .topbar .toggle[aria-expanded="true"] {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .2s ease, visibility 0s linear .2s;
+    }
+  }
+
+  /* Closes the filters from inside them; pushed to the far end of the row. */
+  .band-close { margin-left: auto; }
   .menu { position: relative; margin-left: auto; display: flex; align-items: center; }
 
   .wordmark {
@@ -377,7 +399,9 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 6px clamp(18px, 2.4vw, 34px);
-    margin-left: -.9em;
+    /* Pulled out by a button's inset, so the text in it lines up with the
+       name; stated in the buttons' 11px, not this box's own font size. */
+    margin-left: calc(-11px * .9);
   }
 
   /* min-width: 0 because a fieldset is otherwise at least as wide as its
@@ -387,7 +411,9 @@
   .group legend {
     float: left;
     flex: none;
-    padding: 0 .3em 0 .9em;
+    /* The row is pulled out by .9em of the buttons' 11px; the legend's own
+       10px em would come up short and leave it left of the name above. */
+    padding: 0 .3em 0 calc(11px * .9);
     font-size: 10px;
     color: #a49a8e;
   }
@@ -859,6 +885,16 @@ var books = [
     filters.appendChild(fs);
   });
   filters.appendChild(clear);
+  var bandClose = document.createElement('button');
+  bandClose.type = 'button';
+  bandClose.className = 'opt band-close';
+  bandClose.setAttribute('aria-label', 'Close filters');
+  bandClose.textContent = '✕';
+  filters.appendChild(bandClose);
+  bandClose.addEventListener('click', function () {
+    setOpen(toggle, band, false);
+    toggle.focus();
+  });
 
   // Opening and closing touch nothing but the band and the menu themselves:
   // no layout(), so the spots stay exactly where they are.
@@ -868,7 +904,11 @@ var books = [
     panel.inert = !open;
   }
   toggle.addEventListener('click', function () {
-    setOpen(toggle, band, toggle.getAttribute('aria-expanded') !== 'true');
+    var open = toggle.getAttribute('aria-expanded') !== 'true';
+    setOpen(toggle, band, open);
+    // On a desktop the button just pressed disappears, so focus goes on to
+    // the first filter rather than being dropped.
+    if (open) band.querySelector('.opt').focus();
   });
   burger.addEventListener('click', function () {
     setOpen(burger, siteNav, burger.getAttribute('aria-expanded') !== 'true');
