@@ -1281,17 +1281,27 @@ var books = [
     document.getElementById('empty').hidden = n > 0;
     if (!n) return;            // an empty canvas keeps the size it had
 
+    // Hirst's spacing holds at the page's edges too: the outer spots stand
+    // at least a diameter clear of the window's left and right, and of its
+    // foot. So the grid's span plus a diameter each side must fit the full
+    // width (the grid is centred), and its height plus a diameter must fit
+    // what lies below its top, where the foot's row and the gallery's own
+    // padding count toward that diameter. With small spots the page's
+    // margins are the larger and govern; with a few large ones, this does.
+    var full = gallery.clientWidth;
+    var below = H + parseFloat(cs.paddingBottom) + lab + 1;
     var best = { d: 0 };
     for (var c = 1; c <= n; c++) {
       var r = Math.ceil(n / c);
-      var d = Math.min(W / (2 * c - 1), H / (2 * r - 1));
+      var d = Math.min(W / (2 * c - 1), full / (2 * c + 1),
+                       H / (2 * r - 1), below / (2 * r));
       // A near tie goes to the grid whose last row is fuller.
       if (d > best.d + 0.25 || (d > best.d - 0.25 && c * r - n < best.spare)) {
         best = { c: c, r: r, d: d, spare: c * r - n };
       }
     }
     if (best.d < MIN_D) {
-      var cols = Math.max(1, Math.floor((W / MIN_D + 1) / 2));
+      var cols = Math.max(1, Math.floor((Math.min(W + MIN_D, full - MIN_D) / MIN_D) / 2));
       best = { c: cols, r: Math.ceil(n / cols), d: MIN_D };
     }
     c = best.c; r = best.r;
