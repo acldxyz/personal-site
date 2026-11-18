@@ -366,9 +366,22 @@
     background: rgba(0,0,0,.07);
     border-color: rgba(0,0,0,.16);
   }
-  /* The count of active filters rides on the toggle, so a closed band still
-     says the painting is showing less than the whole shelf. */
+  /* While filters are on, the toggle says which, as a phrase rather than a
+     count, so a closed band still says what the painting is showing. */
   .toggle .n { color: var(--ink-strong); }
+  /* In the phone's bar it shares a line with the name and the menu, so a
+     long phrase wraps within the button, beside the two-line name, rather
+     than being cut off. It only ever changes with the filters, when the
+     painting is being rearranged anyway. */
+  @media (max-width: 860px) {
+    .topbar .toggle {
+      min-width: 0;
+      white-space: normal;
+      text-align: left;
+      line-height: 1.5;
+      border-radius: 14px;
+    }
+  }
 
   /* Shown only while a filter is on; it keeps its place while hidden, so
      the band's height never changes with it. */
@@ -1295,6 +1308,18 @@ var books = [
     if (!again && labelHeight() !== lab) layout(true);
   }
 
+  // The active filters as a phrase, read in the order a person would say
+  // it: how recommended, what kind, when read. "all sci-fi read in 2024",
+  // "recommended fiction", "all-time books read in 2021 or earlier". Empty
+  // while nothing is filtered.
+  function summary() {
+    if (active.g === 'all' && active.y === 'all' && active.r === 'all') return '';
+    var how = { all: 'all', A: 'all-time', Y: 'recommended' }[active.r];
+    var what = active.g === 'all' ? 'books' : active.g.toLowerCase();
+    var when = active.y === 'all' ? '' : ' read in ' + (active.y === '≤ 2021' ? '2021 or earlier' : active.y);
+    return how + ' ' + what + when;
+  }
+
   function render() {
     buttons.forEach(function (btn) {
       btn.setAttribute('aria-pressed', active[btn.dataset.group] === btn.dataset.value);
@@ -1325,7 +1350,10 @@ var books = [
     document.getElementById('which').textContent = names.length ? ' — ' + names.join(' · ') : '';
     document.getElementById('count').textContent =
       (shown === books.length ? books.length + ' spots' : shown + ' of ' + books.length + ' spots');
-    document.getElementById('n').textContent = names.length ? ' · ' + names.length : '';
+    var phrase = summary();
+    document.getElementById('n').textContent = phrase ? ': ' + phrase : '';
+    toggle.setAttribute('aria-label', phrase ? 'Filter: ' + phrase : 'Filter');
+    toggle.title = phrase ? 'Filter: ' + phrase : '';
     clear.disabled = !names.length;
 
     layout();
