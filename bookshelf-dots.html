@@ -184,12 +184,17 @@
   .gallery {
     position: relative;
     flex: 1 0 auto;
+    /* The canvas's unseen margin reaches past the gallery's padding when the
+       spots are large; clipped, so it never widens the page. */
+    overflow: clip;
     display: flex;
-    align-items: center;
+    /* At the top of its space rather than centred: when a filter leaves a
+       few large spots, they sit just under the preview and the spare room
+       gathers at the foot, not in a band of blank page above them. */
+    align-items: flex-start;
     justify-content: center;
-    /* --reserve is the filter band's height, kept free above the spots
-       whenever the band is short enough to spare it, open or not: see
-       layout(). */
+    /* --reserve is Filter's line and the preview's strip, kept free above
+       the spots: see reserve(). */
     padding: calc(clamp(18px, 2.6vw, 40px) + var(--reserve, 0px)) var(--margin) clamp(18px, 2.6vw, 40px);
   }
 
@@ -217,8 +222,12 @@
        as paint would be. A spot's hover growth stays well inside the margin. */
     overflow: hidden;
     /* No ground of its own: the page is the canvas. The box remains, unseen,
-       to hold the one-spot margin that a saved image is cropped to. */
-    transition: width .45s ease-out, height .45s ease-out;
+       to hold the one-spot margin that a saved image is cropped to, but on
+       screen that margin is pulled back into the page by negative margins:
+       with no canvas edge to keep off, it was only blank page, and with a
+       few large spots, a great deal of it. */
+    margin: calc(-1 * var(--d));
+    transition: width .45s ease-out, height .45s ease-out, margin .45s ease-out;
   }
 
   /* Flat household gloss, as Hirst's assistants lay it: one even coat, no
@@ -1213,9 +1222,10 @@ var books = [
 
   /* ---- layout ----
      The painting is whatever grid of the spots on show fills the space best,
-     worked out again every time the filters change. A canvas c spots wide is
-     (2c + 1) diameters across, a spot and a gap per column and one more gap
-     for the far margin; so for every column count the spot is as large as
+     worked out again every time the filters change. On screen a grid c spots
+     wide is (2c - 1) diameters across, a spot and a gap per column less the
+     last gap (the canvas's own margin is pulled back into the page; see
+     .canvas); so for every column count the spot is as large as
      both the width and the height allow, and the count that gives the
      largest spot wins. Fewer books make a smaller grid of larger spots, a
      single book one spot as large as the space allows. Where the last row
@@ -1231,19 +1241,20 @@ var books = [
   // opening it never moves them. Only while it is a slim band, though: on a
   // small screen the filters wrap into a block that would cost the spots
   // more than it is worth, and there the band lies over them instead.
-  var PEEK = 60;      // the preview's 52px cover and the gap around it
+  // The preview's 52px cover and the gap around it, with room for a top-row
+  // spot to grow toward it on hover without touching it.
+  var PEEK = 70;
 
+  // Only Filter's own line is kept above the spots, not the open band's
+  // full height: a folded band would otherwise leave that much blank page
+  // under it. Opened, the band lies over the preview's strip on the page's
+  // white instead, and the spots under it stay exactly where they are. The
+  // line's height follows the phrase on it, which changes only with the
+  // filters, when the painting is being rearranged anyway.
   function reserve() {
-    var h = band.offsetHeight;
-    var keep = h <= Math.max(72, innerHeight * 0.14);
-    band.classList.toggle('over', !keep);
-    // Where the band lies over the spots, its first line is still kept,
-    // since Filter sits there whether the band is open or not. Its height
-    // follows the phrase on it, which changes only with the filters, when
-    // the painting is being rearranged anyway.
-    var r = keep ? h : toggle.offsetHeight + 8;
-    // The preview hangs just below the filter row, or below Filter alone
-    // where the band lies over the spots.
+    band.classList.add('over');
+    var r = toggle.offsetHeight + 8;
+    // The preview hangs just under Filter.
     document.querySelector('.topbar').style.setProperty('--peek-top', r + 4 + 'px');
     // Where there is a pointer to hover with, the preview's strip above the
     // painting is kept free too, so it appears without moving anything.
@@ -1273,14 +1284,14 @@ var books = [
     var best = { d: 0 };
     for (var c = 1; c <= n; c++) {
       var r = Math.ceil(n / c);
-      var d = Math.min(W / (2 * c + 1), H / (2 * r + 1));
+      var d = Math.min(W / (2 * c - 1), H / (2 * r - 1));
       // A near tie goes to the grid whose last row is fuller.
       if (d > best.d + 0.25 || (d > best.d - 0.25 && c * r - n < best.spare)) {
         best = { c: c, r: r, d: d, spare: c * r - n };
       }
     }
     if (best.d < MIN_D) {
-      var cols = Math.max(1, Math.floor((W / MIN_D - 1) / 2));
+      var cols = Math.max(1, Math.floor((W / MIN_D + 1) / 2));
       best = { c: cols, r: Math.ceil(n / cols), d: MIN_D };
     }
     c = best.c; r = best.r;
