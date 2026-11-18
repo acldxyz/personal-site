@@ -13,7 +13,7 @@ which one the file you're editing belongs to before matching anything.
 Heirlloom posts under `heirlloom/`. Dark sidebar nav, `'Crimson Pro', Georgia,
 serif`, shared `styles.css`.
 
-**New** — `index.html` and `bookshelf.html`. Warm paper background, wooden
+**New** — `index.html`, `bookshelf.html` and `bolts.html`. Warm paper background, wooden
 alphabet blocks, quiet uppercase controls. Self-contained, does not use
 `styles.css`. **`index.html` is the reference for the new direction, and the
 tokens below are taken from it.**
@@ -27,6 +27,7 @@ When redesigning a page, target the new language unless told otherwise.
 | `index.html` | **Live home page, and the style reference for the new language.** Self-contained apart from the favicon and the analytics tag. |
 | `bookshelf.html` | The reading list. New language. Book data is the `books` array near the end, one object per book; the comment above it names the fields. |
 | `reading.html` | Redirect stub to `bookshelf.html`, kept because the old address was linked and bookmarked. Don't add books here. |
+| `bolts.html` | The bolt pattern off a hand-painted shirt, redrawn as interlocking marker bolts with the shirt's rainbow wash drifting through them. New language; not linked from the menu. The ink is cut once out of a paper canvas and only the small colour canvas beneath it repaints, at 30fps. `LEAN`, `TWIN` and `PERIOD` were solved together so the bolts nest without touching — change one and re-check the gaps. |
 | `favicon-block.svg` | Tab icon: the red "A" block, flattened from its live pose. |
 | `styles.css` | Old design language only. |
 

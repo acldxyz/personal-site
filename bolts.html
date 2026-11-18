@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bolts — Adam Dawson</title>
+<link rel="icon" type="image/svg+xml" href="favicon-block.svg">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S9B2L8ZZLW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-S9B2L8ZZLW');
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  :root {
+    --ink: #6f665d;
+    --ink-strong: #2f2a24;
+    --focus: #3d7ba8;
+    /* The paper at its lightest. The two bits of chrome sit on it so the
+       bolts running underneath don't cut through the type. */
+    --chip: rgba(250, 248, 243, .94);
+  }
+
+  body {
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Two layers. .wash is the colour: worked out small and stretched to fill,
+     since it only changes over hundreds of pixels. .ink is the paper on top,
+     with every marker stroke cut out of it, so the wash shows through the
+     lines and nowhere else. The ink is drawn once; a frame only repaints the
+     wash. */
+  .field { position: fixed; inset: 0; }
+
+  .field canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .wordmark {
+    position: fixed;
+    top: clamp(16px, 3vw, 34px);
+    left: clamp(16px, 3vw, 34px);
+    padding: .62em .85em .58em;
+    font-family: "Arial Black", "Helvetica Neue", Helvetica, Impact, system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: -.01em;
+    line-height: 1.15;
+    /* the Bookshelf wordmark rests at .82 opacity; here that goes on the
+       type alone, so the chip under it stays solid */
+    color: rgba(47, 42, 36, .82);
+    text-decoration: none;
+    background: var(--chip);
+    border: 1px solid rgba(0, 0, 0, .1);
+    border-radius: 12px;
+    transition: color .2s ease, border-color .2s ease;
+  }
+
+  .wordmark:hover { color: var(--ink-strong); border-color: rgba(0, 0, 0, .26); }
+  .wordmark:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  /* The home page's .reset, on a chip. */
+  .pause {
+    position: fixed;
+    right: clamp(16px, 3vw, 34px);
+    bottom: clamp(16px, 3vw, 34px);
+    font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--chip);
+    border: 1px solid rgba(0, 0, 0, .12);
+    border-radius: 999px;
+    padding: .72em 1.3em;
+    cursor: pointer;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+  }
+
+  .pause:hover {
+    color: var(--ink-strong);
+    background: rgba(242, 238, 229, .96);
+    border-color: rgba(0, 0, 0, .26);
+  }
+
+  .pause:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wordmark, .pause { transition-duration: .01s; }
+  }
+</style>
+</head>
+
+<body>
+
+<main>
+  <h1 class="visually-hidden">Bolts</h1>
+  <div class="field" role="img"
+       aria-label="Rows of hand-drawn lightning bolts, each locked against an upside-down twin, with a rainbow wash drifting slowly through them">
+    <canvas class="wash"></canvas>
+    <canvas class="ink"></canvas>
+  </div>
+</main>
+
+<a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
+<button class="pause" type="button">Pause</button>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------------------------------------------------------------- bolt */
+
+  // Traced off the shirt, in the photo's own pixels (a bolt stands 468 tall
+  // there), so any point can be checked against it. Clockwise from the top
+  // left of the head, the wide part where "DFA" was printed: down the right
+  // side's two barbs to the point, then back up the left side's two jogs.
+  var TRACE = [
+    [0, 0], [158, 0], [122, 134], [182, 152], [90, 314], [138, 320],
+    [-8, 468], [-2, 384], [-36, 380], [34, 224], [-40, 218]
+  ];
+  var BARBS = [3, 5];
+
+  // Everything from here on is in bolt heights.
+  //
+  // Each bolt locks against a twin turned half a revolution, p -> TWIN - p.
+  // Stood upright, the twin's head and the next bolt's head reach for the
+  // same spot at the same height, and a row can't close up tighter than 0.9
+  // without them colliding. On the shirt each pair sits a touch higher than
+  // the one before it; leaning every bolt 3.5° does the same job and keeps
+  // the rows level. A period of 0.855 then leaves both seams about 0.06
+  // wide: the zigzag between a bolt and its twin, and the looser one between
+  // the twin and the next bolt along.
+  var LEAN = 3.5;
+  var TWIN = [0.69, 0.965];
+  var PERIOD = 0.855;
+  var ROW = 1.12;        // rows clear each other from 1.05; the shirt leaves more air
+  var ROW_SHIFT = 0.5;   // in periods: alternate rows sit half a pair over, as on the shirt
+
+  var INK_W = 0.023;     // marker width, matched against the photo at the same scale
+
+  var BOLT = lean(TRACE.map(function (p) { return [p[0] / 468, p[1] / 468]; }), LEAN);
+  var TURNED = BOLT.map(function (p) { return [TWIN[0] - p[0], TWIN[1] - p[1]]; });
+
+  function centroid(poly) {
+    var x = 0, y = 0;
+    poly.forEach(function (p) { x += p[0]; y += p[1]; });
+    return [x / poly.length, y / poly.length];
+  }
+
+  function lean(poly, deg) {
+    var a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), m = centroid(poly);
+    return poly.map(function (p) {
+      var x = p[0] - m[0], y = p[1] - m[1];
+      return [m[0] + x * c - y * s, m[1] + x * s + y * c];
+    });
+  }
+
+  /* ------------------------------------------------------------ the hand */
+
+  // Seeded from the bolt's place in the lattice, so a bolt keeps its wobble
+  // through a resize instead of being redrawn by a different hand.
+  function hand(r, k, side) {
+    var h = Math.imul(r, 0x27d4eb2d) ^ Math.imul(k, 0x165667b1) ^ Math.imul(side + 1, 0x9e3779b9);
+    return function () {   // mulberry32
+      h = h + 0x6d2b79f5 | 0;
+      var t = Math.imul(h ^ h >>> 15, 1 | h);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // Strokes are cut out of the paper, so ink builds up the way it does on
+  // cloth: where two strokes cross, or the tip rests, the line goes deeper.
+  var BLEED = 0.24;   // the faint halo where dye wicks past the tip
+  var CORE = 0.92;
+  var POOL = 0.55;
+
+  function drawBolt(ctx, shape, ox, oy, rand) {
+    var m = centroid(shape);
+
+    // each bolt was placed by hand: never quite square, never quite the same size
+    var turn = (rand() - .5) * 0.035;
+    var grow = 1 + (rand() - .5) * 0.05;
+    var c = Math.cos(turn) * grow, s = Math.sin(turn) * grow;
+    var dx = (rand() - .5) * 0.02, dy = (rand() - .5) * 0.02;
+
+    var pts = shape.map(function (p) {
+      var x = p[0] - m[0], y = p[1] - m[1];
+      return [
+        ax + S * (ox + m[0] + dx + x * c - y * s + (rand() - .5) * 0.014),
+        ay + S * (oy + m[1] + dy + x * s + y * c + (rand() - .5) * 0.014)
+      ];
+    });
+
+    // The outline goes down in two to four strokes, lifting at corners.
+    var n = pts.length;
+    var count = 2 + (rand() < .55 ? 1 : 0) + (rand() < .15 ? 1 : 0);
+    var start = Math.floor(rand() * n), at = [start];
+    for (var i = 1; i < count; i++) {
+      at.push(start + Math.round(i * n / count + (rand() - .5) * 1.6));
+    }
+    at.push(start + n);
+
+    for (i = 0; i < count; i++) {
+      var run = [];
+      for (var j = at[i]; j <= at[i + 1]; j++) run.push(pts[j % n]);
+      stroke(ctx, run, rand);
+    }
+
+    // ink pools at the barbs, where the tip turns back on itself
+    BARBS.forEach(function (b) {
+      if (rand() < .6) pool(ctx, pts[b], S * INK_W * (.55 + rand() * .25));
+    });
+  }
+
+  function stroke(ctx, run, rand) {
+    var w = S * INK_W * (.88 + rand() * .24);
+
+    // a stroke rarely stops dead on its corner; half the time it runs on a little
+    var path = [past(run[0], run[1], rand), run[0]];
+
+    for (var e = 0; e < run.length - 1; e++) {
+      var a = run[e], b = run[e + 1];
+      var ex = b[0] - a[0], ey = b[1] - a[1], len = Math.hypot(ex, ey);
+      var nx = -ey / len, ny = ex / len;
+      var bow = (rand() - .5) * 2 * Math.min(S * 0.012, len * 0.035);
+      var tremor = S * 0.0018, waves = 1 + rand() * 2, phase = rand() * 6.283;
+      var steps = Math.max(2, Math.ceil(len / (S * 0.02)));
+      for (var k = 1; k <= steps; k++) {
+        var t = k / steps, env = Math.sin(Math.PI * t);
+        var off = env * (bow + tremor * Math.sin(6.283 * waves * t + phase));
+        path.push([a[0] + ex * t + nx * off, a[1] + ey * t + ny * off]);
+      }
+    }
+    path.push(past(run[run.length - 1], run[run.length - 2], rand));
+
+    ctx.beginPath();
+    ctx.moveTo(path[0][0], path[0][1]);
+    for (var p = 1; p < path.length; p++) ctx.lineTo(path[p][0], path[p][1]);
+
+    ctx.globalAlpha = BLEED;
+    ctx.lineWidth = w * 1.3;
+    ctx.stroke();
+    ctx.globalAlpha = CORE;
+    ctx.lineWidth = w;
+    ctx.stroke();
+
+    // heavier where the tip landed and where it lifted off
+    pool(ctx, path[0], w * (.45 + rand() * .15));
+    pool(ctx, path[path.length - 1], w * (.45 + rand() * .15));
+  }
+
+  function past(end, from, rand) {
+    var d = rand() < .5 ? 0 : S * rand() * 0.022;
+    var ex = end[0] - from[0], ey = end[1] - from[1], len = Math.hypot(ex, ey) || 1;
+    return [end[0] + ex / len * d, end[1] + ey / len * d];
+  }
+
+  function pool(ctx, p, r) {
+    ctx.globalAlpha = POOL;
+    ctx.beginPath();
+    ctx.arc(p[0], p[1], r, 0, 6.283);
+    ctx.fill();
+  }
+
+  /* ---------------------------------------------------------------- wash */
+
+  // The shirt's colours in the order they run across it: periwinkle on the
+  // left sleeve, the deep plum that covers most of the top, berry and rust
+  // where the purple met the yellow, amber, yellow, then lime at the hem.
+  // Sampled off the photo. Plum gets the widest share because it has the
+  // most cloth; the two ends get the least, because the sweep doubles back
+  // at them (see paintWash) and a fold shows twice as much of its colour.
+  var SWEEP = [
+    [0.00, '#7f89c8'],
+    [0.08, '#6c4ea8'],
+    [0.20, '#701a7c'],
+    [0.34, '#730f68'],
+    [0.46, '#9c2463'],
+    [0.56, '#b54d22'],
+    [0.67, '#d0892a'],
+    [0.79, '#dcc332'],
+    [0.90, '#a4c737'],
+    [1.00, '#67ad3a']
+  ];
+
+  var ANGLE = 40 * Math.PI / 180;   // the sweep runs down and right, as across the shirt
+  var CROSSING = 36;                // seconds for the wash to cross the screen once
+  var FPS = 30;                     // it moves a pixel or two a frame; 60 buys nothing
+
+  // Mixed in OKLab: in sRGB, purple into orange goes through mud.
+  var LUT = (function () {
+    var N = 512, out = new Uint8ClampedArray(N * 3);
+    var stops = SWEEP.map(function (s) { return [s[0], toLab(s[1])]; });
+    for (var i = 0, j = 0; i < N; i++) {
+      var p = i / (N - 1);
+      while (j < stops.length - 2 && p > stops[j + 1][0]) j++;
+      var a = stops[j], b = stops[j + 1], f = (p - a[0]) / (b[0] - a[0]);
+      var rgb = fromLab([0, 1, 2].map(function (c) { return a[1][c] + (b[1][c] - a[1][c]) * f; }));
+      out[i * 3] = rgb[0]; out[i * 3 + 1] = rgb[1]; out[i * 3 + 2] = rgb[2];
+    }
+    return out;
+  })();
+
+  function toLab(hex) {
+    var n = parseInt(hex.slice(1), 16);
+    var c = [n >> 16 & 255, n >> 8 & 255, n & 255].map(function (v) {
+      v /= 255;
+      return v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4);
+    });
+    var l = Math.cbrt(.4122214708 * c[0] + .5363325363 * c[1] + .0514459929 * c[2]);
+    var m = Math.cbrt(.2119034982 * c[0] + .6806995451 * c[1] + .1073969566 * c[2]);
+    var s = Math.cbrt(.0883024619 * c[0] + .2817188376 * c[1] + .6299787005 * c[2]);
+    return [
+      .2104542553 * l + .7936177850 * m - .0040720468 * s,
+      1.9779984951 * l - 2.4285922050 * m + .4505937099 * s,
+      .0259040371 * l + .7827717662 * m - .8086757660 * s
+    ];
+  }
+
+  function fromLab(o) {
+    var l = Math.pow(o[0] + .3963377774 * o[1] + .2158037573 * o[2], 3);
+    var m = Math.pow(o[0] - .1055613458 * o[1] - .0638541728 * o[2], 3);
+    var s = Math.pow(o[0] - .0894841775 * o[1] - 1.2914855480 * o[2], 3);
+    return [
+      4.0767416621 * l - 3.3077115913 * m + .2309699292 * s,
+      -1.2684380046 * l + 2.6097574011 * m - .3413193965 * s,
+      -.0041960863 * l - .7034186147 * m + 1.7076147010 * s
+    ].map(function (v) {
+      v = v <= .0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - .055;
+      return Math.round(v * 255);
+    });
+  }
+
+  function paintWash(t) {
+    var cos = Math.cos(ANGLE), sin = Math.sin(ANGLE);
+    var span = vw * cos + vh * sin;   // corner to corner, along the sweep
+    var unit = Math.max(vw, vh);
+    var px = washData.data, i = 0;
+
+    for (var y = 0; y < washH; y++) {
+      var sy = (y + .5) * vh / washH, ny = sy / unit;
+      for (var x = 0; x < washW; x++) {
+        var sx = (x + .5) * vw / washW, nx = sx / unit;
+        // three slow waves bend the bands, so it reads as dye moving rather than a ruler sliding
+        var w = (sx * cos + sy * sin) / span - t / CROSSING
+              + .07 * Math.sin(6.283 * (.9 * nx + .4 * ny) + .21 * t)
+              + .05 * Math.sin(6.283 * (1.3 * ny - .5 * nx) - .16 * t + 1.7)
+              + .03 * Math.sin(6.283 * (1.7 * nx - 1.1 * ny) + .29 * t + 4.1);
+        // There and back again: the sweep never wraps lime straight into
+        // periwinkle, a seam the shirt doesn't have.
+        w -= 2 * Math.floor(w / 2);
+        var c = ((w < 1 ? w : 2 - w) * 511 + .5 | 0) * 3;
+        px[i] = LUT[c]; px[i + 1] = LUT[c + 1]; px[i + 2] = LUT[c + 2]; px[i + 3] = 255;
+        i += 4;
+      }
+    }
+    wctx.putImageData(washData, 0, 0);
+  }
+
+  /* -------------------------------------------------------------- layout */
+
+  var wash = document.querySelector('.wash');
+  var ink = document.querySelector('.ink');
+  var wctx = wash.getContext('2d', { alpha: false });
+  var ictx = ink.getContext('2d');
+
+  var vw, vh, S, ax, ay, washW, washH, washData;
+
+  function build() {
+    vw = window.innerWidth;
+    vh = window.innerHeight;
+
+    // S, the bolt's height, sets every other measure on the page
+    S = Math.max(160, Math.min(0.30 * vh, 0.55 * vw, 330));
+
+    // the centre of a pair (half of TWIN) on the centre of the screen
+    ax = vw / 2 - S * TWIN[0] / 2;
+    ay = vh / 2 - S * TWIN[1] / 2;
+
+    // Ink at 2x, but a big screen at 2x is a 60MB canvas; past ~8M device
+    // pixels the extra sharpness is not worth it.
+    var dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(8e6 / (vw * vh)));
+    ink.width = Math.round(vw * dpr);
+    ink.height = Math.round(vh * dpr);
+    ictx.setTransform(ink.width / vw, 0, 0, ink.height / vh, 0, 0);
+    drawInk();
+
+    var cell = Math.max(8, Math.round(Math.max(vw, vh) / 160));
+    washW = wash.width = Math.ceil(vw / cell) + 1;
+    washH = wash.height = Math.ceil(vh / cell) + 1;
+    washData = wctx.createImageData(washW, washH);
+    paintWash(clock);
+  }
+
+  function drawInk() {
+    ictx.globalCompositeOperation = 'source-over';
+    ictx.globalAlpha = 1;
+    ictx.save();
+    ictx.translate(vw * .5, vh * .44);
+    ictx.scale(vw * .9, vh * .7);
+    var g = ictx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    g.addColorStop(0, '#faf8f3');
+    g.addColorStop(.55, '#f2eee5');
+    g.addColorStop(1, '#e8e3d8');
+    ictx.fillStyle = g;
+    ictx.fillRect(-2, -2, 4, 4);
+    ictx.restore();
+
+    ictx.globalCompositeOperation = 'destination-out';
+    ictx.fillStyle = ictx.strokeStyle = '#000';
+    ictx.lineJoin = 'round';
+    ictx.lineCap = 'round';
+
+    var r0 = Math.floor(-ay / (S * ROW)) - 1;
+    var r1 = Math.ceil((vh - ay) / (S * ROW)) + 1;
+    for (var r = r0; r <= r1; r++) {
+      var shift = r * ROW_SHIFT * PERIOD;
+      var k0 = Math.floor((-ax / S - shift) / PERIOD) - 2;
+      var k1 = Math.ceil(((vw - ax) / S - shift) / PERIOD) + 1;
+      for (var k = k0; k <= k1; k++) {
+        var ox = k * PERIOD + shift, oy = r * ROW;
+        drawBolt(ictx, BOLT, ox, oy, hand(r, k, 0));
+        drawBolt(ictx, TURNED, ox, oy, hand(r, k, 1));
+      }
+    }
+    ictx.globalAlpha = 1;
+    ictx.globalCompositeOperation = 'source-over';
+  }
+
+  /* ---------------------------------------------------------------- time */
+
+  var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var pauseBtn = document.querySelector('.pause');
+  var clock = 0, last = 0, lastPaint = -1e9, raf = 0, running = false;
+
+  function frame(now) {
+    raf = 0;
+    if (!running) return;
+    // capped, so coming back to a background tab doesn't jump the wash
+    if (last) clock += Math.min(250, now - last) / 1000;
+    last = now;
+    if (now - lastPaint >= 1000 / FPS - 4) {
+      lastPaint = now;
+      paintWash(clock);
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  function play(on) {
+    running = on;
+    pauseBtn.textContent = on ? 'Pause' : 'Play';
+    if (on && !raf) {
+      last = 0;
+      raf = requestAnimationFrame(frame);
+    }
+  }
+
+  pauseBtn.addEventListener('click', function () { play(!running); });
+
+  // Reduced motion opens on the still frame, which is the shirt as it was
+  // painted; Play is still there for anyone who wants it moving.
+  function onMotionPref() { play(!motion.matches); }
+  if (motion.addEventListener) motion.addEventListener('change', onMotionPref);
+  else if (motion.addListener) motion.addListener(onMotionPref);
+
+  var resizing = 0;
+  window.addEventListener('resize', function () {
+    if (!resizing) resizing = requestAnimationFrame(function () { resizing = 0; build(); });
+  });
+
+  build();
+  onMotionPref();
+})();
+</script>
+</body>
+</html>
