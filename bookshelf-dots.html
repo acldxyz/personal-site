@@ -206,8 +206,12 @@
     top: var(--y, 0px);
     width: var(--d);
     height: var(--d);
+    padding: 0;
+    border: 0;
     border-radius: 50%;
     background: var(--k);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     transition:
       left .45s ease-out, top .45s ease-out, width .45s ease-out, height .45s ease-out,
       transform .2s ease-out, opacity .3s ease;
@@ -530,7 +534,7 @@
 
 <main class="gallery" id="gallery">
   <figure class="work">
-    <div class="canvas" id="canvas" role="list" aria-label="One spot per book, newest first">
+    <div class="canvas" id="canvas" role="group" aria-label="One spot per book, newest first">
       <p class="empty" id="empty" hidden>No book is all of those</p>
     </div>
 
@@ -1043,24 +1047,20 @@ var books = [
   /* ---- spots ---- */
 
   books.forEach(function (b) {
-    var a = document.createElement('a');
+    // A button, not a link: a spot opens its card and goes nowhere itself.
+    // The card's cover is the only way through to the shop, so the two
+    // steps can never fire together; a link here, even one whose click was
+    // cancelled, was still followed by hosts that open new tabs themselves.
+    var a = document.createElement('button');
+    a.type = 'button';
     a.className = 'spot';
-    a.setAttribute('role', 'listitem');
-    a.href = buyUrl(b);
-    a.target = '_blank';
-    a.rel = 'noopener';
     a.setAttribute('aria-label', b.t + ' by ' + b.a);
+    a.setAttribute('aria-haspopup', 'dialog');
     a.style.setProperty('--k', b.paint);
     // The keyboard gets the same push, from the focused spot's own centre.
     a.addEventListener('focus', function () { show(b); field(b.cx, b.cy, b); });
     a.addEventListener('blur', function () { rest(); calm(); });
-    // A plain click opens the card; a click with a modifier, or a middle
-    // click, still goes straight to the shop, as a link should.
-    a.addEventListener('click', function (e) {
-      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      e.preventDefault();
-      openCard(b);
-    });
+    a.addEventListener('click', function () { openCard(b); });
     b.el = a;
     canvas.appendChild(a);
   });
