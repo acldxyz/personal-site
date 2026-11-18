@@ -41,11 +41,12 @@
 
   /* ------------------------------------------------------------- topbar */
 
-  /* The bar holds three things at rest: the wordmark, Filter beside it and
-     the menu at the far end. Both menus open sideways from their buttons as
-     overlays: the site links slide out leftward from the menu along the bar,
-     and the filters unroll rightward in a band beneath it. Neither takes
-     space from the page as it opens, so the spots never move for them. */
+  /* The bar holds two things at rest: the wordmark and the menu at the far
+     end, with Filter on its own line beneath the name. Both menus open
+     sideways from their buttons as overlays: the site links slide out
+     leftward from the menu along the bar, and the filters unroll rightward
+     in a band beneath it. Neither takes space from the page as it opens, so
+     the spots never move for them. */
   .topbar {
     position: relative;
     z-index: 10;
@@ -57,23 +58,26 @@
   }
   .topbar .toggle { margin-left: -.9em; }
 
-  /* On a desktop, Filter steps down out of the bar to sit under the name,
-     at the start of the row kept free for the filters. Opened, it gives way
-     to them: it fades as they unroll from the same place, and comes back
-     when they are closed. */
-  @media (min-width: 861px) {
-    .topbar .toggle {
-      position: absolute;
-      left: var(--margin);
-      top: calc(100% + 2px);
-      z-index: 11;
-      transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .2s ease, visibility 0s;
-    }
-    .topbar .toggle[aria-expanded="true"] {
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity .2s ease, visibility 0s linear .2s;
-    }
+  /* Filter sits under the name rather than in the bar, at the start of the
+     row kept free for the filters. Opened, it gives way to them: it fades as
+     they unroll from the same place, and comes back when they are closed.
+     A long phrase of active filters wraps rather than running off a phone's
+     edge. */
+  .topbar .toggle {
+    position: absolute;
+    left: var(--margin);
+    top: calc(100% + 2px);
+    z-index: 11;
+    max-width: calc(100vw - 2 * var(--margin));
+    white-space: normal;
+    text-align: left;
+    line-height: 1.5;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .2s ease, visibility 0s;
+  }
+  .topbar .toggle[aria-expanded="true"] {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s ease, visibility 0s linear .2s;
   }
 
   /* Closes the filters from inside them; pushed to the far end of the row. */
@@ -369,19 +373,7 @@
   /* While filters are on, the toggle says which, as a phrase rather than a
      count, so a closed band still says what the painting is showing. */
   .toggle .n { color: var(--ink-strong); }
-  /* In the phone's bar it shares a line with the name and the menu, so a
-     long phrase wraps within the button, beside the two-line name, rather
-     than being cut off. It only ever changes with the filters, when the
-     painting is being rearranged anyway. */
-  @media (max-width: 860px) {
-    .topbar .toggle {
-      min-width: 0;
-      white-space: normal;
-      text-align: left;
-      line-height: 1.5;
-      border-radius: 14px;
-    }
-  }
+
 
   /* Shown only while a filter is on; it keeps its place while hidden, so
      the band's height never changes with it. */
@@ -1251,7 +1243,11 @@ var books = [
     var h = band.offsetHeight;
     var keep = h <= Math.max(72, innerHeight * 0.14);
     band.classList.toggle('over', !keep);
-    gallery.style.setProperty('--reserve', (keep ? h : 0) + 'px');
+    // Where the band lies over the spots, its first line is still kept,
+    // since Filter sits there whether the band is open or not. Its height
+    // follows the phrase on it, which changes only with the filters, when
+    // the painting is being rearranged anyway.
+    gallery.style.setProperty('--reserve', (keep ? h : toggle.offsetHeight + 8) + 'px');
   }
 
   function layout(again) {
