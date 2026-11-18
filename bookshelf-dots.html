@@ -213,10 +213,12 @@
       transform .2s ease-out, opacity .3s ease;
   }
   .canvas.still, .canvas.still .spot { transition: none; }
-  /* --px/--py are a nudge from a hovered neighbour (see bump()); the spot
-     pointed at grows in place on top of whatever nudge it already has. */
+  /* --px/--py are the push from the pointer (see field()). The spot the
+     pointer is on is marked .lit by the script rather than by :hover, so
+     that it is judged from where the spots rest, not from where they have
+     been pushed to; it grows in place. */
   .spot { transform: translate(var(--px, 0px), var(--py, 0px)); }
-  .spot:hover, .spot:focus-visible { transform: translate(var(--px, 0px), var(--py, 0px)) scale(1.3); }
+  .spot.lit, .spot:focus-visible { transform: translate(var(--px, 0px), var(--py, 0px)) scale(1.3); }
   .spot:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
   /* A filtered-out book leaves the painting: it fades where it stood while
@@ -282,6 +284,7 @@
   }
   .about, .book {
     grid-area: 1 / 1;
+    pointer-events: none;    /* the faded one must not catch the other's clicks */
     min-width: 0;
     transition: opacity .2s ease;
   }
@@ -575,13 +578,19 @@ var books = [
   'use strict';
 
   var GROUPS = [
-    { key: 'g', name: 'Genre', values: ['Sci-Fi', 'Non-Fiction', 'Novel', 'Fantasy', 'Play'] },
+    { key: 'g', name: 'Genre', values: ['Sci-Fi', 'Fiction', 'Non-Fiction'] },
     { key: 'y', name: 'Year', values: ['2026', '2025', '2024', '2023', '2022', '≤ 2021'] },
     { key: 'r', name: 'Recommended', values: ['A', 'Y'], labels: { A: 'All-Time', Y: 'Yes' } }
   ];
 
   // 'S' and 'X' were two passes at the same verdict; both mean yes.
   books.forEach(function (b) { b.r = b.r === 'A' ? 'A' : (b.r ? 'Y' : ''); });
+
+  // Three genres here rather than the data's five: novels, fantasy and plays
+  // are all fiction that is not science fiction. The data keeps its own
+  // labels, which bookshelf.html still uses.
+  var GENRE = { Novel: 'Fiction', Fantasy: 'Fiction', Play: 'Fiction' };
+  books.forEach(function (b) { b.g = GENRE[b.g] || b.g; });
 
   var active = { g: 'all', y: 'all', r: 'all' };
   var buttons = [];
@@ -786,42 +795,80 @@ var books = [
     book.appendChild(art);
     book.appendChild(p);
     caption.classList.add('pointing');
-    bump(b);
   }
-  function rest() { caption.classList.remove('pointing'); unbump(); }
+  function rest() { caption.classList.remove('pointing'); }
 
-  /* A spot that grows makes room for itself: the spots around it are
-     nudged straight away from its centre, the nearest most. The push falls
-     off with the square of the distance and stops after two spots, and at
-     its strongest, on a spot's four touching neighbours, is three tenths of
-     a diameter: enough to read as a shove from across the room, where an
-     eighth was too subtle to see. It eases like every other move here;
-     nothing springs back past its place. */
-  var spotD = 0, bumped = [];
-  var PUSH = 0.3, REACH = 2.3;      // in diameters, and in spot pitches
+  /* The pointer is a field the spots lean away from, wherever it is over
+     the painting: on a spot, between two, or in the white around them. Each
+     spot is pushed straight away from the pointer by an amount that rises
+     with distance up to one spot pitch, so the spot the pointer is on stays
+     put while its four touching neighbours get the full push, three tenths
+     of a diameter; then it falls off with the square of the distance and
+     tapers to nothing at REACH pitches. Between two spots both part; in the
+     white, the nearest lean back. Only the spot the pointer is actually on,
+     judged from the resting grid, grows and names itself in the label.
+     Everything eases as the rest of the page does; nothing springs. */
+  var spotD = 0, pushed = [], lit = null;
+  // PUSH is before the taper, which at one pitch leaves about two thirds
+  // of it: the three tenths above.
+  var PUSH = 0.45, REACH = 2.3;     // in diameters, and in spot pitches
 
-  function bump(b) {
-    unbump();
-    if (!spotD || !b.on) return;
-    var pitch = 2 * spotD;
+  function field(px, py, skip) {
+    var pitch = 2 * spotD, next = [];
     books.forEach(function (o) {
-      if (o === b || !o.on) return;
-      var dx = o.cx - b.cx, dy = o.cy - b.cy;
-      var dist = Math.sqrt(dx * dx + dy * dy) / pitch;
-      if (dist > REACH) return;
-      var push = PUSH * spotD / (dist * dist);
-      o.el.style.setProperty('--px', (dx / (dist * pitch)) * push + 'px');
-      o.el.style.setProperty('--py', (dy / (dist * pitch)) * push + 'px');
-      bumped.push(o);
+      if (!o.on || o === skip) return;
+      var dx = o.cx - px, dy = o.cy - py;
+      var r = Math.sqrt(dx * dx + dy * dy) / pitch;
+      if (r >= REACH || r === 0) return;
+      var taper = 1 - (r / REACH) * (r / REACH);
+      var push = PUSH * spotD * (r < 1 ? r : 1 / (r * r)) * taper * taper;
+      o.el.style.setProperty('--px', dx / (r * pitch) * push + 'px');
+      o.el.style.setProperty('--py', dy / (r * pitch) * push + 'px');
+      next.push(o);
     });
-  }
-  function unbump() {
-    bumped.forEach(function (o) {
-      o.el.style.removeProperty('--px');
-      o.el.style.removeProperty('--py');
+    pushed.forEach(function (o) {
+      if (next.indexOf(o) < 0) { o.el.style.removeProperty('--px'); o.el.style.removeProperty('--py'); }
     });
-    bumped = [];
+    pushed = next;
   }
+  function calm() {
+    pushed.forEach(function (o) { o.el.style.removeProperty('--px'); o.el.style.removeProperty('--py'); });
+    pushed = [];
+  }
+  function light(b) {
+    if (lit === b) return;
+    if (lit) lit.el.classList.remove('lit');
+    lit = b;
+    if (b) { b.el.classList.add('lit'); show(b); } else rest();
+  }
+
+  // Read against the canvas's resting box, a frame at a time. The reach runs
+  // out past the canvas edge too, so a pointer just outside it still leans
+  // the outer spots in a little.
+  var pointer = null, frame = 0;
+  function track() {
+    frame = 0;
+    if (!pointer || !spotD) return;
+    var box = canvas.getBoundingClientRect();
+    var x = pointer.x - box.left, y = pointer.y - box.top;
+    var reach = REACH * 2 * spotD;
+    if (x < -reach || y < -reach || x > box.width + reach || y > box.height + reach) { calm(); light(null); return; }
+    var on = null;
+    books.forEach(function (o) {
+      if (o.on && Math.hypot(o.cx - x, o.cy - y) <= spotD / 2) on = o;
+    });
+    light(on);
+    field(x, y, on);
+  }
+  gallery.addEventListener('pointermove', function (e) {
+    pointer = { x: e.clientX, y: e.clientY };
+    if (!frame) frame = requestAnimationFrame(track);
+  });
+  gallery.addEventListener('pointerleave', function () {
+    pointer = null;
+    calm();
+    light(null);
+  });
 
   /* ---- spots ---- */
 
@@ -834,10 +881,9 @@ var books = [
     a.rel = 'noopener';
     a.setAttribute('aria-label', b.t + ' by ' + b.a);
     a.style.setProperty('--k', b.paint);
-    a.addEventListener('pointerenter', function () { show(b); });
-    a.addEventListener('focus', function () { show(b); });
-    a.addEventListener('pointerleave', rest);
-    a.addEventListener('blur', rest);
+    // The keyboard gets the same push, from the focused spot's own centre.
+    a.addEventListener('focus', function () { show(b); field(b.cx, b.cy, b); });
+    a.addEventListener('blur', function () { rest(); calm(); });
     b.el = a;
     canvas.appendChild(a);
   });
@@ -916,7 +962,7 @@ var books = [
       var row = Math.floor(i / c), col = i % c;
       b.el.style.setProperty('--x', D + col * 2 * D + 'px');
       b.el.style.setProperty('--y', D + row * 2 * D + 'px');
-      b.cx = D + col * 2 * D + D / 2;     // centre, for bump()
+      b.cx = D + col * 2 * D + D / 2;     // resting centre, for the field
       b.cy = D + row * 2 * D + D / 2;
     });
 
@@ -939,6 +985,10 @@ var books = [
       if (b.on) { b.el.removeAttribute('tabindex'); b.el.removeAttribute('aria-hidden'); shown++; }
       else { b.el.tabIndex = -1; b.el.setAttribute('aria-hidden', 'true'); }
     });
+    // The grid is about to move under the pointer: let go of it entirely
+    // until the pointer moves again.
+    light(null);
+    calm();
     rest();
 
     // The label reads as a gallery label would for this selection.
