@@ -21,7 +21,7 @@
        the other. */
     background:
       radial-gradient(circle farthest-corner at 100% 0%,
-        #0a0705 0%, #0c0806 38.8%, #1a110b 40.4%, #6b5230 41.8%, #8a6e42 45%, #967d4f 50%,
+        #0b0a10 0%, #100f16 38.8%, #1a130f 40.4%, #6b5230 41.8%, #8a6e42 45%, #967d4f 50%,
         #968a67 57.5%, #918869 67%, #898266 77.5%, #837e64 88%, #8c866c 100%);
     background-color: #918869;
     overflow: hidden;
@@ -357,9 +357,11 @@ void main() {
     // The ruff is the pigmented back of the iris turned out round the
     // margin: velvet, a brown that is nearly black, catching light only on
     // the flank it turns to it.
-    alb = mix(vec3(0.060, 0.036, 0.024), vec3(0.135, 0.082, 0.052), grain.g) * (0.8 + 0.4 * tint);
-    lit = 0.42 + 0.95 * max(nl, 0.0);
-    sheen *= 0.5;
+    alb = mix(vec3(0.110, 0.080, 0.060), vec3(0.220, 0.160, 0.115), grain.g) * (0.75 + 0.5 * tint);
+    // Velvet: the tongues are low and soft, so the light models them only a
+    // little. Lit hard, each reads as a separate pebble.
+    lit = 0.72 + 0.40 * max(nl, 0.0);
+    sheen *= 0.25;
   } else {
     // Colour by depth. The stroma is pale collagen in front and coloured by
     // what lies behind it. Here that is a faint yellow all through over the
@@ -434,13 +436,21 @@ void main() {
   float rp = ringAt(atan(q.y, q.x)).r;
   vec3  c  = texture(uBack, vC * 0.5 + 0.5).rgb;
 
-  // The pupil. Not a hole punched in the picture: a very dark brown, lifting
-  // a little toward its edge and toward the light. Its edge is drawn sharp
-  // here and then scalloped by the ruff, which is laid over it.
-  vec2  ld  = normalize(LIGHT.xy);
-  float u   = clamp(r / rp, 0.0, 1.0);
-  vec3  pup = vec3(0.026, 0.018, 0.014) + vec3(0.034, 0.022, 0.015) * u * u * u
-            + vec3(0.016, 0.012, 0.010) * smoothstep(-1.0, 1.0, dot(q / rp, ld)) * u;
+  // The pupil. Not a hole punched in the picture. What is seen there is the
+  // dark of the eye's interior through the cornea, and the cornea reflects a
+  // faint veil of the room over it: so it is a deep slate, cool and a little
+  // blue, never black, and never flat. Its colour is the photograph's, set so
+  // that it comes out right after the last pass darkens the dish of the iris
+  // (by 0.78, 0.76, 0.74). Its unevenness is broad and soft, the reflection
+  // of a lit room, not a pattern: lighter toward the light, a cloud or two,
+  // and a little lighter toward the edge. Its edge is drawn sharp here and
+  // then broken up by the ruff, which is laid over it.
+  vec2  ld   = normalize(LIGHT.xy);
+  float u    = clamp(r / rp, 0.0, 1.0);
+  float side = 0.5 + 0.5 * dot(q / rp, ld);                        // 0 away from the light, 1 toward it
+  float haze = 0.6 * noise(vec3(q * 3.4, 41.0) + uSeed) + 0.4 * noise(vec3(q * 7.5, 43.0) + uSeed);
+  vec3  pup  = vec3(0.086, 0.081, 0.113)
+             * (0.66 + 0.46 * side * side + 0.50 * (haze - 0.5) + 0.20 * u * u * u);
   c = mix(pup, c, smoothstep(-0.7, 0.9, (r - rp) * uScale));
   o = vec4(c, 1.0);
 }
@@ -631,10 +641,13 @@ void main() {
     // goes with it.
     var ECC = 0.014, ECC_A = rr(2.6, 3.7);
 
-    // Pupil about 4.3 mm: wide, as it is in the photograph. Never a true circle.
+    // Pupil about 4.3 mm: wide, as it is in the photograph. Never a true
+    // circle, and in the photograph its edge is lumpy: twice as far from a
+    // circle as it was drawn at first, mostly in waves a few to a quarter turn.
     function pupilR(th) {
-      return 0.36 * (1 + 0.050 * (ring(th, 3, S0 + 1) - 0.5) + 0.030 * (ring(th, 7, S0 + 2) - 0.5)
-                       + 0.012 * (ring(th, 19, S0 + 8) - 0.5)) + ECC * Math.cos(th - ECC_A);
+      return 0.36 * (1 + 0.050 * (ring(th, 3, S0 + 1) - 0.5) + 0.080 * (ring(th, 7, S0 + 2) - 0.5)
+                       + 0.065 * (ring(th, 13, S0 + 9) - 0.5) + 0.032 * (ring(th, 29, S0 + 8) - 0.5))
+             + ECC * Math.cos(th - ECC_A);
     }
 
     // Collarette: the wreath where the pupillary zone ends and the ciliary
@@ -1260,7 +1273,10 @@ void main() {
           var across = rnd() + rnd() - 1;                                   // crowded toward the middle of the pleat
           var pth = pcum[i] + pl.w * (0.5 + 0.48 * across);
           var full = under || rnd() < 0.45;
-          var rin = pupilR(pth) + 0.001, rridge = collR(pth), rout = rridge + rr(-0.03, 0.04);
+          // Where a fibre starts is ragged: most run in under the frill, some stop
+          // short of it, so the iris does not begin on a drawn circle.
+          var rin = pupilR(pth) + 0.001 + (rnd() < 0.7 ? rr(0, 0.004) : rr(0.006, 0.028)), rridge = collR(pth),
+              rout = rridge + rr(-0.03, 0.04);
           var pra = full ? rin : rr(rin, rout - 0.06), prb = full ? rout : Math.min(pra + rr(0.05, 0.16), rout);
           var pslope = rr(-0.022, 0.022), pa1 = rr(0.0012, 0.0055), pk1 = TAU / rr(0.05, 0.14), pp1 = rr(0, TAU);
           var phw = under ? rr(0.0010, 0.0018) : Math.min(1.15 * F0 * Math.exp(gauss() * 0.35), 0.0022);
@@ -1299,22 +1315,32 @@ void main() {
        its inner end overhanging the pupil. */
     stage(function () {
       var t0 = SEC[0] - 0.12, t1 = SEC[1] + 0.12, t, q, STEPS = 14;
+      // How pronounced the frill is: it comes and goes round the margin,
+      // thick and lobed in places, in others little more than a dark line.
+      // Even all the way round, it reads as drawn.
+      function full(t) { return 0.30 + 1.25 * sm(ring(t, 11, S0 + 403)); }
       // The roll.
       var arcs = Math.ceil((t1 - t0) / 0.012);
       for (q = 0; q <= arcs; q++) {
         t = t0 + (t1 - t0) * q / arcs;
-        var rr0 = pupilR(t) + 0.0035 + 0.002 * ring(t, 90, S0 + 400);
+        var rr0 = pupilR(t) + 0.0015 + 0.002 * ring(t, 90, S0 + 400);
         X[q] = rr0 * Math.cos(t);  Y[q] = rr0 * Math.sin(t);
-        HW[q] = 0.0058 + 0.0016 * ring(t, 60, S0 + 401);
+        HW[q] = (0.0020 + 0.0022 * full(t)) * (0.75 + 0.5 * ring(t, 70, S0 + 402));
         Z[q] = 0.90;  PG[q] = 0;  FD[q] = 1;  AC[q] = 0;
       }
       upper.fibre(arcs + 1, 0.5, 1);
       // The tongues.
       t = t0;
       while (t < t1) {
-        var rp = pupilR(t), arcw = 0.0080 * Math.exp(gauss() * 0.22), wAng = arcw / rp;   // its width along the margin
-        var len = rr(0.011, 0.019), r0 = rp - rr(0.004, 0.008), zr = rr(0.955, 0.985), tintR = rnd();
-        var mid = t + wAng / 2, tilt = rr(-0.12, 0.12) * wAng;
+        // Its width along the margin. The tongues come in every size, and in
+        // runs: a stretch of small ones, then a few large. Even ones read as
+        // a row of beads.
+        var big = full(t);
+        if (big < 0.55 && rnd() > big) { t += 0.0036 / pupilR(t); continue; }   // where it is thin, few tongues
+        var rp = pupilR(t), arcw = 0.0036 * big * Math.exp(gauss() * 0.35), wAng = arcw / rp;
+        var len = arcw * rr(1.4, 2.8) + rr(0.001, 0.004), r0 = rp - rr(0.0, 0.004) * big;
+        var zr = rr(0.955, 0.985), tintR = rnd();
+        var mid = t + wAng / 2, tilt = rr(-0.35, 0.35) * wAng;
         for (q = 0; q <= STEPS; q++) {
           // Points crowd toward the ends, where the outline turns fastest.
           var u = 0.5 - 0.5 * Math.cos(Math.PI * q / STEPS), rad = r0 + len * u, a = mid + tilt * u;
@@ -1323,8 +1349,9 @@ void main() {
           Z[q] = zr;  PG[q] = 0;  FD[q] = 1;  AC[q] = 0;
         }
         upper.fibre(STEPS + 1, tintR, 1);
-        // They overlap their neighbours more often than they leave a gap.
-        t += wAng * rr(0.55, 0.95);
+        // They overlap their neighbours more often than they leave a gap, but
+        // now and then there is one, where the roll alone shows.
+        t += wAng * (rnd() < 0.08 ? rr(1.2, 1.8) : rr(0.35, 0.75));
       }
     });
 
