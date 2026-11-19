@@ -16,7 +16,9 @@ serif`, shared `styles.css`.
 **New** — `index.html` and `bookshelf.html`. Warm paper background, wooden
 alphabet blocks, quiet uppercase controls. Self-contained, does not use
 `styles.css`. **`index.html` is the reference for the new direction, and the
-tokens below are taken from it.**
+tokens below are taken from it.** One deliberate exception: `bookshelf.html`
+drops the warm paper for a flat `#fcfbf8` ground, because the whole page is
+the painting's canvas (see below).
 
 When redesigning a page, target the new language unless told otherwise.
 
@@ -25,7 +27,7 @@ When redesigning a page, target the new language unless told otherwise.
 | File | What it is |
 |---|---|
 | `index.html` | **Live home page, and the style reference for the new language.** Self-contained apart from the favicon and the analytics tag. |
-| `bookshelf.html` | The reading list. New language. Book data is the `books` array near the end, one object per book; the comment above it names the fields. |
+| `bookshelf.html` | The reading list, as a Damien Hirst spot painting: one spot per book. New language, on a flat `#fcfbf8` ground. Book data is the `books` array near the end, one object per book; the comment above it names the fields. A new book needs two more things besides its entry — see **Adding a book** below. |
 | `reading.html` | Redirect stub to `bookshelf.html`, kept because the old address was linked and bookmarked. Don't add books here. |
 | `favicon-block.svg` | Tab icon: the red "A" block, flattened from its live pose. |
 | `styles.css` | Old design language only. |
@@ -249,6 +251,52 @@ The Bookshelf moved to `bookshelf.html`, with `reading.html` left as a redirect
 so old links keep working. `links.html` kept its filename. Note that its styles
 and scripts hang off `links-*` class names; those are not labels and must not be
 swept up in a rename.
+
+### The Bookshelf (`bookshelf.html`)
+
+A Hirst spot painting of the shelf: every book a spot, all spots one size, the
+gap between spots one diameter, the outer spots at least a diameter from the
+page's left, right and foot, and no colour used twice. The grid is re-solved
+for whatever the filters leave (column count, spot size, spacing), with a short
+last row left-aligned and no blank places. The page itself is the canvas.
+
+- **Filters** are sliders under the name (Genre, Year, Recommended), opened
+  from *Filter*; folded, the button reads the selection as a phrase and a red
+  *Clear* sits beside it. Genre shows three values (Sci-Fi, Fiction,
+  Non-Fiction): the data keeps its five labels and Novel, Fantasy and Play are
+  mapped to Fiction in the page.
+- **Pointer**: spots lean away from the pointer anywhere over the grid; the
+  spot under it grows and a preview (cover, title, author, year) shows under
+  Filter, in a strip kept free so nothing moves. On a phone a finger sliding
+  over the grid does the same. A tap or click opens the book's card; its cover
+  is the only link to Amazon.
+- **Opening the filters or the menu never moves a spot.** Both are overlays.
+- **Save image** draws the spots on show, with a one-spot margin, to a PNG.
+
+#### Adding a book
+
+1. Add its entry to `books`, newest first.
+2. **Its cover.** `u` is an Open Library cover,
+   `covers.openlibrary.org/b/id/<id>-L.jpg`, of an English print edition, and
+   `s` is its width over height. Look at the image, not just the record: Open
+   Library files translations, graphic adaptations, large-print and classroom
+   editions under the same work, and some scans carry price or library
+   stickers. Where Open Library has no proper English cover (an audiobook-only
+   title, a book too new or too small), use Amazon's,
+   `m.media-amazon.com/images/P/<ISBN-10>.01.L.jpg`, and check it isn't the
+   1×1 blank Amazon returns for an unknown ISBN.
+3. **Its spot colour.** Every pair of spots, and every spot and the `#fcfbf8`
+   ground, must be at least ΔE 10 apart in CIELAB (ΔE76) — visibly different,
+   not just different hex. If the entry's `k` is that clear of everything
+   already there, nothing more is needed. If not, take the most prominent
+   colour on the book's own cover that is, and add it to the `SPOT` map, keyed
+   by title. Never invent a colour; it must come from the cover.
+4. **Its Amazon link.** A cover from `m.media-amazon.com/images/P/<ISBN-10>`
+   carries its ISBN and links directly. Otherwise add the ISBN-10 of the most
+   recent English print edition (title checked; no box sets, study guides,
+   translations or book-club printings) to the `ISBN` map, or leave it out and
+   the link falls back to an Amazon search for title and author. Keep the link
+   and the cover on the same edition.
 
 Deploying is `git push` to `main` — the live site tracks that branch. There is
 no CNAME, workflow or `gh-pages` branch in the repo, so the host is configured

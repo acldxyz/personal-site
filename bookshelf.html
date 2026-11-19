@@ -13,71 +13,89 @@
   gtag('config', 'G-S9B2L8ZZLW');
 </script>
 <style>
+  /* After Damien Hirst's spot paintings: a grid of spots of one size on a
+     white ground, the gap between them equal to a spot, and no colour used
+     twice. Here every book is a spot, painted in its cover's own colour, so
+     the canvas is the shelf seen from across the room. Nothing is written
+     on it; a spot gives up its title only when you go up to it. */
+
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --rail: 252px;
-    --mark-h: clamp(84px, 10.5vw, 138px);
-    --gap: 3px;
-    --label-w: 52px;
+    --margin: clamp(22px, 2.8vw, 40px);
 
     --ink: #6f665d;
     --ink-strong: #2f2a24;
     --ink-quiet: #8a8076;
     --focus: #3d7ba8;
-    --paper: #f1ede4;
   }
 
+  /* The page is the canvas: one flat primed white, edge to edge, rather
+     than the site's warm paper with a painting hung on it. It has to be
+     exactly the white the spot colours were chosen against (see SPOT), or
+     the palest of them lose their 10 of separation from the ground. */
   body {
-    min-height: 100%;
-    background:
-      radial-gradient(ellipse 90% 70% at 50% 44%, #faf8f3 0%, #f2eee5 55%, #e8e3d8 100%)
-      fixed;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: #fcfbf8;
     color: var(--ink);
     font-family: system-ui, "Segoe UI", Helvetica, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
-  .shell { display: flex; align-items: flex-start; }
-
-  /* ---------------------------------------------------------------- rail */
-
-  .rail {
-    position: sticky;
-    top: 0;
-    flex: 0 0 var(--rail);
-    width: var(--rail);
-    max-height: 100vh;
-    overflow-y: auto;
-    /* Nothing in the rail may ever raise a horizontal bar. When the column is
-       short enough to scroll, the vertical scrollbar takes ~10px out of the
-       width, and anything sized to the full column then overflows by exactly
-       that much — which showed up as a scrollbar along the bottom of the
-       menu. */
-    overflow-x: hidden;
-    padding: clamp(18px, 2.2vw, 28px) 0 18px clamp(22px, 2.8vw, 40px);
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0,0,0,.16) transparent;
-  }
-  .rail::-webkit-scrollbar { width: 6px; }
-  .rail::-webkit-scrollbar-thumb { background: rgba(0,0,0,.16); border-radius: 3px; }
-
   /* ------------------------------------------------------------- topbar */
 
-  /* Spans the page rather than sitting inside the rail, so the links read as
-     the site's navigation and the rail below reads as this page's controls.
-     The wordmark lines up with the rail's left padding and the last link with
-     the chart's right padding, so the bar shares the page's margins. */
+  /* The bar holds two things at rest: the wordmark and the menu at the far
+     end, with Filter on its own line beneath the name. Both menus open
+     sideways from their buttons as overlays: the site links slide out
+     leftward from the menu along the bar, and the filters unroll rightward
+     in a band beneath it. Neither takes space from the page as it opens, so
+     the spots never move for them. */
   .topbar {
+    position: relative;
+    z-index: 10;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    /* Kept shallow on purpose: every pixel the bar takes is a pixel off the
-       six rows below it, which fitHeight() divides between them. */
-    padding: clamp(14px, 1.6vw, 20px) clamp(22px, 2.8vw, 40px);
-    border-bottom: 1px solid rgba(0,0,0,.08);
+    gap: clamp(14px, 2vw, 28px);
+    padding: clamp(14px, 1.6vw, 20px) var(--margin);
+    background: #fcfbf8;
   }
+  /* Filter sits on its own line under the name rather than in the bar.
+     Opened, it gives way to the filters: it fades as they unroll from the
+     same place, and comes back when they are closed. A long phrase of
+     active filters wraps rather than running off a phone's edge. While a
+     filter is on, a Clear sits after it, so the filters can be undone
+     without opening them. Pulled out by a button's inset so the text
+     starts under the name. */
+  .filterline {
+    position: absolute;
+    left: var(--margin);
+    margin-left: calc(-11px * .9);
+    top: calc(100% + 2px);
+    z-index: 11;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 6px;
+    max-width: calc(100vw - 2 * var(--margin) + 11px * .9);
+    transition: opacity .2s ease, visibility 0s;
+  }
+  .filterline.away {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s ease, visibility 0s linear .2s;
+  }
+  .filterline .toggle {
+    white-space: normal;
+    text-align: left;
+    line-height: 1.5;
+  }
+
+  /* Closes the filters from inside them; pushed to the far end of the row. */
+  .band-close { margin-left: auto; }
+  .band .clear, .band-close { margin-bottom: 2px; }
+  .menu { position: relative; margin-left: auto; display: flex; align-items: center; }
 
   .wordmark {
     display: inline-block;
@@ -94,22 +112,83 @@
   .wordmark:hover { opacity: 1; }
   .wordmark:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
-  /* Navigation, not a control: same pill as the filters so it belongs to the
-     page, with a hairline under it so the two groups do not read as one long
-     list of options. */
-  .site-nav {
+  /* The page's name beside the site's, so a visitor knows where they are:
+     the interface's small capitals, after a hairline, centred on the
+     two-line wordmark. */
+  .page-name {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 1px;
-    /* The pills are borderless until hovered, so the row is optically flush
-       with the page margin only once its own padding is pulled back. Set here
-       as well as on the links, or the em resolves against the inherited size
-       and the pull overshoots the .9em of padding it is cancelling. */
+    align-items: center;
+    gap: clamp(12px, 1.6vw, 18px);
     font-size: 11px;
-    margin-right: -.9em;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink);
   }
-  .site-nav a {
+  .page-name::before {
+    content: '';
+    width: 1px;
+    height: 26px;
+    background: rgba(0, 0, 0, .16);
+  }
+
+  /* Opens leftward from the menu button, on the page's white, over whatever
+     it reaches; on a phone that is the wordmark too, and the row scrolls
+     sideways rather than wrapping. Inert while closed. */
+  .site-nav {
+    position: absolute;
+    right: calc(100% + 4px);
+    top: 50%;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    min-height: 44px;    /* as tall as the two-line wordmark it may cover */
+    /* Out to within 10px of the window's left edge, so on a phone its white
+       covers the wordmark entirely rather than leaving a sliver showing. */
+    max-width: calc(100vw - var(--margin) - 44px);
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: #fcfbf8;
+    transform: translateY(-50%);
+    clip-path: inset(-4px -4px -4px 100%);
+    opacity: 0;
+    transition: clip-path .45s ease-out, opacity .3s ease;
+  }
+  .site-nav::-webkit-scrollbar { display: none; }
+  .site-nav.open { clip-path: inset(-4px -4px -4px 0); opacity: 1; }
+
+  /* Three rules that close into a cross. */
+  .burger {
+    position: relative;
+    width: 40px;
+    height: 34px;
+    margin-right: -10px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: none;
+    cursor: pointer;
+    transition: background-color .2s ease, border-color .2s ease;
+  }
+  .burger:hover { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.14); }
+  .burger:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .burger span {
+    position: absolute;
+    left: 12px;
+    width: 16px;
+    height: 1.5px;
+    background: var(--ink);
+    transition: transform .3s ease, opacity .2s ease, background-color .2s ease;
+  }
+  .burger span:nth-child(1) { top: 11px; }
+  .burger span:nth-child(2) { top: 16px; }
+  .burger span:nth-child(3) { top: 21px; }
+  .burger:hover span, .burger[aria-expanded="true"] span { background: var(--ink-strong); }
+  .burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+  .burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+  .burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
+
+  .site-nav a, .opt {
+    font-family: inherit;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
@@ -117,398 +196,452 @@
     white-space: nowrap;
     color: var(--ink);
     text-decoration: none;
+    background: none;
     padding: .52em .9em;
     border-radius: 999px;
     border: 1px solid transparent;
+    cursor: pointer;
     transition: color .2s ease, background-color .2s ease, border-color .2s ease;
   }
-  .site-nav a:hover {
+  .site-nav a:hover, .opt:hover {
     color: var(--ink-strong);
     background: rgba(0,0,0,.05);
     border-color: rgba(0,0,0,.14);
   }
-  .site-nav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .site-nav a:focus-visible, .opt:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-  .page-label {
-    margin: 0 0 24px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--ink-quiet);
+  /* ------------------------------------------------------------ gallery */
+
+  /* The spots are the page. They sit in whatever the window leaves between
+     the bar and the foot, and everything else steps back. */
+  .gallery {
+    position: relative;
+    flex: 1 0 auto;
+    /* The canvas's unseen margin reaches past the gallery's padding when the
+       spots are large; clipped, so it never widens the page. */
+    overflow: clip;
+    display: flex;
+    /* At the top of its space rather than centred: when a filter leaves a
+       few large spots, they sit just under the preview and the spare room
+       gathers at the foot, not in a band of blank page above them. */
+    align-items: flex-start;
+    justify-content: center;
+    /* --reserve is Filter's line and the preview's strip, kept free above
+       the spots: see reserve(). */
+    /* --below tops the foot of the gallery up so the last row stands at
+       least a diameter above the bottom of the page: see layout(). */
+    padding: calc(clamp(18px, 2.6vw, 40px) + var(--reserve, 0px)) var(--margin) max(clamp(18px, 2.6vw, 40px), var(--below, 0px));
   }
 
-  .readout {
-    margin-top: 14px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--ink-quiet);
-    font-variant-numeric: tabular-nums;
-  }
-  .readout b { font-weight: 600; color: var(--ink-strong); }
-
-  .group { border: 0; margin-bottom: 26px; }
-  .group:last-child { margin-bottom: 8px; }
-
-  .group-name {
-    display: block;
-    margin-bottom: 8px;
-    padding-left: .1em;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: #a49a8e;
+  .work {
+    --d: 24px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .opts { display: flex; flex-wrap: wrap; gap: 1px; }
+  /* --d is the spot's diameter and the one number the painting is built
+     from: Hirst's spacing is a spot's width, between spots and from the
+     outer spots to the page's edges. layout() sets it, the canvas's size
+     and every spot's place, and all of them transition, so when a filter
+     changes the grid the spots travel to their new places together instead
+     of the painting being torn down and rehung. */
+  .canvas {
+    position: relative;
+    /* A finger on the grid slides over the spots, as a mouse would, rather
+       than scrolling the page: that is how a touchscreen gets the preview
+       and the push. The page still scrolls from the bar, the foot and the
+       margins, which are at least a diameter wide. */
+    touch-action: none;
+    width: var(--cw, 0px);
+    height: var(--ch, 0px);
+    /* A book leaving fades where it stood, but takes the new spot size like
+       the rest, so on a shrinking canvas it can stand past the edge. Clipped,
+       as paint would be. A spot's hover growth stays well inside the margin. */
+    overflow: hidden;
+    /* No ground of its own: the page is the canvas. The box remains, unseen,
+       to hold the one-spot margin that a saved image is cropped to, but on
+       screen that margin is pulled back into the page by negative margins:
+       with no canvas edge to keep off, it was only blank page, and with a
+       few large spots, a great deal of it. */
+    margin: calc(-1 * var(--d));
+    transition: width .45s ease-out, height .45s ease-out, margin .45s ease-out;
+  }
 
-  .opt {
-    display: inline-flex;
-    align-items: center;
-    background: none;
-    border: 1px solid transparent;
-    border-radius: 999px;
-    padding: .52em .9em;
+  /* Flat household gloss, as Hirst's assistants lay it: one even coat, no
+     edge and no shading. The palest spots hold their circle on the white
+     ground by colour alone, because the canvas is kept 10 clear of every
+     spot along with the spots themselves — see SPOT below. */
+  .spot {
+    position: absolute;
+    left: var(--x, 0px);
+    top: var(--y, 0px);
+    width: var(--d);
+    height: var(--d);
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--k);
     cursor: pointer;
-    color: var(--ink);
-    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      left .45s ease-out, top .45s ease-out, width .45s ease-out, height .45s ease-out,
+      transform .2s ease-out, opacity .3s ease;
+  }
+  .canvas.still, .canvas.still .spot { transition: none; }
+  /* --px/--py are the push from the pointer (see field()). The spot the
+     pointer is on is marked .lit by the script rather than by :hover, so
+     that it is judged from where the spots rest, not from where they have
+     been pushed to; it grows in place. */
+  .spot { transform: translate(var(--px, 0px), var(--py, 0px)); }
+  .spot.lit, .spot:focus-visible { transform: translate(var(--px, 0px), var(--py, 0px)) scale(1.3); }
+  .spot:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  /* A filtered-out book leaves the painting: it fades where it stood while
+     the rest regroup without it. It stops answering the pointer at once
+     rather than after the fade, so nothing on the canvas responds that is
+     not in the picture. */
+  .spot.off {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: none;
+    transition:
+      left .45s ease-out, top .45s ease-out, width .45s ease-out, height .45s ease-out,
+      opacity .3s ease, visibility 0s linear .3s;
+  }
+
+  /* The preview: while a spot is pointed at, its cover, title, author and
+     year. It hangs from the filters, not the painting: under the filter
+     row, lined up with the name and Filter, in the same place whatever
+     shape the grid takes. Its strip is kept free (see reserve()), so it
+     never moves the spots, and it takes no pointer. On a touchscreen it
+     follows a finger sliding over the grid, as it follows a mouse. */
+  .peek {
+    position: absolute;
+    left: var(--margin);
+    top: calc(100% + var(--peek-top, 0px));
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    max-width: calc(100vw - 2 * var(--margin));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .peek.on { opacity: 1; }
+  .peek img, .peek .swatch {
+    flex: none;
+    height: 52px;
+    width: auto;
+    border-radius: 1px 2px 2px 1px;
+    box-shadow: 2px 3px 6px -3px rgba(40,30,20,.4), inset 0 0 0 1px rgba(60,48,32,.14);
+  }
+  .peek .swatch { width: calc(52px * var(--s)); background: var(--k); }
+  .peek p {
+    min-width: 0;
+    padding-bottom: 1px;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
     text-transform: uppercase;
-    white-space: nowrap;
-    transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .2s ease;
+    line-height: 1.7;
+    color: var(--ink-quiet);
   }
-  .opt:hover { color: var(--ink-strong); background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.14); }
-  .opt:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .peek b {
+    display: block;
+    font-weight: 600;
+    color: var(--ink-strong);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-  .opt[aria-pressed="true"] {
+  .empty {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
+  }
+
+  /* The painting's name and count stay on the page for a screen reader,
+     which also hears the count change as the filters do; nobody else needs
+     them, with the filters' own phrase in the bar above. */
+  .unseen {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ---------------------------------------------------------------- foot */
+
+  .rec, .empty, .group legend {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  /* Save image and Send a rec belong to the page, not the painting: a row
+     at the foot of the window, lined up with the name and Filter, that
+     stays put however the grid reshapes. layout() keeps the grid clear of
+     it. */
+  .foot {
+    padding: 0 var(--margin) clamp(14px, 1.8vw, 24px);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1px;
+    /* Pulled out by a button's inset, in the buttons' 11px. */
+    margin-left: calc(-11px * .9);
+  }
+
+  .rec {
+    padding: .52em .9em;
+    color: var(--ink-quiet);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-color: transparent;
+    transition: color .2s ease, text-decoration-color .2s ease;
+  }
+  .rec:hover { color: var(--ink-strong); text-decoration-color: currentColor; }
+  .rec:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .opt[aria-expanded="true"] {
     color: var(--ink-strong);
     background: rgba(0,0,0,.07);
     border-color: rgba(0,0,0,.16);
   }
+  /* While filters are on, the toggle says which, as a phrase rather than a
+     count, so a closed band still says what the painting is showing. */
+  .toggle .n { color: var(--ink-strong); }
 
-  .opt[disabled] { opacity: .34; cursor: default; pointer-events: none; }
-
-  /* The dots divide the column rather than each claiming a fixed width. At a
-     fixed 17px they added up to 209px, which fits the 219px column — until the
-     padding reaches its 40px maximum on a wide window, or a scrollbar takes
-     10px, and the ninth wraps. Sharing the space means nine on one line at any
-     width. */
-  .opts.dots { gap: 6px; padding: .3em .2em; }
-
-  /* Qualified with .opt so the pill hover and pressed backgrounds do not
-     paint over the one thing a dot exists to show. */
-  /* Domed: lit from the upper left like everything else on this site, with a
-     cast shadow underneath so it sits above the paper rather than on it. The
-     overlays are white and black only, so the dome does not tint the colour
-     the dot exists to show. */
-  .opt.dot {
-    position: relative;
-    flex: 1 1 0;
-    min-width: 0;
-    max-width: 20px;
-    height: auto;
-    aspect-ratio: 1;
-    padding: 0;
-    border-radius: 50%;
-    background-color: var(--sw);
-    background-image:
-      radial-gradient(circle at 32% 26%,
-        rgba(255,255,255,.55) 0%, rgba(255,255,255,.16) 34%, rgba(255,255,255,0) 60%),
-      radial-gradient(circle at 70% 86%,
-        rgba(0,0,0,.30) 0%, rgba(0,0,0,0) 58%);
-    border: 1px solid rgba(0,0,0,.22);
-    transition: transform .18s ease, opacity .2s ease;
+  /* Clear undoes rather than chooses, so it is set apart in a pale shade of
+     the site's red block. Inside the band it keeps its place while hidden,
+     so the band's height never changes with it. */
+  .opt.clear {
+    color: rgb(168, 58, 48);
+    background: rgba(201, 74, 63, .09);
+    border-color: rgba(201, 74, 63, .18);
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .3s ease;
   }
-  /* target grown past the dot, kept under half the gap so they never overlap */
-  .opt.dot::after {
-    content: '';
+  .opt.clear:hover {
+    color: rgb(140, 44, 36);
+    background: rgba(201, 74, 63, .15);
+    border-color: rgba(201, 74, 63, .34);
+  }
+  .clear[disabled] { opacity: 0; pointer-events: none; }
+  .clear[hidden] { display: none; }
+
+  /* The filters, in one band under the bar that unrolls left to right from
+     where Filter stands. Opened, it lies over the preview's strip (and on a
+     phone, where the filters wrap into a block, over the top of the spots)
+     on the page's white with a soft edge, and the spots under it are left
+     exactly as they were. Inert while closed. */
+  .band {
     position: absolute;
-    inset: -2px;
-    border-radius: 50%;
-  }
-  /* Lifts a little when pointed at. */
-  .opt.dot:hover {
-    transform: translateY(-1px) scale(1.12);
-    border-color: rgba(0,0,0,.34);
-  }
-
-  /* Pressed in: the cast shadow goes, the crown flattens, and the light now
-     falls on the far wall of the dish instead of the near one. */
-  /* Pressed in. With no shadows left to carry it, the whole read is the
-     gradient flipping corners — the light now falls on the far wall of the
-     dish rather than the near one — so it is pitched harder than the raised
-     state to stay legible. */
-  .opt.dot:active,
-  .opt.dot[aria-pressed="true"] {
-    transform: translateY(1px) scale(.95);
-    background-image:
-      radial-gradient(circle at 34% 22%,
-        rgba(0,0,0,.42) 0%, rgba(0,0,0,.14) 44%, rgba(0,0,0,0) 70%),
-      radial-gradient(circle at 70% 86%,
-        rgba(255,255,255,.30) 0%, rgba(255,255,255,0) 60%);
-  }
-
-  /* Selected carries no ring: the recess is the state. */
-  .opt.dot[aria-pressed="true"] { border-color: rgba(0,0,0,.28); }
-
-  .opt.dot:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 3px;
-  }
-
-  /* Every cover on the shelf as a band of its own colour: ordered by hue and
-     then by shade, or narrowed to one hue once a dot is chosen. */
-  .spectrum {
-    display: flex;
-    height: 0;
-    margin-top: 0;
-    border-radius: 3px;
-    overflow: hidden;
+    left: 0;
+    right: 0;
+    top: 100%;
+    padding: 2px var(--margin) 12px;
+    background: #fcfbf8;
+    box-shadow: 0 14px 18px -14px rgba(40,30,20,.22);
+    clip-path: inset(0 100% -24px 0);
     opacity: 0;
-    transition: height .3s ease, margin-top .3s ease, opacity .3s ease;
+    transition: clip-path .45s ease-out, opacity .3s ease;
   }
-  .spectrum.shown {
-    height: 26px;
-    margin-top: 12px;
-    opacity: 1;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);
-  }
-  .spectrum i {
-    flex: 1 1 0;
-    min-width: 0;
-    background: var(--b);
-    transition: box-shadow .15s ease;
-  }
-  /* A band can be two pixels wide, so the marker has to be the band itself
-     rather than anything drawn around it. */
-  .spectrum i.lit { box-shadow: inset 0 0 0 1px rgba(20, 16, 12, .75); }
-
-  /* A link, not another pill: it leaves the page rather than filtering it, so
-     it is set flush with the labels and the count instead of carrying the
-     pill's inset. The rule is held back until hover, the same way the pills
-     hold back their border — at rest the rail is all text and no chrome. */
-  .rec {
-    display: inline-block;
-    margin-top: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--ink-quiet);
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    /* Low enough to clear the caps. */
-    text-underline-offset: 3px;
-    /* Transparent rather than none, so the rule fades in where a switch from
-       none would pop, and the line box never shifts. */
-    text-decoration-color: transparent;
-    transition: color .2s ease, text-decoration-color .2s ease;
-  }
-  .rec:hover {
-    color: var(--ink-strong);
-    text-decoration-color: currentColor;
-  }
-  .rec:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-
-
-  /* --------------------------------------------------------------- chart */
-
-  .chart-wrap {
-    flex: 1 1 auto;
-    min-width: 0;
-    /* The top matches the rail's, so the first row and the first filter start
-       together under the bar. The foot is only breathing room, so it is the
-       half that gives way when the six rows want more height. */
-    padding: clamp(18px, 2.2vw, 28px) clamp(22px, 2.8vw, 40px) clamp(12px, 1.5vw, 22px);
-  }
-
-  /* The gap between years is kept tight on purpose: every pixel taken out of
-     it is handed to the spines by fitHeight(), which divides what is left of
-     the window between the six rows. The last row's margin buys nothing —
-     .chart-wrap's own padding already sits under it. */
-  .year {
+  .band.open { clip-path: inset(0 0 -24px 0); opacity: 1; }
+  /* Items meet along their foot, so Clear and the close button sit level
+     with the sliders' row even where a group's name stands above its
+     slider. */
+  .filters {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-end;
-    gap: 14px;
-    margin-bottom: clamp(8px, 0.95vw, 14px);
-  }
-  .year:last-child { margin-bottom: 0; }
-  .year[hidden] { display: none; }
-
-  .year-label {
-    flex: 0 0 var(--label-w);
-    width: var(--label-w);
-    text-align: right;
-    padding-bottom: 2px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .12em;
-    color: var(--ink-quiet);
-    font-variant-numeric: tabular-nums;
+    gap: 6px clamp(18px, 2.4vw, 34px);
+    /* Pulled out by a button's inset, so the text in it lines up with the
+       name; stated in the buttons' 11px, not this box's own font size. */
+    margin-left: calc(-11px * .9);
   }
 
-  /* A row is pinned to the width its marks add up to, so when one opens into
-     a cover the others have to give up the difference rather than the row
-     growing. Widths are set from the script — see relayout() and open(). */
-  .row {
-    display: flex;
-    align-items: flex-end;
-    gap: var(--gap);
-    height: var(--mark-h);
-    transition: width .34s ease;
+  /* min-width: 0 because a fieldset is otherwise at least as wide as its
+     contents, and would push the page sideways on a phone rather than let
+     its buttons wrap. */
+  .group { display: flex; align-items: baseline; border: 0; min-width: 0; }
+  .group legend {
+    float: left;
+    flex: none;
+    /* The row is pulled out by .9em of the buttons' 11px; the legend's own
+       10px em would come up short and leave it left of the name above. */
+    padding: 0 .3em 0 calc(11px * .9);
+    font-size: 10px;
+    color: #a49a8e;
   }
-
-  /* One book. Width is its page count; the colour is sampled from its cover,
-     so a row at rest is still that year's palette. */
-  .mark {
+  /* Each group is a slider: its choices sit on one track, and a thumb under
+     the chosen one slides from choice to choice as another is picked, or as
+     it is dragged along the track. The track takes a finger's drag itself
+     rather than scrolling the page. */
+  .track {
     position: relative;
-    flex: 0 0 auto;
-    height: 100%;
-    min-width: 3px;
-    display: block;
-    transform-style: preserve-3d;
-    /* each mark carries its own vanishing point — one shared perspective
-       would skew the marks at the far ends of a long row */
-    transform: perspective(760px) rotateY(0deg);
-    transition: width .34s ease, transform .5s ease, opacity .3s ease, visibility 0s;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    padding: 2px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .045);
+    touch-action: none;
     cursor: pointer;
-    /* --r is set per mark from its width: a fixed radius that reads as a
-       softened corner on a 60px spine turns a 4px one into a lozenge. */
-    border-radius: var(--r, 2px);
   }
-
-  .face {
+  .thumb {
     position: absolute;
-    inset: 0;
-    backface-visibility: hidden;
-    overflow: hidden;
-    border-radius: inherit;
-    box-shadow: inset 0 0 0 1px rgba(60, 48, 32, .16);
+    top: 2px;
+    bottom: 2px;
+    left: var(--tx, 2px);
+    width: var(--tw, 0px);
+    border-radius: 999px;
+    background: #fcfbf8;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .07), 0 1px 3px rgba(40, 30, 20, .16);
+    transition: left .3s ease-out, width .3s ease-out;
   }
-  /* A spine is a curved surface, not a flat swatch: it falls away at both
-     edges and catches the light a little in from the left, where this site's
-     light sits. The overlay is pure black and white at low alpha, so one
-     gradient serves all 106 spines without shifting any of their hues. */
-  .front {
-    background-color: var(--k);
-    background-image: linear-gradient(90deg,
-      rgba(0, 0, 0, .30) 0%,
-      rgba(0, 0, 0, .07) 9%,
-      rgba(255, 255, 255, .15) 26%,
-      rgba(255, 255, 255, .02) 54%,
-      rgba(0, 0, 0, .09) 82%,
-      rgba(0, 0, 0, .26) 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .track .opt {
+    position: relative;
+    z-index: 1;
+    border: 0;
+    background: none;
+    padding: .62em .95em;
   }
-
-  /* Set the way an English spine is: reading down, glyphs turned a quarter
-     clockwise. --t is picked per book against the mark's own colour, since
-     the marks run from near-white to near-black. */
-  .title {
-    writing-mode: vertical-rl;
-    height: 100%;
-    /* --ts is set per mark from its width: a thin spine gets small type
-       rather than no type. Padding follows it so the inset stays in
-       proportion instead of swallowing a short spine. */
-    padding: calc(var(--ts) * 0.9) 0;
-    font-size: var(--ts);
-    font-weight: 600;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    line-height: 1.16;
-    text-align: center;
-    /* In vertical-rl the block axis is horizontal, so max-width is a cap on
-       the number of lines: two of them, and never wider than the spine
-       itself. A short title still sets on one line — the box only grows to
-       the second when the first cannot hold it. */
-    max-width: min(100%, calc(var(--ts) * 2.5));
-    /* Words are never broken. A title too long for its spine is set smaller
-       by fitTitles() until it fits whole; letting it hyphenate instead would
-       strand HYPERI above ON when a resize shortens the row. */
-    overflow-wrap: normal;
-    word-break: normal;
-    hyphens: none;
-    overflow: hidden;
-    color: var(--t);
-    pointer-events: none;
-  }
-
-  /* Tracking is dropped on the narrowest spines, where it buys nothing and
-     costs characters. */
-  .mark.narrow .title { letter-spacing: 0; }
-  .back { transform: rotateY(180deg); background: var(--k); }
-  .back img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-  .mark.open {
-    transform: perspective(760px) rotateY(180deg);
-    z-index: 3;
-  }
-
-  /* Filtered out, but still holding its place in the row so that everything
-     which survives the filter stays exactly where it was. visibility (rather
-     than opacity alone) also takes it out of the tab order and off the
-     accessibility tree, so a hidden book cannot be reached or read out. */
-  .mark.off {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity .3s ease, visibility 0s linear .3s;
-  }
-  .mark:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
-
-  /* Which book the pointer is on is decided by the row, not by each mark's own
-     box — see bindRow(). Marks keep their pointer events so links still work. */
-
-  .empty {
-    padding: 40px 0;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--ink-quiet);
-  }
-
-  /* -------------------------------------------------------------- narrow */
+  .track .opt:hover { background: none; }
+  .track .opt[aria-checked="true"] { color: var(--ink-strong); }
+  .track.dragging .thumb { transition-duration: .2s; }
 
   @media (max-width: 860px) {
-    .shell { flex-direction: column; }
-    .rail {
-      position: static;
-      flex: none;
-      width: 100%;
-      max-height: none;
-      overflow: visible;
-      padding: 26px 20px 4px;
-    }
-    /* Five links and the wordmark will not share a line at this width, so the
-       bar stacks and the row runs left from the same margin. */
-    .topbar {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 22px 20px 16px;
-    }
-    .site-nav { justify-content: flex-start; margin: 0 0 0 -.9em; }
-    .group { margin-bottom: 18px; }
-    .chart-wrap { width: 100%; padding: 18px 20px 60px; }
-    :root { --mark-h: clamp(70px, 22vw, 104px); --label-w: 40px; }
-    /* The rows scroll here and the mark height is fixed, so a tight gap would
-       crowd the years without buying any spine. */
-    .year { margin-bottom: 22px; }
+    :root { --margin: 20px; }
+  }
+  @media (max-width: 560px) {
+    /* On a phone the two actions sit centred under the grid; on a desktop
+       they line up with the name. */
+    .actions { justify-content: center; margin-left: 0; }
+    .group { flex-direction: column; align-items: flex-start; }
+    .group legend { width: 100%; margin: 4px 0 3px; padding-left: 0; }
+    /* Stacked, each slider's own edge lines up with the name rather than
+       the text inside it, and the close button takes the band's top corner
+       so it never wraps onto a line of its own. */
+    .filters { margin-left: 0; }
+    .band-close { position: absolute; top: 0; right: calc(var(--margin) - 11px * .9); margin: 0; }
+    /* Narrow enough for the year's seven stops on the smallest phones. */
+    .track .opt { padding: .62em .72em; letter-spacing: .12em; }
+  }
 
-    .readout { margin-top: 14px; }
+  /* ---------------------------------------------------------------- card */
+
+  /* A spot's first click opens its card over the painting: the cover, and
+     when it was read, what kind of book it is and whether it is
+     recommended. The painting stays where it is behind a veil of the page's
+     white; the cover itself is the way through to buying it. */
+  .card {
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: #fcfbf8;
+    color: var(--ink);
+    box-shadow:
+      0 0 0 1px rgba(60,48,32,.08),
+      0 24px 60px -18px rgba(40,30,20,.38);
+    max-width: min(620px, calc(100vw - 2 * var(--margin)));
+    max-height: calc(100vh - 2 * var(--margin));
+    opacity: 0;
+    transform: translateY(8px) scale(.98);
+    transition: opacity .3s ease-out, transform .3s ease-out, overlay .3s allow-discrete, display .3s allow-discrete;
+  }
+  .card[open] { opacity: 1; transform: none; }
+  @starting-style { .card[open] { opacity: 0; transform: translateY(8px) scale(.98); } }
+  .card::backdrop {
+    background: rgba(252,251,248,.72);
+    opacity: 0;
+    transition: opacity .3s ease-out, overlay .3s allow-discrete, display .3s allow-discrete;
+  }
+  .card[open]::backdrop { opacity: 1; }
+  @starting-style { .card[open]::backdrop { opacity: 0; } }
+
+  .card-body {
+    display: flex;
+    gap: clamp(20px, 3vw, 32px);
+    padding: clamp(20px, 3vw, 30px);
+  }
+
+  /* The cover is the link. It lifts a little when pointed at, as a book
+     picked up would, and says where it goes underneath. */
+  .buy {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink-quiet);
+  }
+  .buy .art {
+    display: block;
+    height: clamp(200px, 34vh, 290px);
+    width: auto;
+    border-radius: 1.5px 3px 3px 1.5px;
+    box-shadow: 3px 5px 12px -4px rgba(40,30,20,.42), inset 0 0 0 1px rgba(60,48,32,.14);
+    transition: transform .3s ease-out, box-shadow .3s ease-out;
+  }
+  .buy .art.swatch { width: calc(clamp(200px, 34vh, 290px) * var(--s)); background: var(--k); }
+  .buy:hover .art { transform: translateY(-3px); box-shadow: 6px 12px 22px -6px rgba(40,30,20,.42), inset 0 0 0 1px rgba(60,48,32,.14); }
+  .buy:hover { color: var(--ink-strong); }
+  .buy:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 3px; }
+  .buy span, .facts dt, .card-close, .card h2, .card .by {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+  .buy span { transition: color .2s ease; }
+
+  .card-text { min-width: 0; display: flex; flex-direction: column; padding-top: 2px; }
+  .card h2 { color: var(--ink-strong); font-size: 13px; line-height: 1.45; }
+  .card .by { color: var(--ink-quiet); margin-top: 4px; }
+  .facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 22px;
+    margin-top: 28px;
+    font-size: 13px;
+    color: var(--ink-strong);
+  }
+  .facts dt { font-size: 10px; color: #a49a8e; padding-top: 2px; }
+
+  .card-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
+
+  @media (max-width: 560px) {
+    /* Full width, so the cover at its top left stays clear of the close
+       button at the top right. */
+    .card { width: calc(100vw - 2 * var(--margin)); }
+    .card-body { flex-direction: column; align-items: flex-start; }
+    .buy .art { height: 220px; }
+    .buy .art.swatch { width: calc(220px * var(--s)); }
+    .facts { margin-top: 18px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: .01s !important;
       transition-duration: .01s !important;
+      transition-delay: 0s !important;
     }
   }
 </style>
@@ -516,47 +649,69 @@
 
 <body>
 
-<!-- The same destinations as the home page's menu, in the same order. Writing
-     is a disclosure there because it has no page of its own; across a bar there
-     is room to just list what it holds. Bookshelf is left out because the label
-     in the rail already says where you are. -->
 <header class="topbar">
   <a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
-  <nav class="site-nav" aria-label="Primary">
-    <a href="about.html">About</a>
-    <a href="fatherhood.html">Fatherhood</a>
-    <a href="research.html">Research</a>
-    <a href="links.html">Canon</a>
-    <a href="mailto:adam@acld.xyz">Contact</a>
-  </nav>
+  <h1 class="page-name">Bookshelf</h1>
+  <div class="filterline" id="filterline">
+    <button type="button" class="opt toggle" id="toggle" aria-expanded="false" aria-controls="band">Filter<span class="n" id="n"></span></button>
+    <button type="button" class="opt clear" id="qclear" aria-label="Clear filters" hidden>Clear</button>
+  </div>
+  <div class="menu">
+    <nav class="site-nav" id="site-nav" aria-label="Primary" inert>
+      <a href="about.html">About</a>
+      <a href="fatherhood.html">Fatherhood</a>
+      <a href="research.html">Research</a>
+      <a href="links.html">Canon</a>
+      <a href="mailto:adam@acld.xyz">Contact</a>
+    </nav>
+    <button type="button" class="burger" id="burger" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+  <div class="peek" id="peek" aria-hidden="true"></div>
+  <div class="band" id="band" inert>
+    <div class="filters" id="filters"></div>
+  </div>
 </header>
 
-<div class="shell">
+<main class="gallery" id="gallery">
+  <figure class="work">
+    <div class="canvas" id="canvas" role="group" aria-label="One spot per book, newest first">
+      <p class="empty" id="empty" hidden>No book is all of those</p>
+    </div>
 
-  <aside class="rail">
-    <h1 class="page-label">Bookshelf</h1>
+    <div class="unseen">
+      <p id="count" aria-live="polite"></p>
+    </div>
+  </figure>
+</main>
 
-    <div id="filters"></div>
+<footer class="foot" id="foot">
+  <div class="actions">
+    <button type="button" class="opt" id="save">Save image</button>
+    <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send a rec</a>
+  </div>
+</footer>
 
-    <!-- The count answers the filters above it, so it reads as their result
-         rather than as another one of them. -->
-    <p class="readout" id="readout" aria-live="polite"></p>
-
-    <!-- An invitation, not a filter — hence a link rather than a pill. -->
-    <a class="rec" href="mailto:adam@acld.xyz?subject=Book%20recommendation&amp;body=Title%3A%0D%0A%0D%0AAuthor%3A%0D%0A%0D%0AWhy%3A%0D%0A%0D%0A">Send me a rec</a>
-  </aside>
-
-  <main class="chart-wrap">
-    <div id="years"></div>
-    <p class="empty" id="empty" hidden>Nothing on that shelf</p>
-  </main>
-
-</div>
+<dialog class="card" id="card" aria-labelledby="card-title">
+  <div class="card-body">
+    <a class="buy" id="card-buy" target="_blank" rel="noopener"></a>
+    <div class="card-text">
+      <h2 id="card-title"></h2>
+      <p class="by" id="card-by"></p>
+      <dl class="facts">
+        <dt>Read</dt><dd id="card-read"></dd>
+        <dt>Genre</dt><dd id="card-genre"></dd>
+        <dt>Recommended</dt><dd id="card-rec"></dd>
+      </dl>
+    </div>
+  </div>
+  <button type="button" class="opt card-close" id="card-close" aria-label="Close">✕</button>
+</dialog>
 
 <script>
 /* t title · a author · y year · r recommendation · g genre · c colour family
    k dominant hex · s cover aspect (w/h) · p pages · u cover */
 var books = [
+  { t: "The Genius Zone", a: "Gay Hendricks", y: "2026", r: "X", g: "Non-Fiction", c: "White", k: "#f2f4f3", s: 0.644, p: 160, u: "https://m.media-amazon.com/images/P/1250246547.01.L.jpg" },
   { t: "Children of Time", a: "Adrian Tchaikovsky", y: "2026", r: "X", g: "Sci-Fi", c: "Green", k: "#3f7a5a", s: 0.651, p: 416, u: "https://m.media-amazon.com/images/P/0316452505.01.L.jpg" },
   { t: "The Big Leap", a: "Gay Hendricks", y: "2026", r: "X", g: "Non-Fiction", c: "White", k: "#e8e4da", s: 0.667, p: 224, u: "https://m.media-amazon.com/images/P/0061735361.01.L.jpg" },
   { t: "The Tao of Fundraising", a: "John Kim", y: "2026", r: "X", g: "Non-Fiction", c: "White", k: "#e8e4da", s: 0.667, p: 256, u: "https://m.media-amazon.com/images/P/163763496X.01.L.jpg" },
@@ -573,103 +728,103 @@ var books = [
   { t: "How to Change Your Mind", a: "Michael Pollan", y: "2026", r: "X", g: "Non-Fiction", c: "Blue", k: "#5288ad", s: 0.636, p: 480, u: "https://covers.openlibrary.org/b/id/8805168-L.jpg" },
   { t: "The Art of Learning", a: "Josh Waitzkin", y: "2026", r: "X", g: "Non-Fiction", c: "Orange", k: "#d24514", s: 0.662, p: 288, u: "https://covers.openlibrary.org/b/id/475008-L.jpg" },
   { t: "Blood Music", a: "Greg Bear", y: "2026", r: "X", g: "Sci-Fi", c: "White", k: "#ffffff", s: 0.616, p: 320, u: "https://covers.openlibrary.org/b/id/477227-L.jpg" },
-  { t: "Concrete Island", a: "J.G. Ballard", y: "2026", r: "", g: "Novel", c: "Black", k: "#191014", s: 0.656, p: 176, u: "https://books.google.com/books/content?id=8azfAAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Who: The A Method for Hiring", a: "Geoff Smart", y: "2026", r: "", g: "Non-Fiction", c: "White", k: "#ffffff", s: 0.734, p: 208, u: "https://books.google.com/books/content?id=38lvDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Gate of the Feral Gods", a: "Matt Dinniman", y: "2026", r: "X", g: "Sci-Fi", c: "Black", k: "#000003", s: 0.665, p: 608, u: "https://books.google.com/books/content?id=tuYrEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Among Friends", a: "Hal Ebbott", y: "2026", r: "X", g: "Novel", c: "Brown", k: "#854113", s: 0.663, p: 352, u: "https://books.google.com/books/content?id=QGgwEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Concrete Island", a: "J.G. Ballard", y: "2026", r: "", g: "Novel", c: "Black", k: "#180f13", s: 0.665, p: 176, u: "https://covers.openlibrary.org/b/id/181638-L.jpg" },
+  { t: "Who: The A Method for Hiring", a: "Geoff Smart", y: "2026", r: "", g: "Non-Fiction", c: "White", k: "#ffffff", s: 0.684, p: 208, u: "https://m.media-amazon.com/images/P/0345504194.01.L.jpg" },
+  { t: "Gate of the Feral Gods", a: "Matt Dinniman", y: "2026", r: "X", g: "Sci-Fi", c: "Black", k: "#010101", s: 0.661, p: 608, u: "https://covers.openlibrary.org/b/id/15258911-L.jpg" },
+  { t: "Among Friends", a: "Hal Ebbott", y: "2026", r: "X", g: "Novel", c: "Brown", k: "#e95a4c", s: 0.65, p: 352, u: "https://m.media-amazon.com/images/P/1035055430.01.L.jpg" },
   { t: "There Is No Antimemetics Division", a: "qntm", y: "2026", r: "", g: "Sci-Fi", c: "Orange", k: "#e38962", s: 0.6, p: 234, u: "https://covers.openlibrary.org/b/id/11457905-L.jpg" },
   { t: "Trail Wise, Path Ways", a: "John Illig", y: "2026", r: "", g: "Non-Fiction", c: "White", k: "#fcfdfd", s: 0.625, p: 184, u: "https://covers.openlibrary.org/b/id/3793932-L.jpg" },
   { t: "Breakneck", a: "Dan Wang", y: "2026", r: "S", g: "Non-Fiction", c: "Brown", k: "#726847", s: 0.712, p: 224, u: "https://covers.openlibrary.org/b/id/15121652-L.jpg" },
-  { t: "Permutation City", a: "Greg Egan", y: "2026", r: "X", g: "Sci-Fi", c: "White", k: "#a8a489", s: 0.65, p: 377, u: "https://books.google.com/books/content?id=_37NGwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Thinking Machine", a: "Stephen Witt", y: "2026", r: "X", g: "Non-Fiction", c: "Green", k: "#2fd42f", s: 0.642, p: 272, u: "https://books.google.com/books/content?id=ywwCEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Food Rules: An Eater's Manual", a: "Michael Pollan", y: "2026", r: "", g: "Non-Fiction", c: "White", k: "#ffffff", s: 0.579, p: 160, u: "https://books.google.com/books/content?id=1ZuJDQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Metamorphosis of Prime Intellect", a: "Roger Williams", y: "2026", r: "X", g: "Sci-Fi", c: "White", k: "#ffffff", s: 0.616, p: 176, u: "https://books.google.com/books/content?id=JgccBdnUHT8C&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Never Let Me Go", a: "Kazuo Ishiguro", y: "2026", r: "", g: "Sci-Fi", c: "White", k: "#cfc8be", s: 0.707, p: 304, u: "https://books.google.com/books/content?id=qLfZf7f5_pkC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Ministry of Time", a: "Kaliane Bradley", y: "2026", r: "", g: "Sci-Fi", c: "Black", k: "#000000", s: 0.661, p: 339, u: "https://books.google.com/books/content?id=x8f0EAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Blindsight", a: "Peter Watts", y: "2026", r: "X", g: "Sci-Fi", c: "Green", k: "#c1f014", s: 0.665, p: 384, u: "https://books.google.com/books/content?id=FVMzz-xINLsC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Into Thin Air", a: "Jon Krakauer", y: "2025", r: "X", g: "Non-Fiction", c: "White", k: "#fefefe", s: 0.696, p: 320, u: "https://books.google.com/books/content?id=3FONDQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Sense of an Ending", a: "Julian Barnes", y: "2025", r: "S", g: "Novel", c: "Black", k: "#191b32", s: 0.628, p: 160, u: "https://books.google.com/books/content?id=IHhD0QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Permutation City", a: "Greg Egan", y: "2026", r: "X", g: "Sci-Fi", c: "White", k: "#9f9e9d", s: 0.65, p: 377, u: "https://covers.openlibrary.org/b/id/10957051-L.jpg" },
+  { t: "The Thinking Machine", a: "Stephen Witt", y: "2026", r: "X", g: "Non-Fiction", c: "Green", k: "#11660d", s: 0.652, p: 272, u: "https://covers.openlibrary.org/b/id/15131358-L.jpg" },
+  { t: "Food Rules: An Eater's Manual", a: "Michael Pollan", y: "2026", r: "", g: "Non-Fiction", c: "White", k: "#ffffff", s: 0.614, p: 160, u: "https://covers.openlibrary.org/b/id/6305235-L.jpg" },
+  { t: "The Metamorphosis of Prime Intellect", a: "Roger Williams", y: "2026", r: "X", g: "Sci-Fi", c: "White", k: "#fefefe", s: 0.666, p: 176, u: "https://covers.openlibrary.org/b/id/757078-L.jpg" },
+  { t: "Never Let Me Go", a: "Kazuo Ishiguro", y: "2026", r: "", g: "Sci-Fi", c: "White", k: "#ffffff", s: 0.648, p: 304, u: "https://covers.openlibrary.org/b/id/13160732-L.jpg" },
+  { t: "The Ministry of Time", a: "Kaliane Bradley", y: "2026", r: "", g: "Sci-Fi", c: "Black", k: "#000000", s: 0.662, p: 339, u: "https://covers.openlibrary.org/b/id/15154821-L.jpg" },
+  { t: "Blindsight", a: "Peter Watts", y: "2026", r: "X", g: "Sci-Fi", c: "Green", k: "#0d0d17", s: 0.642, p: 384, u: "https://covers.openlibrary.org/b/id/15087925-L.jpg" },
+  { t: "Into Thin Air", a: "Jon Krakauer", y: "2025", r: "X", g: "Non-Fiction", c: "White", k: "#ede9f0", s: 0.693, p: 320, u: "https://covers.openlibrary.org/b/id/419166-L.jpg" },
+  { t: "The Sense of an Ending", a: "Julian Barnes", y: "2025", r: "S", g: "Novel", c: "Black", k: "#231f20", s: 0.706, p: 160, u: "https://m.media-amazon.com/images/P/0307957128.01.L.jpg" },
   { t: "The Ocean at the End of the Lane", a: "Neil Gaiman", y: "2025", r: "X", g: "Fantasy", c: "Blue", k: "#557b8a", s: 0.694, p: 224, u: "https://covers.openlibrary.org/b/id/7258156-L.jpg" },
-  { t: "Einstein's Dreams", a: "Alan Lightman", y: "2025", r: "A", g: "Novel", c: "Orange", k: "#b67240", s: 0.67, p: 179, u: "https://books.google.com/books/content?id=RZVNCVpyuIcC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Einstein's Dreams", a: "Alan Lightman", y: "2025", r: "A", g: "Novel", c: "Orange", k: "#8d5940", s: 0.734, p: 179, u: "https://covers.openlibrary.org/b/id/287763-L.jpg" },
   { t: "Contact", a: "Carl Sagan", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#555756", s: 0.644, p: 384, u: "https://covers.openlibrary.org/b/id/8798315-L.jpg" },
-  { t: "The Fall of Hyperion", a: "Dan Simmons", y: "2025", r: "X", g: "Sci-Fi", c: "Blue", k: "#637888", s: 0.637, p: 528, u: "https://books.google.com/books/content?id=F4P4DwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "A Short Stay in Hell", a: "Steven L. Peck", y: "2025", r: "", g: "Fantasy", c: "Brown", k: "#5c5649", s: 0.667, p: 102, u: "https://books.google.com/books/content?id=V282uQAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Orbital", a: "Samantha Harvey", y: "2025", r: "S", g: "Novel", c: "Orange", k: "#cf7758", s: 0.692, p: 193, u: "https://books.google.com/books/content?id=3QPkEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Semiosis", a: "Sue Burke", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#040304", s: 0.688, p: 333, u: "https://books.google.com/books/content?id=8TdCDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Dungeon Anarchist's Cookbook", a: "Matt Dinniman", y: "2025", r: "X", g: "Sci-Fi", c: "Red", k: "#f94444", s: 0.711, p: 784, u: "https://books.google.com/books/content?id=0rhmEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Solaris", a: "Stanislaw Lem", y: "2025", r: "", g: "Sci-Fi", c: "White", k: "#fcfbfe", s: 0.646, p: 234, u: "https://books.google.com/books/content?id=w6-kOwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Carl's Doomsday Scenario", a: "Matt Dinniman", y: "2025", r: "X", g: "Sci-Fi", c: "Purple", k: "#fd01db", s: 0.642, p: 384, u: "https://books.google.com/books/content?id=COoCEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Dungeon Crawler Carl", a: "Matt Dinniman", y: "2025", r: "A", g: "Sci-Fi", c: "Orange", k: "#f9bf1b", s: 0.669, p: 480, u: "https://books.google.com/books/content?id=506EEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Murderbot: Exit Strategy", a: "Martha Wells", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#122427", s: 0.653, p: 336, u: "https://books.google.com/books/content?id=n48hEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "I, Robot", a: "Isaac Asimov", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#060002", s: 0.663, p: 304, u: "https://books.google.com/books/content?id=2vnbMzYXBQsC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Jurassic Park", a: "Michael Crichton", y: "2025", r: "S", g: "Sci-Fi", c: "White", k: "#ffffff", s: 0.582, p: 464, u: "https://books.google.com/books/content?id=MNeEFe9qU3cC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Project Hail Mary", a: "Andy Weir", y: "2025", r: "S", g: "Sci-Fi", c: "Blue", k: "#03353d", s: 0.65, p: 496, u: "https://books.google.com/books/content?id=-Ff2DwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Upgrade", a: "Blake Crouch", y: "2025", r: "", g: "Sci-Fi", c: "Blue", k: "#0452b4", s: 0.65, p: 352, u: "https://books.google.com/books/content?id=Gj9JEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Annie Bot", a: "Sierra Greer", y: "2025", r: "", g: "Sci-Fi", c: "Red", k: "#d36585", s: 0.656, p: 240, u: "https://books.google.com/books/content?id=4---EAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Golden Son", a: "Pierce Brown", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#000000", s: 0.667, p: 464, u: "https://books.google.com/books/content?id=B4zIAgAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Left Hand of Darkness", a: "Ursula K. Le Guin", y: "2025", r: "", g: "Sci-Fi", c: "Blue", k: "#63c9dc", s: 0.637, p: 320, u: "https://books.google.com/books/content?id=zhERCgAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Fall of Hyperion", a: "Dan Simmons", y: "2025", r: "X", g: "Sci-Fi", c: "Blue", k: "#06070a", s: 0.648, p: 528, u: "https://covers.openlibrary.org/b/id/15258763-L.jpg" },
+  { t: "A Short Stay in Hell", a: "Steven L. Peck", y: "2025", r: "", g: "Fantasy", c: "Brown", k: "#b6a591", s: 0.695, p: 102, u: "https://covers.openlibrary.org/b/id/13012357-L.jpg" },
+  { t: "Orbital", a: "Samantha Harvey", y: "2025", r: "S", g: "Novel", c: "Orange", k: "#c47b72", s: 0.692, p: 193, u: "https://covers.openlibrary.org/b/id/14829832-L.jpg" },
+  { t: "Semiosis", a: "Sue Burke", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#090909", s: 0.662, p: 333, u: "https://m.media-amazon.com/images/P/0765391368.01.L.jpg" },
+  { t: "The Dungeon Anarchist's Cookbook", a: "Matt Dinniman", y: "2025", r: "X", g: "Sci-Fi", c: "Red", k: "#030102", s: 0.662, p: 784, u: "https://m.media-amazon.com/images/P/0593820282.01.L.jpg" },
+  { t: "Solaris", a: "Stanislaw Lem", y: "2025", r: "", g: "Sci-Fi", c: "White", k: "#121115", s: 0.65, p: 234, u: "https://covers.openlibrary.org/b/id/10116589-L.jpg" },
+  { t: "Carl's Doomsday Scenario", a: "Matt Dinniman", y: "2025", r: "X", g: "Sci-Fi", c: "Purple", k: "#010101", s: 0.667, p: 384, u: "https://covers.openlibrary.org/b/id/15255001-L.jpg" },
+  { t: "Dungeon Crawler Carl", a: "Matt Dinniman", y: "2025", r: "A", g: "Sci-Fi", c: "Orange", k: "#0c0b09", s: 0.666, p: 480, u: "https://covers.openlibrary.org/b/id/15255497-L.jpg" },
+  { t: "Murderbot: Exit Strategy", a: "Martha Wells", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#282122", s: 0.662, p: 336, u: "https://covers.openlibrary.org/b/id/10537131-L.jpg" },
+  { t: "I, Robot", a: "Isaac Asimov", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#090607", s: 0.668, p: 304, u: "https://covers.openlibrary.org/b/id/11395675-L.jpg" },
+  { t: "Jurassic Park", a: "Michael Crichton", y: "2025", r: "S", g: "Sci-Fi", c: "White", k: "#0f0e0e", s: 0.65, p: 464, u: "https://covers.openlibrary.org/b/id/15276301-L.jpg" },
+  { t: "Project Hail Mary", a: "Andy Weir", y: "2025", r: "S", g: "Sci-Fi", c: "Blue", k: "#1d373e", s: 0.661, p: 496, u: "https://covers.openlibrary.org/b/id/15236532-L.jpg" },
+  { t: "Upgrade", a: "Blake Crouch", y: "2025", r: "", g: "Sci-Fi", c: "Blue", k: "#f1f5fa", s: 0.648, p: 352, u: "https://covers.openlibrary.org/b/id/13813073-L.jpg" },
+  { t: "Annie Bot", a: "Sierra Greer", y: "2025", r: "", g: "Sci-Fi", c: "Red", k: "#de6080", s: 0.648, p: 240, u: "https://covers.openlibrary.org/b/id/15099057-L.jpg" },
+  { t: "Golden Son", a: "Pierce Brown", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#0d0906", s: 0.658, p: 464, u: "https://covers.openlibrary.org/b/id/14624865-L.jpg" },
+  { t: "The Left Hand of Darkness", a: "Ursula K. Le Guin", y: "2025", r: "", g: "Sci-Fi", c: "Blue", k: "#ced8cf", s: 0.662, p: 320, u: "https://covers.openlibrary.org/b/id/11932333-L.jpg" },
   { t: "Chapterhouse Dune", a: "Frank Herbert", y: "2025", r: "", g: "Sci-Fi", c: "Black", k: "#0c0c02", s: 0.558, p: 624, u: "https://covers.openlibrary.org/b/id/8580276-L.jpg" },
-  { t: "Counter-Intelligence", a: "Robert Hannigan", y: "2025", r: "", g: "Non-Fiction", c: "Brown", k: "#654d46", s: 0.665, p: 336, u: "https://books.google.com/books/content?id=e2fXEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Murderbot: Rogue Protocol", a: "Martha Wells", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#212121", s: 0.627, p: 160, u: "https://books.google.com/books/content?id=JvAyDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Murderbot: Artificial Condition", a: "Martha Wells", y: "2025", r: "X", g: "Sci-Fi", c: "Brown", k: "#332a20", s: 0.627, p: 176, u: "https://books.google.com/books/content?id=oTU0DwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Hyperion", a: "Dan Simmons", y: "2024", r: "X", g: "Sci-Fi", c: "Orange", k: "#cc7452", s: 0.653, p: 496, u: "https://books.google.com/books/content?id=8nsmEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Counter-Intelligence", a: "Robert Hannigan", y: "2025", r: "", g: "Non-Fiction", c: "Brown", k: "#f0eceb", s: 0.654, p: 336, u: "https://m.media-amazon.com/images/P/0008398577.01.L.jpg" },
+  { t: "Murderbot: Rogue Protocol", a: "Martha Wells", y: "2025", r: "X", g: "Sci-Fi", c: "Black", k: "#181819", s: 0.662, p: 160, u: "https://covers.openlibrary.org/b/id/14318440-L.jpg" },
+  { t: "Murderbot: Artificial Condition", a: "Martha Wells", y: "2025", r: "X", g: "Sci-Fi", c: "Brown", k: "#664730", s: 0.662, p: 176, u: "https://covers.openlibrary.org/b/id/10537139-L.jpg" },
+  { t: "Hyperion", a: "Dan Simmons", y: "2024", r: "X", g: "Sci-Fi", c: "Orange", k: "#b5842c", s: 0.666, p: 496, u: "https://covers.openlibrary.org/b/id/8513391-L.jpg" },
   { t: "The Return of the King", a: "J.R.R. Tolkien", y: "2024", r: "X", g: "Fantasy", c: "Black", k: "#000000", s: 0.636, p: 401, u: "https://covers.openlibrary.org/b/id/8461498-L.jpg" },
   { t: "The Two Towers", a: "J.R.R. Tolkien", y: "2024", r: "", g: "Fantasy", c: "Green", k: "#737562", s: 0.638, p: 464, u: "https://covers.openlibrary.org/b/id/12617859-L.jpg" },
   { t: "The Fellowship of the Ring", a: "J.R.R. Tolkien", y: "2024", r: "", g: "Fantasy", c: "Black", k: "#000000", s: 0.639, p: 539, u: "https://covers.openlibrary.org/b/id/15173637-L.jpg" },
-  { t: "A River Runs Through It", a: "Norman Maclean", y: "2024", r: "", g: "Novel", c: "White", k: "#ffffff", s: 0.65, p: 161, u: "https://books.google.com/books/content?id=otrz-KkRIBEC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Murderbot: All Systems Red", a: "Martha Wells", y: "2024", r: "X", g: "Sci-Fi", c: "Black", k: "#312f28", s: 0.634, p: 144, u: "https://books.google.com/books/content?id=ZSu2DQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Hobbit", a: "J.R.R. Tolkien", y: "2024", r: "", g: "Fantasy", c: "Black", k: "#393a3e", s: 0.699, p: 320, u: "https://books.google.com/books/content?id=U799AY3yfqcC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Do Androids Dream of Electric Sheep", a: "Philip K. Dick", y: "2024", r: "X", g: "Sci-Fi", c: "White", k: "#a9adb3", s: 0.715, p: 256, u: "https://books.google.com/books/content?id=jUX8N9kiCiQC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Man Who Solved the Market", a: "Gregory Zuckerman", y: "2023", r: "X", g: "Non-Fiction", c: "Black", k: "#222222", s: 0.663, p: 384, u: "https://books.google.com/books/content?id=YUmHDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Sounds of Life", a: "Karen Bakker", y: "2023", r: "X", g: "Non-Fiction", c: "Black", k: "#010101", s: 0.656, p: 368, u: "https://books.google.com/books/content?id=DldsEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Hidden Life of Trees", a: "Peter Wohlleben", y: "2023", r: "S", g: "Non-Fiction", c: "White", k: "#f7f6e4", s: 0.652, p: 288, u: "https://books.google.com/books/content?id=WEn4DAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Billion Dollar Whale", a: "Tom Wright", y: "2023", r: "", g: "Non-Fiction", c: "White", k: "#dfedf6", s: 0.66, p: 400, u: "https://books.google.com/books/content?id=CVWYDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Kill Chain", a: "Christian Brose", y: "2023", r: "", g: "Non-Fiction", c: "Black", k: "#050505", s: 0.667, p: 320, u: "https://books.google.com/books/content?id=CW-nDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "A River Runs Through It", a: "Norman Maclean", y: "2024", r: "", g: "Novel", c: "White", k: "#f8f8f6", s: 0.663, p: 161, u: "https://covers.openlibrary.org/b/id/141911-L.jpg" },
+  { t: "Murderbot: All Systems Red", a: "Martha Wells", y: "2024", r: "X", g: "Sci-Fi", c: "Black", k: "#546a65", s: 0.626, p: 144, u: "https://covers.openlibrary.org/b/id/9157148-L.jpg" },
+  { t: "The Hobbit", a: "J.R.R. Tolkien", y: "2024", r: "", g: "Fantasy", c: "Black", k: "#d4d0bf", s: 0.642, p: 320, u: "https://covers.openlibrary.org/b/id/14844408-L.jpg" },
+  { t: "Do Androids Dream of Electric Sheep", a: "Philip K. Dick", y: "2024", r: "X", g: "Sci-Fi", c: "White", k: "#e2dbcd", s: 0.712, p: 256, u: "https://covers.openlibrary.org/b/id/7240822-L.jpg" },
+  { t: "The Man Who Solved the Market", a: "Gregory Zuckerman", y: "2023", r: "X", g: "Non-Fiction", c: "Black", k: "#2f2b29", s: 0.655, p: 384, u: "https://covers.openlibrary.org/b/id/15255081-L.jpg" },
+  { t: "The Sounds of Life", a: "Karen Bakker", y: "2023", r: "X", g: "Non-Fiction", c: "Black", k: "#010101", s: 0.658, p: 368, u: "https://covers.openlibrary.org/b/id/14645234-L.jpg" },
+  { t: "Hidden Life of Trees", a: "Peter Wohlleben", y: "2023", r: "S", g: "Non-Fiction", c: "White", k: "#f7f6e4", s: 0.7, p: 288, u: "https://m.media-amazon.com/images/P/1771642483.01.L.jpg" },
+  { t: "Billion Dollar Whale", a: "Tom Wright", y: "2023", r: "", g: "Non-Fiction", c: "White", k: "#236292", s: 0.667, p: 400, u: "https://covers.openlibrary.org/b/id/14833559-L.jpg" },
+  { t: "The Kill Chain", a: "Christian Brose", y: "2023", r: "", g: "Non-Fiction", c: "Black", k: "#25271f", s: 0.674, p: 320, u: "https://covers.openlibrary.org/b/id/10368066-L.jpg" },
   { t: "Heretics of Dune", a: "Frank Herbert", y: "2023", r: "X", g: "Sci-Fi", c: "Black", k: "#020202", s: 0.558, p: 688, u: "https://covers.openlibrary.org/b/id/8597984-L.jpg" },
-  { t: "The Three Body Problem", a: "Liu Cixin", y: "2023", r: "X", g: "Sci-Fi", c: "Blue", k: "#3070ac", s: 0.656, p: 399, u: "https://books.google.com/books/content?id=QxbFBAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Three Body Problem", a: "Liu Cixin", y: "2023", r: "X", g: "Sci-Fi", c: "Blue", k: "#1a3979", s: 0.662, p: 399, u: "https://m.media-amazon.com/images/P/0765382032.01.L.jpg" },
   { t: "Red Rising", a: "Pierce Brown", y: "2023", r: "X", g: "Sci-Fi", c: "Red", k: "#b72a2a", s: 0.667, p: 416, u: "https://covers.openlibrary.org/b/id/8185003-L.jpg" },
-  { t: "Troy", a: "Stephen Fry", y: "2023", r: "X", g: "Novel", c: "Black", k: "#171817", s: 0.626, p: 413, u: "https://books.google.com/books/content?id=lRsszgEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Speaker for the Dead", a: "Orson Scott Card", y: "2023", r: "X", g: "Sci-Fi", c: "Black", k: "#19181b", s: 0.637, p: 336, u: "https://books.google.com/books/content?id=s_VYLwEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Troy", a: "Stephen Fry", y: "2023", r: "X", g: "Novel", c: "Black", k: "#191919", s: 0.652, p: 413, u: "https://covers.openlibrary.org/b/id/11764332-L.jpg" },
+  { t: "Speaker for the Dead", a: "Orson Scott Card", y: "2023", r: "X", g: "Sci-Fi", c: "Black", k: "#020103", s: 0.644, p: 336, u: "https://covers.openlibrary.org/b/id/11257940-L.jpg" },
   { t: "Ender's Game", a: "Orson Scott Card", y: "2023", r: "A", g: "Sci-Fi", c: "Black", k: "#252828", s: 0.608, p: 357, u: "https://covers.openlibrary.org/b/id/8185355-L.jpg" },
-  { t: "A View from the Bridge", a: "Arthur Miller", y: "2023", r: "A", g: "Play", c: "Green", k: "#429539", s: 0.642, p: 96, u: "https://books.google.com/books/content?id=4mdNnDqkU8EC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Paper Menagerie and Other Stories", a: "Ken Liu", y: "2023", r: "X", g: "Sci-Fi", c: "White", k: "#f4f3f1", s: 0.667, p: 450, u: "https://books.google.com/books/content?id=Y3QmDQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Creative Act: A Way of Being", a: "Rick Rubin", y: "2023", r: "", g: "Non-Fiction", c: "White", k: "#cacec6", s: 0.681, p: 432, u: "https://books.google.com/books/content?id=l3dtEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "A View from the Bridge", a: "Arthur Miller", y: "2023", r: "A", g: "Play", c: "Green", k: "#909196", s: 0.65, p: 96, u: "https://covers.openlibrary.org/b/id/14681538-L.jpg" },
+  { t: "The Paper Menagerie and Other Stories", a: "Ken Liu", y: "2023", r: "X", g: "Sci-Fi", c: "White", k: "#f4f4f4", s: 0.667, p: 450, u: "https://covers.openlibrary.org/b/id/15123229-L.jpg" },
+  { t: "The Creative Act: A Way of Being", a: "Rick Rubin", y: "2023", r: "", g: "Non-Fiction", c: "White", k: "#b5b7be", s: 0.661, p: 432, u: "https://covers.openlibrary.org/b/id/14813663-L.jpg" },
   { t: "God Emperor of Dune", a: "Frank Herbert", y: "2023", r: "A", g: "Sci-Fi", c: "Green", k: "#215e42", s: 0.666, p: 496, u: "https://covers.openlibrary.org/b/id/10226364-L.jpg" },
-  { t: "The Age of A.I. and our Human Future", a: "Henry Kissinger", y: "2023", r: "", g: "Non-Fiction", c: "Blue", k: "#8cb9cf", s: 0.715, p: 254, u: "https://books.google.com/books/content?id=PrEhzgEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Rocket Men", a: "Robert Kurson", y: "2023", r: "X", g: "Non-Fiction", c: "White", k: "#a9c3c2", s: 0.67, p: 384, u: "https://books.google.com/books/content?id=ivdQDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Ghost Wars", a: "Steve Coll", y: "2023", r: "X", g: "Non-Fiction", c: "Black", k: "#000000", s: 0.656, p: 695, u: "https://books.google.com/books/content?id=ToYxFL5wmBIC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Moon is a Harsh Mistress", a: "Robert A. Heinlein", y: "2023", r: "", g: "Sci-Fi", c: "Black", k: "#010101", s: 0.656, p: 382, u: "https://books.google.com/books/content?id=HtuRSsAb2fEC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Barbarian Days: A Surfing Life", a: "William Finnegan", y: "2022", r: "A", g: "Non-Fiction", c: "White", k: "#afa48a", s: 0.653, p: 384, u: "https://books.google.com/books/content?id=r7IMAwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Psychology of Money", a: "Morgan Housel", y: "2022", r: "X", g: "Non-Fiction", c: "White", k: "#ffffff", s: 0.646, p: 256, u: "https://books.google.com/books/content?id=TnrrDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Neuromancer", a: "William Gibson", y: "2022", r: "X", g: "Sci-Fi", c: "Green", k: "#01692e", s: 0.636, p: 304, u: "https://books.google.com/books/content?id=pNQiDQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Damascus Station", a: "David McCloskey", y: "2022", r: "X", g: "Novel", c: "Black", k: "#1a242a", s: 0.656, p: 432, u: "https://books.google.com/books/content?id=7bROzwEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "The Age of A.I. and our Human Future", a: "Henry Kissinger", y: "2023", r: "", g: "Non-Fiction", c: "Blue", k: "#9eb1bf", s: 0.66, p: 254, u: "https://covers.openlibrary.org/b/id/14769214-L.jpg" },
+  { t: "Rocket Men", a: "Robert Kurson", y: "2023", r: "X", g: "Non-Fiction", c: "White", k: "#8fb5b9", s: 0.648, p: 384, u: "https://m.media-amazon.com/images/P/081298871X.01.L.jpg" },
+  { t: "Ghost Wars", a: "Steve Coll", y: "2023", r: "X", g: "Non-Fiction", c: "Black", k: "#000000", s: 0.657, p: 695, u: "https://covers.openlibrary.org/b/id/872236-L.jpg" },
+  { t: "The Moon is a Harsh Mistress", a: "Robert A. Heinlein", y: "2023", r: "", g: "Sci-Fi", c: "Black", k: "#000000", s: 0.657, p: 382, u: "https://covers.openlibrary.org/b/id/14811313-L.jpg" },
+  { t: "Barbarian Days: A Surfing Life", a: "William Finnegan", y: "2022", r: "A", g: "Non-Fiction", c: "White", k: "#bfb4a2", s: 0.635, p: 384, u: "https://covers.openlibrary.org/b/id/14713896-L.jpg" },
+  { t: "Psychology of Money", a: "Morgan Housel", y: "2022", r: "X", g: "Non-Fiction", c: "White", k: "#ffffff", s: 0.646, p: 256, u: "https://m.media-amazon.com/images/P/0857197681.01.L.jpg" },
+  { t: "Neuromancer", a: "William Gibson", y: "2022", r: "X", g: "Sci-Fi", c: "Green", k: "#00692e", s: 0.628, p: 304, u: "https://covers.openlibrary.org/b/id/8904053-L.jpg" },
+  { t: "Damascus Station", a: "David McCloskey", y: "2022", r: "X", g: "Novel", c: "Black", k: "#c8c9cf", s: 0.661, p: 432, u: "https://covers.openlibrary.org/b/id/12198638-L.jpg" },
   { t: "Foundation and the Empire", a: "Isaac Asimov", y: "2022", r: "", g: "Sci-Fi", c: "Brown", k: "#9a946c", s: 0.598, p: 256, u: "https://covers.openlibrary.org/b/id/9300695-L.jpg" },
-  { t: "Ardennes 1944", a: "Antony Beevor", y: "2022", r: "S", g: "Non-Fiction", c: "Black", k: "#2a2115", s: 0.692, p: 451, u: "https://books.google.com/books/content?id=3LXZCwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Ringworld", a: "Larry Niven", y: "2022", r: "", g: "Sci-Fi", c: "Blue", k: "#0089d5", s: 0.643, p: 288, u: "https://books.google.com/books/content?id=tUppPgAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Snow Crash", a: "Neal Stephenson", y: "2022", r: "A", g: "Sci-Fi", c: "Black", k: "#242729", s: 0.67, p: 454, u: "https://books.google.com/books/content?id=SXyqPwAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Kitchen Confidential", a: "Anthony Bourdain", y: "2022", r: "A", g: "Non-Fiction", c: "Black", k: "#0c0e11", s: 0.711, p: 320, u: "https://books.google.com/books/content?id=cocVLbFkgyQC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Beginner's Mind", a: "Shunryu Suzuki", y: "2022", r: "X", g: "Non-Fiction", c: "White", k: "#7a7e7d", s: 0.624, p: 208, u: "https://books.google.com/books/content?id=g8GGrFCFS8kC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Ardennes 1944", a: "Antony Beevor", y: "2022", r: "S", g: "Non-Fiction", c: "Black", k: "#311c09", s: 0.667, p: 451, u: "https://covers.openlibrary.org/b/id/7353550-L.jpg" },
+  { t: "Ringworld", a: "Larry Niven", y: "2022", r: "", g: "Sci-Fi", c: "Blue", k: "#3487c9", s: 0.643, p: 288, u: "https://covers.openlibrary.org/b/id/15263136-L.jpg" },
+  { t: "Snow Crash", a: "Neal Stephenson", y: "2022", r: "A", g: "Sci-Fi", c: "Black", k: "#262a2c", s: 0.672, p: 454, u: "https://covers.openlibrary.org/b/id/7997181-L.jpg" },
+  { t: "Kitchen Confidential", a: "Anthony Bourdain", y: "2022", r: "A", g: "Non-Fiction", c: "Black", k: "#120f0d", s: 0.672, p: 320, u: "https://covers.openlibrary.org/b/id/41173-L.jpg" },
+  { t: "Beginner's Mind", a: "Shunryu Suzuki", y: "2022", r: "X", g: "Non-Fiction", c: "White", k: "#7b7f7e", s: 0.624, p: 208, u: "https://covers.openlibrary.org/b/id/13770583-L.jpg" },
   { t: "Merchants of Debt", a: "George Anders", y: "2022", r: "X", g: "Non-Fiction", c: "Black", k: "#000000", s: 0.646, p: 334, u: "https://covers.openlibrary.org/b/id/6538879-L.jpg" },
-  { t: "Weed the People", a: "Bruce Barcott", y: "2022", r: "", g: "Non-Fiction", c: "Red", k: "#ee1c25", s: 0.657, p: 336, u: "https://books.google.com/books/content?id=tTQrBwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Bad Blood", a: "John Carreyrou", y: "2022", r: "X", g: "Non-Fiction", c: "Red", k: "#cb1721", s: 0.65, p: 352, u: "https://books.google.com/books/content?id=zIJcDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Weed the People", a: "Bruce Barcott", y: "2022", r: "", g: "Non-Fiction", c: "Red", k: "#ee1c25", s: 0.636, p: 336, u: "https://covers.openlibrary.org/b/id/14631273-L.jpg" },
+  { t: "Bad Blood", a: "John Carreyrou", y: "2022", r: "X", g: "Non-Fiction", c: "Red", k: "#000000", s: 0.669, p: 352, u: "https://covers.openlibrary.org/b/id/15104854-L.jpg" },
   { t: "Children of Dune", a: "Frank Herbert", y: "2022", r: "", g: "Sci-Fi", c: "Red", k: "#953b67", s: 0.666, p: 496, u: "https://covers.openlibrary.org/b/id/10226359-L.jpg" },
-  { t: "Stories of Your Life and Others", a: "Ted Chiang", y: "2022", r: "A", g: "Sci-Fi", c: "White", k: "#f3f2f2", s: 0.674, p: 333, u: "https://books.google.com/books/content?id=xa_wbcnyKXMC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Macbeth", a: "William Shakespeare", y: "2022", r: "A", g: "Play", c: "Purple", k: "#2d1052", s: 0.681, p: 280, u: "https://books.google.com/books/content?id=dvn3uent7VcC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Hard Thing About Hard Things", a: "Ben Horowitz", y: "2022", r: "", g: "Non-Fiction", c: "Black", k: "#140e0e", s: 0.551, p: 304, u: "https://books.google.com/books/content?id=620pAgAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "My Life at the Limit", a: "Reinhold Messner", y: "2022", r: "", g: "Non-Fiction", c: "Brown", k: "#6f665d", s: 0.663, p: 251, u: "https://books.google.com/books/content?id=OzYVCgAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Cold Start Problem", a: "Andrew Chen", y: "2022", r: "", g: "Non-Fiction", c: "Blue", k: "#111bc8", s: 0.696, p: 304, u: "https://books.google.com/books/content?id=duj8DwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Super Pumped", a: "Mike Isaac", y: "2022", r: "X", g: "Non-Fiction", c: "Red", k: "#ca1424", s: 0.688, p: 420, u: "https://books.google.com/books/content?id=ql6NEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Martian", a: "Andy Weir", y: "2022", r: "A", g: "Sci-Fi", c: "Orange", k: "#e19947", s: 0.723, p: 384, u: "https://books.google.com/books/content?id=oGGMDQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Exhalation", a: "Ted Chiang", y: "2022", r: "A", g: "Sci-Fi", c: "Black", k: "#000d10", s: 0.642, p: 368, u: "https://books.google.com/books/content?id=SGOPEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Stories of Your Life and Others", a: "Ted Chiang", y: "2022", r: "A", g: "Sci-Fi", c: "White", k: "#80b8e3", s: 0.648, p: 333, u: "https://covers.openlibrary.org/b/id/8885976-L.jpg" },
+  { t: "Macbeth", a: "William Shakespeare", y: "2022", r: "A", g: "Play", c: "Purple", k: "#4f606d", s: 0.666, p: 280, u: "https://m.media-amazon.com/images/P/0521680980.01.L.jpg" },
+  { t: "The Hard Thing About Hard Things", a: "Ben Horowitz", y: "2022", r: "", g: "Non-Fiction", c: "Black", k: "#141514", s: 0.602, p: 304, u: "https://covers.openlibrary.org/b/id/15051998-L.jpg" },
+  { t: "My Life at the Limit", a: "Reinhold Messner", y: "2022", r: "", g: "Non-Fiction", c: "Brown", k: "#050608", s: 0.664, p: 251, u: "https://m.media-amazon.com/images/P/1594858527.01.L.jpg" },
+  { t: "The Cold Start Problem", a: "Andrew Chen", y: "2022", r: "", g: "Non-Fiction", c: "Blue", k: "#111bc8", s: 0.662, p: 304, u: "https://covers.openlibrary.org/b/id/12589136-L.jpg" },
+  { t: "Super Pumped", a: "Mike Isaac", y: "2022", r: "X", g: "Non-Fiction", c: "Red", k: "#c91625", s: 0.664, p: 420, u: "https://m.media-amazon.com/images/P/0393358615.01.L.jpg" },
+  { t: "The Martian", a: "Andy Weir", y: "2022", r: "A", g: "Sci-Fi", c: "Orange", k: "#a41a03", s: 0.624, p: 384, u: "https://covers.openlibrary.org/b/id/12065533-L.jpg" },
+  { t: "Exhalation", a: "Ted Chiang", y: "2022", r: "A", g: "Sci-Fi", c: "Black", k: "#000b11", s: 0.676, p: 368, u: "https://covers.openlibrary.org/b/id/8793546-L.jpg" },
   { t: "Dune Messiah", a: "Frank Herbert", y: "2022", r: "X", g: "Sci-Fi", c: "Blue", k: "#184378", s: 0.561, p: 352, u: "https://covers.openlibrary.org/b/id/14322962-L.jpg" },
-  { t: "Boys in the Boat", a: "Daniel James Brown", y: "2022", r: "A", g: "Non-Fiction", c: "Orange", k: "#c0aa7a", s: 0.66, p: 432, u: "https://books.google.com/books/content?id=tHfWEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Boys in the Boat", a: "Daniel James Brown", y: "2022", r: "A", g: "Non-Fiction", c: "Orange", k: "#a2a498", s: 0.558, p: 432, u: "https://m.media-amazon.com/images/P/0143136968.01.L.jpg" },
   { t: "Dune", a: "Frank Herbert", y: "2022", r: "A", g: "Sci-Fi", c: "Red", k: "#c8352c", s: 0.558, p: 896, u: "https://covers.openlibrary.org/b/id/15110282-L.jpg" },
   { t: "Foundation", a: "Isaac Asimov", y: "2022", r: "X", g: "Sci-Fi", c: "White", k: "#e2d7be", s: 0.592, p: 200, u: "https://covers.openlibrary.org/b/id/13440809-L.jpg" },
-  { t: "A Little Life", a: "Hanya Yanagihara", y: "≤ 2021", r: "S", g: "Novel", c: "White", k: "#a9a9a9", s: 0.65, p: 832, u: "https://books.google.com/books/content?id=sL_ZCwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "The Corrections", a: "Jonathan Franzen", y: "≤ 2021", r: "", g: "Novel", c: "Black", k: "#04171d", s: 0.667, p: 567, u: "https://books.google.com/books/content?id=3SETVDEO45AC&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "A Little Life", a: "Hanya Yanagihara", y: "≤ 2021", r: "S", g: "Novel", c: "White", k: "#111212", s: 0.647, p: 832, u: "https://covers.openlibrary.org/b/id/8144904-L.jpg" },
+  { t: "The Corrections", a: "Jonathan Franzen", y: "≤ 2021", r: "", g: "Novel", c: "Black", k: "#010101", s: 0.67, p: 567, u: "https://m.media-amazon.com/images/P/0312421273.01.L.jpg" },
   { t: "Freedom", a: "Jonathan Franzen", y: "≤ 2021", r: "X", g: "Novel", c: "Blue", k: "#6891a9", s: 0.688, p: 562, u: "https://covers.openlibrary.org/b/id/15205666-L.jpg" },
-  { t: "Curious Case of the Dog in the Nighttime", a: "Mark Haddon", y: "≤ 2021", r: "S", g: "Novel", c: "Red", k: "#ef4b32", s: 0.6, p: 240, u: "https://books.google.com/books/content?id=Thc32eB1Kx4C&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
-  { t: "Sol Lewitt 100 Views", a: "Sol LeWitt", y: "≤ 2021", r: "A", g: "Non-Fiction", c: "Black", k: "#484848", s: 0.871, p: 271, u: "https://books.google.com/books/content?id=PIo0AQAAIAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" },
+  { t: "Curious Case of the Dog in the Nighttime", a: "Mark Haddon", y: "≤ 2021", r: "S", g: "Novel", c: "Red", k: "#fe5737", s: 0.6, p: 240, u: "https://covers.openlibrary.org/b/id/12648960-L.jpg" },
+  { t: "Sol Lewitt 100 Views", a: "Sol LeWitt", y: "≤ 2021", r: "A", g: "Non-Fiction", c: "Black", k: "#535252", s: 0.867, p: 271, u: "https://covers.openlibrary.org/b/id/12652229-L.jpg" },
 ];
 </script>
 
@@ -678,603 +833,859 @@ var books = [
   'use strict';
 
   var GROUPS = [
-    { key: 'g', name: 'Genre', values: ['Sci-Fi', 'Non-Fiction', 'Novel', 'Fantasy', 'Play'] },
-    { key: 'y', name: 'Year', values: ['2026', '2025', '2024', '2023', '2022', '≤ 2021'] },
-    { key: 'r', name: 'Recommended', values: ['A', 'Y'], labels: { A: 'All-Time', Y: 'Yes' } },
-    { key: 'c', name: 'Cover Color', values: ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Brown', 'Black', 'White'],
-      swatches: { Red: '#c24a3f', Orange: '#d3813a', Yellow: '#e1b640', Green: '#5c9f52',
-                  Blue: '#4a87b9', Purple: '#7a5ca8', Brown: '#8a6647', Black: '#33302b', White: '#faf8f3' } }
+    { key: 'g', name: 'Genre', values: ['Sci-Fi', 'Fiction', 'Non-Fiction'] },
+    // Shown by their last two digits; the data and saved file names keep
+    // the full year.
+    { key: 'y', name: 'Year', values: ['2026', '2025', '2024', '2023', '2022', '≤ 2021'],
+      labels: { '2026': '26', '2025': '25', '2024': '24', '2023': '23', '2022': '22', '≤ 2021': '≤ 21' } },
+    { key: 'r', name: 'Recommended', values: ['A', 'Y'], labels: { A: 'All-Time', Y: 'Yes' } }
   ];
-
-  var YEARS = ['2026', '2025', '2024', '2023', '2022', '≤ 2021'];
 
   // 'S' and 'X' were two passes at the same verdict; both mean yes.
   books.forEach(function (b) { b.r = b.r === 'A' ? 'A' : (b.r ? 'Y' : ''); });
 
-  var active = { g: 'all', y: 'all', r: 'all', c: 'all' };
-  var yearsEl = document.getElementById('years');
-  var readout = document.getElementById('readout');
-  var empty = document.getElementById('empty');
-  var buttons = {};
-  var rows = {};        // year -> { el, row, marks: [] }
-  var spectrum;
-  var litBand = null, litBook = null;   // the band being pointed at, and its book
+  // Three genres here rather than the data's five: novels, fantasy and plays
+  // are all fiction that is not science fiction. The data keeps its own,
+  // finer labels.
+  var GENRE = { Novel: 'Fiction', Fantasy: 'Fiction', Play: 'Fiction' };
+  books.forEach(function (b) { b.g = GENRE[b.g] || b.g; });
 
-  function matches(b, ignore) {
-    return GROUPS.every(function (grp) {
-      var k = grp.key;
-      return k === ignore || active[k] === 'all' || b[k] === active[k];
-    });
+  var active = { g: 'all', y: 'all', r: 'all' };
+  var buttons = [];
+  var canvas = document.getElementById('canvas');
+  var work = canvas.parentNode;
+  var gallery = document.getElementById('gallery');
+
+  // 'Yes' is a floor, not a tier: the all-time books were recommended too.
+  function matches(b) {
+    return (active.g === 'all' || b.g === active.g) &&
+           (active.y === 'all' || b.y === active.y) &&
+           (active.r === 'all' || (active.r === 'Y' ? b.r !== '' : b.r === active.r));
   }
 
-  function px(el, prop) { return parseFloat(getComputedStyle(el)[prop]) || 0; }
+  /* ---- colour ----
+     Hirst's one rule for the spots is that no colour repeats, and it has to
+     hold to the eye, not just in the code: the covers are thick with near
+     blacks and near whites that differ by a digit. So every pair of spots
+     here is at least 10 apart in CIELAB (ΔE76), plainly different at a
+     glance, and every spot is still a colour taken from its own cover. The
+     canvas counts as a colour already used: the spots carry no edge, so a
+     white cover's spot would otherwise be a hole in the grid.
 
-  function lum(hex) {
-    var c = [1, 3, 5].map(function (i) {
-      var v = parseInt(hex.substr(i, 2), 16) / 255;
-      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-    });
-    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+     A book keeps its cover's main colour where that is already distinct,
+     newest first. The rest, listed below, were found by reducing each cover
+     to its palette and taking the most prominent colour on it that stands
+     clear of every other spot, the hardest covers to place choosing first.
+     10 is as far apart as this shelf allows; at 12 some all-black covers
+     have nothing left to give. A new book needs the same check: if its main
+     colour comes within 10 of a spot here, it takes another from its cover. */
+
+  var SPOT = {
+    "The Genius Zone": "#718fa5",
+    "The Big Leap": "#9db8dc",
+    "The Metamorphosis of Prime Intellect": "#d1d1d1",
+    "The Creative Act: A Way of Being": "#b2b9ae",
+    "Trail Wise, Path Ways": "#828484",
+    "A Little Life": "#606060",
+    "Exhalation": "#1b2021",
+    "Ender's Game": "#3a5763",
+    "Who: The A Method for Hiring": "#357ec1",
+    "Beginner's Mind": "#b7a36f",
+    "Psychology of Money": "#ecd79a",
+    "The Paper Menagerie and Other Stories": "#9a5736",
+    "A Short Stay in Hell": "#94755d",
+    "Blood Music": "#775b58",
+    "Counter-Intelligence": "#e6795f",
+    "How to Make a Few Billion Dollars": "#ed2127",
+    "The Road": "#303b45",
+    "Blood, Sweat, and Pixels": "#f6cb16",
+    "There Is No Antimemetics Division": "#3c2514",
+    "Permutation City": "#948d51",
+    "Never Let Me Go": "#9d8f85",
+    "The Ocean at the End of the Lane": "#04072b",
+    "Contact": "#ccf6e9",
+    "Dungeon Crawler Carl": "#e41b59",
+    "Murderbot: Exit Strategy": "#372e30",
+    "Murderbot: Artificial Condition": "#6d4c32",
+    "The Hobbit": "#899f74",
+    "The Three Body Problem": "#1b3b7d",
+    "Ringworld": "#9edfd8",
+    "Weed the People": "#e2d2b7",
+    "Boys in the Boat": "#e8af6a",
+    "The Sounds of Life": "#bf8c51",
+    "The Hard Thing About Hard Things": "#dc5d31",
+    "The Tao of Fundraising": "#cfb7a5",
+    "Roadside Picnic": "#7b9683",
+    "Concrete Island": "#3086ec",
+    "Gate of the Feral Gods": "#f5fd04",
+    "Food Rules: An Eater's Manual": "#172911",
+    "The Ministry of Time": "#6b7635",
+    "Into Thin Air": "#b5c5d9",
+    "The Fall of Hyperion": "#984c45",
+    "Orbital": "#c57a71",
+    "Semiosis": "#4e1d11",
+    "Solaris": "#502e29",
+    "I, Robot": "#d30503",
+    "Jurassic Park": "#f4a034",
+    "Golden Son": "#4f3c24",
+    "Chapterhouse Dune": "#344f46",
+    "Hyperion": "#b8831b",
+    "The Return of the King": "#0c6b0c",
+    "The Fellowship of the Ring": "#fbcb4d",
+    "A River Runs Through It": "#ccba95",
+    "Murderbot: All Systems Red": "#74453e",
+    "The Man Who Solved the Market": "#bcbc30",
+    "Hidden Life of Trees": "#eff9e3",
+    "Billion Dollar Whale": "#d5eaf7",
+    "The Kill Chain": "#546249",
+    "Heretics of Dune": "#2f6567",
+    "Troy": "#edd648",
+    "Speaker for the Dead": "#2d2851",
+    "Rocket Men": "#abc9cb",
+    "Ghost Wars": "#421016",
+    "Damascus Station": "#cb5548",
+    "Ardennes 1944": "#f73517",
+    "Snow Crash": "#782836",
+    "Kitchen Confidential": "#ca7546",
+    "Merchants of Debt": "#2b1006",
+    "Stories of Your Life and Others": "#74aed9",
+    "My Life at the Limit": "#b86624",
+    "Super Pumped": "#6a1118",
+    "The Martian": "#c2492b",
+    "Dune": "#aa4539",
+    "Foundation": "#0c1909",
+    "Freedom": "#2c342d",
+    "The Thinking Machine": "#1a961b",
+    "Blindsight": "#6c6978",
+    "The Sense of an Ending": "#655b4b",
+    "Einstein's Dreams": "#92624b",
+    "The Dungeon Anarchist's Cookbook": "#f94444",
+    "Carl's Doomsday Scenario": "#fd01db",
+    "Project Hail Mary": "#03353d",
+    "Upgrade": "#0452b4",
+    "Annie Bot": "#ee7096",
+    "The Left Hand of Darkness": "#56787d",
+    "Murderbot: Rogue Protocol": "#493d5e",
+    "Do Androids Dream of Electric Sheep": "#546ea3",
+    "A View from the Bridge": "#a0a1a6",
+    "The Age of A.I. and our Human Future": "#af99bb",
+    "The Moon is a Harsh Mistress": "#061723",
+    "Barbarian Days: A Surfing Life": "#afa48a",
+    "Neuromancer": "#01692e",
+    "Bad Blood": "#cb1721",
+    "Macbeth": "#000006",
+    "The Corrections": "#eb7836",
+    "Curious Case of the Dog in the Nighttime": "#ef4b32",
+    "Sol Lewitt 100 Views": "#484848"
+  };
+  books.forEach(function (b) { b.paint = SPOT[b.t] || b.k.toLowerCase(); });
+
+  /* ---- filters ---- */
+
+  var filters = document.getElementById('filters');
+  var band = document.getElementById('band');
+  var toggle = document.getElementById('toggle');
+  var burger = document.getElementById('burger');
+  var siteNav = document.getElementById('site-nav');
+  var filterline = document.getElementById('filterline');
+  var qclear = document.getElementById('qclear');
+  var clear = document.createElement('button');
+  clear.type = 'button';
+  clear.className = 'opt clear';
+  clear.textContent = 'Clear';
+  clear.disabled = true;
+
+  /* Each group is a slider: a radio group of choices on one track, with a
+     thumb under the chosen one. A tap picks a choice; a drag along the
+     track picks whichever choice is under the finger as it goes, so the
+     painting follows the thumb stop by stop; the arrow keys step it. */
+  var tracks = [];
+
+  function pick(grp, v) {
+    if (active[grp.key] === v) return;
+    active[grp.key] = v;
+    render();
   }
 
-  var INK_DARK = '#171310', INK_LIGHT = '#fffcf6';
-
-  // Marks run from near-white to near-black, so the spine lettering is chosen
-  // by measuring both inks against this mark and keeping the better one. A
-  // luminance threshold gets the mid-tones backwards — a mid orange is dark
-  // enough to fail the test but still far lighter than any usable dark ink.
-  function inkOn(hex) {
-    var L = lum(hex);
-    function ratio(other) {
-      var a = Math.max(L, lum(other)), b = Math.min(L, lum(other));
-      return (a + 0.05) / (b + 0.05);
-    }
-    return ratio(INK_DARK) >= ratio(INK_LIGHT) ? INK_DARK : INK_LIGHT;
-  }
-
-  /* ---- rail ---- */
-
-  var frag = document.createDocumentFragment();
   GROUPS.forEach(function (grp) {
     var fs = document.createElement('fieldset');
     fs.className = 'group';
-    var legend = document.createElement('legend');
-    legend.className = 'group-name';
-    legend.textContent = grp.name;
-    fs.appendChild(legend);
-
-    var opts = document.createElement('div');
-    opts.className = 'opts' + (grp.swatches ? ' dots' : '');
-    buttons[grp.key] = [];
-
-    // Colour has no 'all' dot — there is no colour to paint it. Clearing is
-    // the second click on the live dot, same as every other group allows.
-    var choices = grp.swatches ? grp.values : ['all'].concat(grp.values);
-
-    choices.forEach(function (v) {
+    var lg = document.createElement('legend');
+    lg.textContent = grp.name;
+    fs.appendChild(lg);
+    var track = document.createElement('div');
+    track.className = 'track';
+    track.setAttribute('role', 'radiogroup');
+    track.setAttribute('aria-label', grp.name);
+    var thumb = document.createElement('span');
+    thumb.className = 'thumb';
+    thumb.setAttribute('aria-hidden', 'true');
+    track.appendChild(thumb);
+    fs.appendChild(track);
+    var stops = [];
+    ['all'].concat(grp.values).forEach(function (v) {
       var btn = document.createElement('button');
       btn.type = 'button';
+      btn.className = 'opt';
+      btn.setAttribute('role', 'radio');
+      btn.textContent = v === 'all' ? 'All' : (grp.labels ? grp.labels[v] : v);
       btn.dataset.group = grp.key;
       btn.dataset.value = v;
-      btn.setAttribute('aria-pressed', v === 'all');
-
-      if (grp.swatches) {
-        // A dot carries its colour and nothing else, so the name it would
-        // have worn has to reach a screen reader some other way.
-        btn.className = 'opt dot';
-        btn.setAttribute('aria-label', v);
-        btn.style.setProperty('--sw', grp.swatches[v]);
-      } else {
-        btn.className = 'opt';
-        btn.textContent = v === 'all' ? 'All' : (grp.labels ? grp.labels[v] : v);
-      }
-
-      btn.addEventListener('click', function () {
-        active[grp.key] = (active[grp.key] === v) ? 'all' : v;
-        render();
+      btn.addEventListener('click', function () { pick(grp, v); });
+      btn.addEventListener('keydown', function (e) {
+        var i = stops.indexOf(btn), to = null;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') to = stops[Math.min(stops.length - 1, i + 1)];
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') to = stops[Math.max(0, i - 1)];
+        if (e.key === 'Home') to = stops[0];
+        if (e.key === 'End') to = stops[stops.length - 1];
+        if (!to) return;
+        e.preventDefault();
+        to.focus();
+        pick(grp, to.dataset.value);
       });
-
-      opts.appendChild(btn);
-      buttons[grp.key].push(btn);
+      track.appendChild(btn);
+      stops.push(btn);
+      buttons.push(btn);
     });
 
-    fs.appendChild(opts);
-    if (grp.swatches) {
-      spectrum = document.createElement('div');
-      spectrum.className = 'spectrum';
-      fs.appendChild(spectrum);
+    // The stop under a point along the track, held to the ends past them.
+    function stopAt(x) {
+      for (var i = 0; i < stops.length; i++) {
+        if (x < stops[i].getBoundingClientRect().right) return stops[i];
+      }
+      return stops[stops.length - 1];
     }
-    frag.appendChild(fs);
+    track.addEventListener('pointerdown', function (e) {
+      track.setPointerCapture(e.pointerId);
+      track.classList.add('dragging');
+      pick(grp, stopAt(e.clientX).dataset.value);
+    });
+    track.addEventListener('pointermove', function (e) {
+      if (!track.hasPointerCapture(e.pointerId)) return;
+      pick(grp, stopAt(e.clientX).dataset.value);
+    });
+    function release() { track.classList.remove('dragging'); }
+    track.addEventListener('pointerup', release);
+    track.addEventListener('pointercancel', release);
+
+    tracks.push({ grp: grp, track: track, thumb: thumb, stops: stops });
+    filters.appendChild(fs);
   });
-  document.getElementById('filters').appendChild(frag);
+  filters.appendChild(clear);
 
-  /* ---- marks ---- */
-
-  YEARS.forEach(function (y) {
-    var wrap = document.createElement('div');
-    wrap.className = 'year';
-
-    var label = document.createElement('div');
-    label.className = 'year-label';
-    label.textContent = y;
-    wrap.appendChild(label);
-
-    var row = document.createElement('div');
-    row.className = 'row';
-    wrap.appendChild(row);
-
-    yearsEl.appendChild(wrap);
-    rows[y] = { el: wrap, row: row, marks: [] };
+  // The thumb sits under the chosen stop, measured from the stop itself so
+  // it fits whatever width the stop's label gives it.
+  function placeThumbs() {
+    tracks.forEach(function (t) {
+      var on = t.stops.filter(function (b) { return b.dataset.value === active[t.grp.key]; })[0];
+      t.track.style.setProperty('--tx', on.offsetLeft + 'px');
+      t.track.style.setProperty('--tw', on.offsetWidth + 'px');
+    });
+  }
+  var bandClose = document.createElement('button');
+  bandClose.type = 'button';
+  bandClose.className = 'opt band-close';
+  bandClose.setAttribute('aria-label', 'Close filters');
+  bandClose.textContent = '✕';
+  filters.appendChild(bandClose);
+  bandClose.addEventListener('click', function () {
+    setOpen(toggle, band, false);
+    toggle.focus();
   });
+
+  // Opening and closing touch nothing but the band and the menu themselves:
+  // no layout(), so the spots stay exactly where they are.
+  function setOpen(btn, panel, open) {
+    panel.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open);
+    panel.inert = !open;
+    if (panel === band) {
+      filterline.classList.toggle('away', open);
+      qclear.hidden = open || clear.disabled;
+    }
+  }
+  toggle.addEventListener('click', function () {
+    var open = toggle.getAttribute('aria-expanded') !== 'true';
+    setOpen(toggle, band, open);
+    // The button just pressed disappears, so focus goes on to the first
+    // filter rather than being dropped.
+    if (open) band.querySelector('.track .opt[aria-checked="true"]').focus();
+  });
+  burger.addEventListener('click', function () {
+    setOpen(burger, siteNav, burger.getAttribute('aria-expanded') !== 'true');
+  });
+  addEventListener('keydown', function (e) {
+    // An open card takes Escape for itself and leaves the menus as they are.
+    if (e.key !== 'Escape' || card.open) return;
+    [[burger, siteNav], [toggle, band]].some(function (pair) {
+      if (pair[0].getAttribute('aria-expanded') !== 'true') return false;
+      setOpen(pair[0], pair[1], false);
+      pair[0].focus();
+      return true;     // one at a time, the most recently reached first
+    });
+  });
+  function clearAll() {
+    active = { g: 'all', y: 'all', r: 'all' };
+    render();
+  }
+  // Either Clear disappears once it has done its work, so focus moves on:
+  // in the open band to the first slider, from the folded line to Filter.
+  clear.addEventListener('click', function () {
+    clearAll();
+    band.querySelector('.track .opt[aria-checked="true"]').focus();
+  });
+  qclear.addEventListener('click', function () {
+    clearAll();
+    toggle.focus();
+  });
+
+  /* The pointer is a field the spots lean away from, wherever it is over
+     the painting: on a spot, between two, or in the white around them. Each
+     spot is pushed straight away from the pointer by an amount that rises
+     with distance up to one spot pitch, so the spot the pointer is on stays
+     put while its four touching neighbours get the full push, three tenths
+     of a diameter; then it falls off with the square of the distance and
+     tapers to nothing at REACH pitches. Between two spots both part; in the
+     white, the nearest lean back. Only the spot the pointer is actually on,
+     judged from the resting grid, grows.
+     Everything eases as the rest of the page does; nothing springs. */
+  var spotD = 0, pushed = [], lit = null;
+  // PUSH is before the taper, which at one pitch leaves about two thirds
+  // of it: the three tenths above.
+  var PUSH = 0.45, REACH = 2.3;     // in diameters, and in spot pitches
+
+  function field(px, py, skip) {
+    var pitch = 2 * spotD, next = [];
+    books.forEach(function (o) {
+      if (!o.on || o === skip) return;
+      var dx = o.cx - px, dy = o.cy - py;
+      var r = Math.sqrt(dx * dx + dy * dy) / pitch;
+      if (r >= REACH || r === 0) return;
+      var taper = 1 - (r / REACH) * (r / REACH);
+      var push = PUSH * spotD * (r < 1 ? r : 1 / (r * r)) * taper * taper;
+      o.el.style.setProperty('--px', dx / (r * pitch) * push + 'px');
+      o.el.style.setProperty('--py', dy / (r * pitch) * push + 'px');
+      next.push(o);
+    });
+    pushed.forEach(function (o) {
+      if (next.indexOf(o) < 0) { o.el.style.removeProperty('--px'); o.el.style.removeProperty('--py'); }
+    });
+    pushed = next;
+  }
+  function calm() {
+    pushed.forEach(function (o) { o.el.style.removeProperty('--px'); o.el.style.removeProperty('--py'); });
+    pushed = [];
+  }
+  function light(b) {
+    if (lit === b) return;
+    if (lit) lit.el.classList.remove('lit');
+    lit = b;
+    if (b) { b.el.classList.add('lit'); peek(b); } else unpeek();
+  }
+
+  var peekEl = document.getElementById('peek');
+  function peek(b) {
+    peekEl.textContent = '';
+    // The cover is only fetched when a spot is first pointed at. Where it
+    // fails, the spot's colour in the cover's shape stands in.
+    var swatch = document.createElement('span');
+    swatch.className = 'swatch';
+    swatch.style.setProperty('--k', b.paint);
+    swatch.style.setProperty('--s', b.s);
+    var art = swatch;
+    if (!b.noCover) {
+      art = document.createElement('img');
+      art.alt = '';
+      art.src = b.u;
+      art.addEventListener('error', function () { b.noCover = true; if (art.parentNode) art.replaceWith(swatch); });
+      art.addEventListener('load', function () { if (art.naturalWidth < 8) art.dispatchEvent(new Event('error')); });
+    }
+    var p = document.createElement('p');
+    var t = document.createElement('b');
+    t.textContent = b.t;
+    p.appendChild(t);
+    p.appendChild(document.createTextNode(b.a + ' · ' + b.y));
+    peekEl.appendChild(art);
+    peekEl.appendChild(p);
+    peekEl.classList.add('on');
+  }
+  function unpeek() { peekEl.classList.remove('on'); }
+
+  // Read against the canvas's resting box, a frame at a time. The reach runs
+  // out past the canvas edge too, so a pointer just outside it still leans
+  // the outer spots in a little.
+  var pointer = null, frame = 0;
+  function track() {
+    frame = 0;
+    if (!pointer || !spotD) return;
+    var box = canvas.getBoundingClientRect();
+    var x = pointer.x - box.left, y = pointer.y - box.top;
+    var reach = REACH * 2 * spotD;
+    if (x < -reach || y < -reach || x > box.width + reach || y > box.height + reach) { calm(); light(null); return; }
+    var on = null;
+    books.forEach(function (o) {
+      if (o.on && Math.hypot(o.cx - x, o.cy - y) <= spotD / 2) on = o;
+    });
+    light(on);
+    field(x, y, on);
+  }
+  // A press that slides is looking, not choosing: it must not open the card
+  // of the spot it started on when it lifts, which with a finger it would,
+  // since the press stays with that spot wherever the finger goes.
+  var press = null, slid = false;
+  gallery.addEventListener('pointerdown', function (e) {
+    press = { x: e.clientX, y: e.clientY };
+    slid = false;
+    pointer = { x: e.clientX, y: e.clientY };
+    if (!frame) frame = requestAnimationFrame(track);
+  });
+  addEventListener('pointerup', function () { press = null; });
+  gallery.addEventListener('pointermove', function (e) {
+    pointer = { x: e.clientX, y: e.clientY };
+    if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) slid = true;
+    if (!frame) frame = requestAnimationFrame(track);
+  });
+  gallery.addEventListener('pointerleave', function () {
+    pointer = null;
+    calm();
+    light(null);
+  });
+
+  /* ---- card ---- */
+
+  /* Each book's own Amazon page, by its ISBN-10. Looked up on Open Library:
+     the most recent English print edition of the work, its title checked
+     against the book's, so a box set, study guide, translation or book-club
+     printing is never the link. A book with no edition that passed stays
+     off this list and falls back to Amazon's search for its title and
+     author, which finds it reliably. The four Amazon covers carry their
+     ISBN in their own address. */
+  var ISBN = {
+    "Echopraxia": "1784080489",
+    "Roadside Picnic": "1399617206",
+    "Ubik": "1857988531",
+    "The Road": "0330513001",
+    "The Raw and the Cooked": "080213937X",
+    "Blood, Sweat, and Pixels": "0062651242",
+    "How to Change Your Mind": "0735224153",
+    "The Art of Learning": "0743277457",
+    "Blood Music": "1596871067",
+    "Concrete Island": "031242034X",
+    "Who: The A Method for Hiring": "0345504194",
+    "Gate of the Feral Gods": "0593955978",
+    "Among Friends": "1035055430",
+    "There Is No Antimemetics Division": "1529953170",
+    "Breakneck": "1324106034",
+    "Permutation City": "185798174X",
+    "The Thinking Machine": "0593832698",
+    "The Metamorphosis of Prime Intellect": "1411602196",
+    "Never Let Me Go": "057122413X",
+    "The Ministry of Time": "1668045168",
+    "Blindsight": "0765319640",
+    "Into Thin Air": "0330353977",
+    "The Sense of an Ending": "0307957128",
+    "The Ocean at the End of the Lane": "1472200322",
+    "Einstein's Dreams": "140007780X",
+    "Contact": "1501197983",
+    "The Fall of Hyperion": "0553288202",
+    "A Short Stay in Hell": "0983748446",
+    "Orbital": "1529922933",
+    "Semiosis": "0765391368",
+    "The Dungeon Anarchist's Cookbook": "0593820282",
+    "Solaris": "0571311571",
+    "Carl's Doomsday Scenario": "0593820274",
+    "Dungeon Crawler Carl": "059382024X",
+    "I, Robot": "0008279551",
+    "Jurassic Park": "1784752223",
+    "Project Hail Mary": "1804953695",
+    "Upgrade": "0593157524",
+    "Annie Bot": "0008584605",
+    "Golden Son": "1444759027",
+    "The Left Hand of Darkness": "1473225949",
+    "Counter-Intelligence": "0008398577",
+    "The Return of the King": "0345339738",
+    "The Two Towers": "0593500490",
+    "The Fellowship of the Ring": "0345339703",
+    "A River Runs Through It": "0226500578",
+    "The Hobbit": "0618260307",
+    "Do Androids Dream of Electric Sheep": "1780220383",
+    "The Man Who Solved the Market": "0241309727",
+    "The Sounds of Life": "0691240973",
+    "Hidden Life of Trees": "1771642483",
+    "Billion Dollar Whale": "031643647X",
+    "The Kill Chain": "031653353X",
+    "Heretics of Dune": "0575074892",
+    "Red Rising": "0593871529",
+    "Troy": "1797207075",
+    "Speaker for the Dead": "1250773067",
+    "Ender's Game": "1250773024",
+    "A View from the Bridge": "0553234064",
+    "The Paper Menagerie and Other Stories": "148142436X",
+    "The Creative Act: A Way of Being": "0593652886",
+    "God Emperor of Dune": "0575075066",
+    "Rocket Men": "081298871X",
+    "The Moon is a Harsh Mistress": "0340837942",
+    "Barbarian Days: A Surfing Life": "0143109391",
+    "Psychology of Money": "0857197681",
+    "Neuromancer": "0143111604",
+    "Damascus Station": "0393881040",
+    "Foundation and the Empire": "0008117500",
+    "Ardennes 1944": "0670025313",
+    "Ringworld": "0575077026",
+    "Kitchen Confidential": "0060934913",
+    "Beginner's Mind": "1590308492",
+    "Merchants of Debt": "1587981254",
+    "Weed the People": "1618936085",
+    "Bad Blood": "0525431993",
+    "Children of Dune": "0593098242",
+    "Stories of Your Life and Others": "1101972122",
+    "The Hard Thing About Hard Things": "0062273213",
+    "My Life at the Limit": "1594858527",
+    "The Cold Start Problem": "0062969749",
+    "Super Pumped": "0393358615",
+    "Exhalation": "1101947888",
+    "Dune Messiah": "0593098234",
+    "Boys in the Boat": "0143136968",
+    "Dune": "059343837X",
+    "Foundation": "0553382578",
+    "A Little Life": "1447294831",
+    "Curious Case of the Dog in the Nighttime": "0385678835",
+    "Sol Lewitt 100 Views": "0300152825",
+    "The Three Body Problem": "0765382032",
+    "Macbeth": "0521680980",
+    "The Martian": "0553418025",
+    "The Corrections": "0312421273"
+  };
+
+  function buyUrl(b) {
+    var fromCover = /\/images\/P\/([0-9]{9}[0-9X])\./.exec(b.u);
+    var isbn = ISBN[b.t] || (fromCover && fromCover[1]);
+    return isbn ? 'https://www.amazon.com/dp/' + isbn
+                : 'https://www.amazon.com/s?k=' + encodeURIComponent(b.t + ' ' + b.a) + '&i=stripbooks';
+  }
+
+  var card = document.getElementById('card');
+  var REC = { A: 'All-time', Y: 'Yes', '': 'No' };
+
+  function openCard(b) {
+    light(null);
+    calm();
+    var buy = document.getElementById('card-buy');
+    buy.textContent = '';
+    buy.href = buyUrl(b);
+    buy.setAttribute('aria-label', 'Buy ' + b.t + ' on Amazon (opens in a new tab)');
+    var swatch = document.createElement('span');
+    swatch.className = 'art swatch';
+    swatch.style.setProperty('--k', b.paint);
+    swatch.style.setProperty('--s', b.s);
+    var art = swatch;
+    if (!b.noCover) {
+      art = document.createElement('img');
+      art.className = 'art';
+      art.alt = '';
+      art.src = b.u;
+      art.addEventListener('error', function () { b.noCover = true; if (art.parentNode) art.replaceWith(swatch); });
+      art.addEventListener('load', function () { if (art.naturalWidth < 8) art.dispatchEvent(new Event('error')); });
+    }
+    var where = document.createElement('span');
+    where.textContent = 'Buy on Amazon ↗';
+    buy.appendChild(art);
+    buy.appendChild(where);
+    document.getElementById('card-title').textContent = b.t;
+    document.getElementById('card-by').textContent = b.a;
+    document.getElementById('card-read').textContent = b.y === '≤ 2021' ? '2021 or earlier' : b.y;
+    document.getElementById('card-genre').textContent = b.g;
+    document.getElementById('card-rec').textContent = REC[b.r];
+    card.showModal();
+  }
+
+  document.getElementById('card-close').addEventListener('click', function () { card.close(); });
+  // A click on the veil around the card, rather than on the card, closes it.
+  card.addEventListener('click', function (e) {
+    var r = card.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) card.close();
+  });
+
+  /* ---- spots ---- */
 
   books.forEach(function (b) {
-    var a = document.createElement('a');
-    a.className = 'mark';
-    a.style.setProperty('--k', b.k);
-    a.style.setProperty('--t', inkOn(b.k));
-    a.href = 'https://www.amazon.com/s?k=' + encodeURIComponent(b.t + ' ' + b.a) + '&i=stripbooks';
-    a.target = '_blank';
-    a.rel = 'noopener';
-
-    var front = document.createElement('span');
-    front.className = 'face front';
-    var title = document.createElement('span');
-    title.className = 'title';
-    title.textContent = b.t;
-    front.appendChild(title);
-    b.titleEl = title;
-
-    var back = document.createElement('span');
-    back.className = 'face back';
-    var img = document.createElement('img');
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    // The only place the title appears: the mark shows art, not text.
-    img.alt = b.t + ' by ' + b.a;
-    img.src = b.u;
-    back.appendChild(img);
-
-    a.appendChild(front);
-    a.appendChild(back);
-
-    a.addEventListener('focus', function () { open(b); });
-    a.addEventListener('blur', function () { close(b); });
-
+    // A button, not a link: a spot opens its card and goes nowhere itself.
+    // The card's cover is the only way through to the shop, so the two
+    // steps can never fire together; a link here, even one whose click was
+    // cancelled, was still followed by hosts that open new tabs themselves.
+    var a = document.createElement('button');
+    a.type = 'button';
+    a.className = 'spot';
+    a.setAttribute('aria-label', b.t + ' by ' + b.a);
+    a.setAttribute('aria-haspopup', 'dialog');
+    a.style.setProperty('--k', b.paint);
+    // The keyboard gets the same push, from the focused spot's own centre;
+    // only the keyboard, though. Focus also lands here when a card closes
+    // and hands it back, and after a tap that is no reason to hold the
+    // neighbours apart.
+    a.addEventListener('focus', function () {
+      if (!a.matches(':focus-visible')) return;
+      field(b.cx, b.cy, b);
+      peek(b);
+    });
+    a.addEventListener('blur', function () { calm(); unpeek(); });
+    a.addEventListener('click', function () {
+      if (slid) { slid = false; return; }
+      openCard(b);
+    });
     b.el = a;
-    rows[b.y].marks.push(b);
-    rows[b.y].row.appendChild(a);   // appended once; filters only show and hide
+    canvas.appendChild(a);
   });
-
-  /* ---- pointer ----
-     Hover used to hang off each mark's own mouseenter and mouseleave, and that
-     feeds back on itself: opening a mark grows it and shifts everything beside
-     it, so the boxes being hit-tested are moving at the very moment the
-     browser decides what the pointer is over. Near a boundary two marks trade
-     the hover back and forth and the row chatters — which is why it felt like
-     only the centre of a spine worked, the edges being where the fight
-     happened.
-
-     The row decides instead, reading the pointer against the resting layout
-     (x0/x1), which never moves. A mark already open keeps the pointer while it
-     is inside its live box, so growing under the cursor never hands it away;
-     past that edge the resting map picks the next one. A map that cannot move
-     has nothing to oscillate about. */
-  function bookAt(r, clientX) {
-    var x = clientX - r.row.getBoundingClientRect().left;
-    for (var i = 0; i < r.live.length; i++) {
-      var b = r.live[i];
-      if (b.on && x >= b.x0 && x < b.x1) return b;
-    }
-    return null;
-  }
-
-  // The next book along that is not filtered out.
-  function neighbour(r, from, dir) {
-    for (var i = r.live.indexOf(from) + dir; i >= 0 && i < r.live.length; i += dir) {
-      if (r.live[i].on) return r.live[i];
-    }
-    return null;
-  }
-
-  function bindRow(r) {
-    r.row.addEventListener('pointermove', function (e) {
-      var cur = r.open;
-
-      if (!cur) {                       // nothing open: the row is at rest, so
-        var hit = bookAt(r, e.clientX); // the resting map is exactly the layout
-        if (hit) open(hit);
-        return;
-      }
-
-      var x = e.clientX - r.row.getBoundingClientRect().left;
-      var box = r.openBox;
-      if (!box || (x >= box.l && x <= box.r)) return;                // still on it
-
-      // Stepping off an open mark, take the book *next to it*, not the one the
-      // resting map names. An open mark is far wider than its own resting
-      // span, so its far edge sits over some later book's slot — reading the
-      // map there skips the neighbour entirely and lands several books along.
-      var dir = x > box.r ? 1 : -1;
-      var over = dir > 0 ? x - box.r : box.l - x;
-      close(cur);
-      // Unless the pointer has jumped clear of the mark altogether, in which
-      // case it is not a step to the next book and the map — now that the row
-      // has snapped back to rest — is right again.
-      var next = over > cur.cw ? bookAt(r, e.clientX) : neighbour(r, cur, dir);
-      if (next) open(next);
-    });
-
-    r.row.addEventListener('pointerleave', function () {
-      if (r.open) close(r.open);
-    });
-  }
 
   /* ---- layout ----
-     One scale of pixels-per-page across every row, so a mark means the same
-     thing in 2022 as in 2026 and a row's length is the year's total reading.
-     The scale is whatever lets the longest row fit the panel. */
+     The painting is whatever grid of the spots on show fills the space best,
+     worked out again every time the filters change. On screen a grid c spots
+     wide is (2c - 1) diameters across, a spot and a gap per column less the
+     last gap (the canvas's own margin is pulled back into the page; see
+     .canvas); so for every column count the spot is as large as both the
+     width and the height allow, and the count that gives the largest spot
+     wins. Fewer books make a smaller grid of larger spots, a
+     single book one spot as large as the space allows. Where the last row
+     comes up short it runs from the left like the rows above it, and simply
+     stops: no blank places, the canvas only ever holds the books on it. */
 
-  var MIN_W = 3;
-  var NARROW = 15;      // below this the spine drops its letter-spacing
-  var visible = [];
+  var MIN_D = 12, MAX_D = 150;
 
-  // Measured off the panel rather than off a row, so it still reads correctly
-  // when every row is hidden by a filter.
-  function chartWidth() {
-    var wrap = document.querySelector('.chart-wrap');
-    var cs = getComputedStyle(wrap);
-    var inner = wrap.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    var y0 = rows[YEARS[0]].el;
-    return inner - px(y0, 'gap') - parseFloat(getComputedStyle(y0.firstChild).width);
+  // The foot's row of actions, which the grid is fitted above.
+  function footHeight() { return document.getElementById('foot').offsetHeight; }
+
+  // The preview's 52px cover and the gap around it, with room for a top-row
+  // spot to grow toward it on hover without touching it.
+  var PEEK = 70;
+
+  // Only Filter's own line is kept above the spots, not the open band's
+  // full height: a folded band would otherwise leave that much blank page
+  // under it. Opened, the band lies over the preview's strip on the page's
+  // white instead, and the spots under it stay exactly where they are. The
+  // line's height follows the phrase on it, which changes only with the
+  // filters, when the painting is being rearranged anyway.
+  function reserve() {
+    var r = filterline.offsetHeight + 8;
+    // The preview hangs just under Filter.
+    document.querySelector('.topbar').style.setProperty('--peek-top', r + 4 + 'px');
+    // The preview's strip above the painting is kept free too, so it
+    // appears without moving anything.
+    r += PEEK;
+    gallery.style.setProperty('--reserve', r + 'px');
   }
 
-  // Pixels per page, fixed by the whole collection and not by what survives a
-  // filter. Filtering must take ink off the page, not resize the unit — a mark
-  // has to mean the same number of pages in every state the chart can be in.
-  function fullScale(avail) {
-    var gap = px(rows[YEARS[0]].row, 'gap');
-    var scale = Infinity;
-    YEARS.forEach(function (y) {
-      var all = rows[y].marks;
-      if (!all.length) return;
-      var pages = all.reduce(function (t, b) { return t + b.p; }, 0);
-      var room = avail - gap * (all.length - 1);
-      if (room > 0 && pages > 0) scale = Math.min(scale, room / pages);
-    });
-    return isFinite(scale) ? scale : 0.1;
-  }
+  function layout() {
+    placeThumbs();      // a stop's width changes with the window on a phone
+    reserve();
+    var shown = books.filter(function (b) { return b.on; });
+    var n = shown.length;
+    var cs = getComputedStyle(gallery);
+    var W = gallery.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    var top = gallery.getBoundingClientRect().top + scrollY;
+    var lab = footHeight();
+    // A pixel short, so fractional sizes can never add up to more than the
+    // room and nudge the foot down.
+    var H = innerHeight - top - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - lab - 1;
+    // On a phone the bar takes much of the screen, and fitting what is left
+    // would leave spots too small to tap. There the painting may run on below
+    // the fold, as tall as most of a screen.
+    if (W < 560) H = Math.max(H, innerHeight * 0.66);
 
-  /* Every year on screen at once: the row height is whatever divides the
-     window between the six of them, rather than a figure derived from the
-     window's width. Kept off on narrow screens, where the rail sits above the
-     chart and dividing what is left over six would leave slivers. */
-  var ROW_MIN = 40, ROW_MAX = 150;
+    document.getElementById('empty').hidden = n > 0;
+    if (!n) return;            // an empty canvas keeps the size it had
 
-  function fitHeight() {
-    var root = document.documentElement;
-    if (matchMedia('(max-width: 860px)').matches) {
-      root.style.removeProperty('--mark-h');      // let the stylesheet have it
-      return;
-    }
-    var wrap = document.querySelector('.chart-wrap');
-    var cs = getComputedStyle(wrap);
-    var gaps = YEARS.reduce(function (t, y) {
-      return t + parseFloat(getComputedStyle(rows[y].el).marginBottom);
-    }, 0);
-    // Measured rather than assumed: the bar wraps to two lines on a narrow
-    // window, and the rows have to give up the difference either way. Taken
-    // from its height, not its position, so a scrolled page reads the same.
-    var bar = document.querySelector('.topbar');
-    var room = innerHeight - (bar ? bar.getBoundingClientRect().height : 0)
-             - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - gaps;
-    var h = Math.max(ROW_MIN, Math.min(ROW_MAX, Math.floor(room / YEARS.length)));
-    root.style.setProperty('--mark-h', h + 'px');
-  }
-
-  function relayout(retry) {
-    fitHeight();                  // before anything reads the row height
-    var avail = chartWidth();
-    var gap = px(rows[YEARS[0]].row, 'gap');
-    var h = rows[YEARS[0]].row.clientHeight;
-    var scale = fullScale(avail);
-
-    YEARS.forEach(function (y) {
-      var r = rows[y];
-      // Widths are laid out over the whole year, filtered or not: the marks
-      // that vanish still hold their column so the rest do not slide.
-      var live = r.marks;
-      r.el.hidden = live.length === 0;
-      r.live = live;
-      var total = 0;
-      live.forEach(function (b) {
-        b.w = Math.max(MIN_W, b.p * scale);
-        b.cw = h * b.s;                 // opened, the mark is the cover's shape
-        b.el.style.width = b.w + 'px';
-        // Starting size from the spine's width; fitTitles() takes it down
-        // from here for any title that still will not fit.
-        b.ts = Math.max(5, Math.min(9, b.w * 0.62));
-        b.el.style.setProperty('--ts', b.ts.toFixed(2) + 'px');
-        b.el.style.setProperty('--r', Math.min(2.5, b.w * 0.16).toFixed(2) + 'px');
-        b.el.classList.toggle('narrow', b.w < NARROW);
-        // Where this mark sits when nothing is open: the map the pointer is
-        // read against, so it cannot move while the row is animating. The gap
-        // has to accumulate with the widths or the map drifts left of the
-        // marks it is meant to describe, and the books at the end of a long
-        // row become unreachable. Each span runs to the start of the next, so
-        // the seam between two books belongs to the one before it.
-        b.x0 = total;
-        total += b.w + gap;
-        b.x1 = total;
-      });
-      r.width = Math.max(0, total - gap);
-      r.gap = gap;
-      r.row.style.width = r.width + 'px';
-    });
-
-    fitTitles();
-
-    // Hiding rows can retire the window scrollbar, which widens the panel the
-    // scale was just derived from. Measure again and redo once — never more,
-    // or a borderline case could oscillate.
-    if (!retry && chartWidth() !== avail) relayout(true);
-  }
-
-  /* A title long enough to need more lines than its spine is wide had those
-     lines quietly clipped. Shrinking the type fixes it twice over: more
-     characters fit on each line, so fewer lines are needed, and each line is
-     narrower. The space a wrapped title needs therefore falls with roughly
-     the square of the size, which is why the correction below is a square
-     root rather than the raw overflow ratio — it lands in one or two passes
-     instead of creeping down.
-
-     Reads and writes are kept in separate phases across the whole set, so
-     this costs a couple of layout passes rather than one per book. */
-  var MIN_TS = 3.4;   // below this it is texture, not letterforms
-
-  function fitTitles() {
-    var live = [];
-    YEARS.forEach(function (y) {
-      rows[y].live.forEach(function (b) { if (b.on && b.titleEl) live.push(b); });
-    });
-
-    for (var pass = 0; pass < 6; pass++) {
-      var over = [];
-      for (var i = 0; i < live.length; i++) {          // read phase
-        var el = live[i].titleEl;
-        // vertical-rl puts the block axis across the spine, so the two ways a
-        // title can fail to fit land on different axes: too many lines is
-        // width overflow, and a word longer than the spine is tall is height
-        // overflow. Both figures are integers over a fractional box, so a
-        // title can sit a rounded pixel proud of its spine — hence the 0.985
-        // nudge below rather than an exact fit.
-        var wr = el.scrollWidth > el.clientWidth ? el.clientWidth / el.scrollWidth : 1;
-        var hr = el.scrollHeight > el.clientHeight ? el.clientHeight / el.scrollHeight : 1;
-        if (wr < 1 || hr < 1) over.push([live[i], wr, hr]);
-      }
-      if (!over.length) return;
-      for (var j = 0; j < over.length; j++) {          // write phase
-        var b = over[j][0];
-        // The two overflows correct differently. Halving the size roughly
-        // quarters the area a wrapped title needs, so lines take the square
-        // root; a word that will not fit only halves in length, so it takes
-        // the ratio raw.
-        var byLines = over[j][1] < 1 ? b.ts * Math.max(0.55, Math.sqrt(over[j][1]) * 0.985) : b.ts;
-        var byWord = over[j][2] < 1 ? b.ts * Math.max(0.55, over[j][2] * 0.985) : b.ts;
-        var next = Math.max(MIN_TS, Math.min(byLines, byWord));
-        if (next >= b.ts - 0.05) next = Math.max(MIN_TS, b.ts - 0.4);   // always make progress
-        b.ts = next;
-        b.el.style.setProperty('--ts', next.toFixed(2) + 'px');
+    // Hirst's spacing holds at the page's edges too: the outer spots stand
+    // at least a diameter clear of the window's left and right, and of its
+    // foot. So the grid's span plus a diameter each side must fit the full
+    // width (the grid is centred), and its height plus a diameter must fit
+    // what lies below its top, where the foot's row and the gallery's own
+    // padding count toward that diameter. With small spots the page's
+    // margins are the larger and govern; with a few large ones, this does.
+    var full = gallery.clientWidth;
+    var below = H + parseFloat(cs.paddingBottom) + lab + 1;
+    var best = { d: 0 };
+    for (var c = 1; c <= n; c++) {
+      var r = Math.ceil(n / c);
+      var d = Math.min(W / (2 * c - 1), full / (2 * c + 1),
+                       H / (2 * r - 1), below / (2 * r));
+      // A near tie goes to the grid whose last row is fuller.
+      if (d > best.d + 0.25 || (d > best.d - 0.25 && c * r - n < best.spare)) {
+        best = { c: c, r: r, d: d, spare: c * r - n };
       }
     }
-  }
-
-  // Opening one mark takes width from the rest of its row rather than from
-  // the page, so the row keeps its footprint and the year stays comparable.
-  function open(b) {
-    var r = rows[b.y];
-    if (!r.live || r.live.length === 0) return;
-    b.el.classList.add('open');
-    r.open = b;
-
-    var others = r.live.filter(function (x) { return x !== b; });
-    var room = r.width - r.gap * Math.max(0, r.live.length - 1) - b.cw;
-    var floor = others.length * MIN_W;
-
-    if (room < floor) {
-      // Too few books to absorb the cover — let the row grow this once.
-      room = floor;
-      r.row.style.width = (b.cw + floor + r.gap * Math.max(0, r.live.length - 1)) + 'px';
+    if (best.d < MIN_D) {
+      var cols = Math.max(1, Math.floor((Math.min(W + MIN_D, full - MIN_D) / MIN_D) / 2));
+      best = { c: cols, r: Math.ceil(n / cols), d: MIN_D };
     }
+    c = best.c; r = best.r;
+    var D = Math.floor(Math.min(MAX_D, best.d) * 4) / 4;
+    spotD = D;
 
-    var sum = others.reduce(function (t, x) { return t + x.w; }, 0) || 1;
-    b.el.style.width = b.cw + 'px';
-    others.forEach(function (x) {
-      x.el.style.width = Math.max(MIN_W, x.w * room / sum) + 'px';
+    // Where the grid runs on below the fold, the gap under it is the
+    // gallery's padding and the foot's row and nothing else, so the padding
+    // is topped up to make that gap a diameter. Where the grid fits, the
+    // sizing above already leaves at least that, and this asks for no more
+    // than the room there is.
+    gallery.style.setProperty('--below', Math.max(0, D - lab) + 'px');
+
+    // Set on the figure, which the canvas and its spots both read.
+    work.style.setProperty('--d', D + 'px');
+    work.style.setProperty('--cw', (2 * c + 1) * D + 'px');
+    work.style.setProperty('--ch', (2 * r + 1) * D + 'px');
+    shown.forEach(function (b, i) {
+      var row = Math.floor(i / c), col = i % c;
+      b.el.style.setProperty('--x', D + col * 2 * D + 'px');
+      b.el.style.setProperty('--y', D + row * 2 * D + 'px');
+      b.cx = D + col * 2 * D + D / 2;     // resting centre, for the field
+      b.cy = D + row * 2 * D + D / 2;
     });
-
-    // Where the open mark will come to rest, in row coordinates. The pointer
-    // is tested against this rather than against its live box: for the third
-    // of a second the mark is widening, its live box does not yet reach the
-    // pointer that opened it, and testing against that box reads as having
-    // stepped off — which closes the mark and opens its neighbour, which then
-    // does the same. The flip never gets far enough to be seen. This box does
-    // not move, so the mark keeps the pointer while it opens.
-    var acc = 0;
-    for (var i = 0; i < r.live.length && r.live[i] !== b; i++) {
-      if (r.live[i].on) acc += parseFloat(r.live[i].el.style.width) + r.gap;
-    }
-    r.openBox = { l: acc, r: acc + b.cw };
   }
 
-  function close(b) {
-    var r = rows[b.y];
-    b.el.classList.remove('open');
-    if (r.open === b) { r.open = null; r.openBox = null; }
-    if (!r.live) return;
-    r.row.style.width = r.width + 'px';
-    r.live.forEach(function (x) { x.el.style.width = x.w + 'px'; });
+  // The active filters as a phrase, read in the order a person would say
+  // it: how recommended, what kind, when read. "all sci-fi read in 2024",
+  // "recommended fiction", "all-time books read in 2021 or earlier". Empty
+  // while nothing is filtered.
+  function summary() {
+    if (active.g === 'all' && active.y === 'all' && active.r === 'all') return '';
+    var how = { all: 'all', A: 'all-time', Y: 'recommended' }[active.r];
+    var what = active.g === 'all' ? 'books' : active.g.toLowerCase();
+    var when = active.y === 'all' ? '' : ' read in ' + (active.y === '≤ 2021' ? '2021 or earlier' : active.y);
+    return how + ' ' + what + when;
   }
-
-  /* ---- render ---- */
 
   function render() {
-    visible = [];
+    buttons.forEach(function (btn) {
+      var on = active[btn.dataset.group] === btn.dataset.value;
+      btn.setAttribute('aria-checked', on);
+      // Only the chosen stop is in the tab order; the arrows move along.
+      btn.tabIndex = on ? 0 : -1;
+    });
+    var shown = 0;
     books.forEach(function (b) {
       b.on = matches(b);
-      if (b.on) visible.push(b);
+      b.el.classList.toggle('off', !b.on);
+      // Out of the painting, so out of reach too: off the tab order and unread.
+      if (b.on) { b.el.removeAttribute('tabindex'); b.el.removeAttribute('aria-hidden'); shown++; }
+      else { b.el.tabIndex = -1; b.el.setAttribute('aria-hidden', 'true'); }
     });
+    // The grid is about to move under the pointer: let go of it entirely
+    // until the pointer moves again.
+    light(null);
+    calm();
+    unpeek();
 
-    // Nothing is added or removed — a filter only decides what is shown, so
-    // every surviving book keeps the position it already had.
-    books.forEach(function (b) { b.el.classList.toggle('off', !b.on); });
-
-    relayout();
-
-    GROUPS.forEach(function (grp) {
-      buttons[grp.key].forEach(function (btn) {
-        var v = btn.dataset.value;
-        // Count against every filter except this group's own, so a disabled
-        // option is one that would genuinely leave nothing behind.
-        var n = books.filter(function (b) {
-          return matches(b, grp.key) && (v === 'all' || b[grp.key] === v);
-        }).length;
-        btn.disabled = n === 0 && active[grp.key] !== v;
-        btn.setAttribute('aria-pressed', active[grp.key] === v);
-      });
+    // The unseen count, with the selection named, for a screen reader.
+    var names = GROUPS.filter(function (g) { return active[g.key] !== 'all'; }).map(function (g) {
+      var v = active[g.key];
+      if (g.key === 'r') return v === 'A' ? 'All-time' : 'Recommended';
+      // Read aloud beside the count, a bare 25 could be heard as a second
+      // count, so a year here takes its apostrophe: ’25, ≤ ’21.
+      if (g.key === 'y') return g.labels[v].replace(/(\d+)/, '\u2019$1');
+      return v;
     });
+    document.getElementById('count').textContent =
+      (shown === books.length ? books.length + ' spots' : shown + ' of ' + books.length + ' spots') +
+      (names.length ? ' — ' + names.join(' · ') : '');
+    var phrase = summary();
+    document.getElementById('n').textContent = phrase ? ': ' + phrase : '';
+    toggle.setAttribute('aria-label', phrase ? 'Filter: ' + phrase : 'Filter');
+    toggle.title = phrase ? 'Filter: ' + phrase : '';
+    clear.disabled = !names.length;
+    qclear.hidden = !names.length || band.classList.contains('open');
+    placeThumbs();
 
-    paintSpectrum();
-    readout.innerHTML = '<b>' + visible.length + '</b> out of <b>' + books.length + '</b>';
-    empty.hidden = visible.length > 0;
+    layout();
   }
 
-  function hueSat(hex) {
-    var r = parseInt(hex.substr(1, 2), 16) / 255,
-        g = parseInt(hex.substr(3, 2), 16) / 255,
-        b = parseInt(hex.substr(5, 2), 16) / 255;
-    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, hu = 0;
-    if (d) {
-      if (mx === r) hu = 60 * (((g - b) / d) % 6);
-      else if (mx === g) hu = 60 * ((b - r) / d + 2);
-      else hu = 60 * ((r - g) / d + 4);
-    }
-    if (hu < 0) hu += 360;
-    return { h: hu, s: mx ? d / mx : 0 };
+  /* ---- save ----
+     The image is the spots alone, drawn afresh rather than captured from the
+     screen: the grid as it stands, its one-spot margin all round, on the
+     page's white, at a size that prints. It is drawn from where each spot is
+     going, not where it is, so a save pressed mid-transition still comes out
+     square. Where the device can share a file (most phones) it goes to the
+     share sheet; otherwise it downloads. */
+
+  var GROUND = '#fcfbf8';
+
+  function picture() {
+    var st = getComputedStyle(work);
+    var d = parseFloat(st.getPropertyValue('--d'));
+    var w = parseFloat(st.getPropertyValue('--cw')), h = parseFloat(st.getPropertyValue('--ch'));
+    var k = Math.max(2, 2400 / w);          // at least 2400px across
+    var c = document.createElement('canvas');
+    c.width = Math.round(w * k);
+    c.height = Math.round(h * k);
+    var g = c.getContext('2d');
+    g.fillStyle = GROUND;
+    g.fillRect(0, 0, c.width, c.height);
+    books.forEach(function (b) {
+      if (!b.on) return;
+      var x = parseFloat(b.el.style.getPropertyValue('--x')), y = parseFloat(b.el.style.getPropertyValue('--y'));
+      g.fillStyle = b.paint;
+      g.beginPath();
+      g.arc((x + d / 2) * k, (y + d / 2) * k, d / 2 * k, 0, Math.PI * 2);
+      g.fill();
+    });
+    return c;
   }
 
-  /* Two halves. 0 is anything with a hue worth reading; 1 is everything the
-     eye takes as a neutral — too grey to carry a hue, or so dark that it
-     reads as black whatever its hue.
-
-     Judged on the cover's own colour rather than on which filter bucket it
-     was filed under. Grouping by filter family put brown after purple simply
-     because Brown is the eighth dot; but brown is dark orange, and on a ramp
-     it belongs with the oranges. The band is a gradient, not a legend for the
-     dots above it. */
-  function rampGroup(hex) {
-    var c = hueSat(hex), L = lum(hex);
-    return (L < 0.035 || c.s < 0.22) ? 1 : 0;
+  function fileName() {
+    var parts = GROUPS.filter(function (g) { return active[g.key] !== 'all'; }).map(function (g) {
+      var v = active[g.key];
+      return g.key === 'r' ? (v === 'A' ? 'all-time' : 'recommended') : v;
+    });
+    var tag = parts.join('-').toLowerCase().replace(/≤\s*/g, 'to-').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return 'bookshelf-spots' + (tag ? '-' + tag : '') + '.png';
   }
 
-  /* Red straddles hue zero — a scarlet can measure 355 and a pillar-box 3 —
-     so raw hue throws half the reds to the far end of the band. Cutting the
-     circle at 350 instead puts the whole red family together at the head and
-     leaves the seam among the magentas, which is where the spectrum wants to
-     wrap anyway. */
-  function rampHue(hex) { return (hueSat(hex).h + 10) % 360; }
+  // Inside a claude.ai artifact a page may not download for itself; the
+  // viewer offers the file instead, after a confirmation. Anywhere else there
+  // is no window.claude and the save goes the ordinary way.
+  var viaViewer = window.claude && window.claude.use ? window.claude.use('downloads') : Promise.resolve(null);
 
-  // Always on: with no colour chosen it is the whole collection sorted by hue
-  // and then by shade, so the band is a map of the shelf rather than a
-  // readout that only appears once you have committed to something.
-  function paintSpectrum() {
-    if (!spectrum) return;
-    if (!visible.length) {
-      spectrum.classList.remove('shown');
-      spectrum.textContent = '';
-      spectrum.removeAttribute('aria-label');
-      return;
-    }
-
-    var shades = visible.slice(), label;
-    if (active.c === 'all') {
-      shades.forEach(function (b) {
-        b._g = rampGroup(b.k);
-        b._h = rampHue(b.k);
-        b._l = lum(b.k);
-      });
-      shades.sort(function (a, b) {
-        if (a._g !== b._g) return a._g - b._g;              // colours, then neutrals
-        if (a._g === 0) {
-          // the spectrum, red first
-          if (Math.abs(a._h - b._h) > 0.5) return a._h - b._h;
-          return b._l - a._l;
+  document.getElementById('save').addEventListener('click', function () {
+    if (!books.some(function (b) { return b.on; })) return;
+    picture().toBlob(function (blob) {
+      var name = fileName();
+      viaViewer.then(function (downloads) {
+        if (downloads) {
+          downloads.save({ filename: name, data: blob }).catch(function () {});
+          return;
         }
-        return a._l - b._l;                                  // black, greys, white
+        ordinary(blob, name);
       });
-      label = shades.length + ' covers, red through the spectrum, then black to white';
-    } else {
-      shades.sort(function (a, b) { return lum(b.k) - lum(a.k); });
-      label = shades.length + ' ' + active.c.toLowerCase() + ' covers, lightest to darkest';
-    }
-
-    spectrum.textContent = '';        // the lit band is about to be discarded
-    litBand = null;
-    litBook = null;
-    shades.forEach(function (b) {
-      var band = document.createElement('i');
-      band.style.setProperty('--b', b.k);
-      band.book = b;
-      spectrum.appendChild(band);
-    });
-    spectrum.setAttribute('aria-label', label);
-    spectrum.classList.add('shown');
-  }
-
-  /* Pointing at a band flips the book it was sampled from. The band and the
-     spine are the same book seen two ways, so the rail doubles as an index
-     into the chart. */
-  function unlight() {
-    if (litBand) litBand.classList.remove('lit');
-    if (litBook) close(litBook);
-    litBand = null;
-    litBook = null;
-  }
-
-  function bindSpectrum() {
-    if (!spectrum) return;
-    spectrum.addEventListener('pointermove', function (e) {
-      var band = e.target;
-      if (!band || band.parentNode !== spectrum || !band.book) return;
-      if (band === litBand) return;
-      unlight();
-      litBand = band;
-      litBook = band.book;
-      band.classList.add('lit');
-      open(litBook);
-    });
-    spectrum.addEventListener('pointerleave', unlight);
-  }
-
-  var resizeTimer, lastW = 0, lastH = 0;
-  addEventListener('resize', function () {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () {
-      var w = chartWidth();
-      if (w === lastW && innerHeight === lastH) return;
-      lastW = w;
-      lastH = innerHeight;
-      relayout();
-    }, 140);
+    }, 'image/png');
   });
 
-  YEARS.forEach(function (y) { bindRow(rows[y]); });
-  bindSpectrum();
+  function ordinary(blob, name) {
+    var file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Bookshelf' }).catch(function () {});
+      return;
+    }
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
 
+  var pending = 0;
+  addEventListener('resize', function () {
+    cancelAnimationFrame(pending);
+    pending = requestAnimationFrame(layout);
+  });
+
+  // Hung, not assembled: the first layout is placed without transitions.
+  canvas.classList.add('still');
   render();
-  lastW = chartWidth();
-  lastH = innerHeight;
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { canvas.classList.remove('still'); });
+  });
 })();
 </script>
-
 </body>
 </html>
