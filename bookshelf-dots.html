@@ -59,28 +59,37 @@
   /* Filter sits on its own line under the name rather than in the bar.
      Opened, it gives way to the filters: it fades as they unroll from the
      same place, and comes back when they are closed. A long phrase of
-     active filters wraps rather than running off a phone's edge. Pulled
-     out by its own inset so its text starts under the name. */
-  .topbar .toggle {
+     active filters wraps rather than running off a phone's edge. While a
+     filter is on, a Clear sits after it, so the filters can be undone
+     without opening them. Pulled out by a button's inset so the text
+     starts under the name. */
+  .filterline {
     position: absolute;
     left: var(--margin);
-    margin-left: -.9em;
+    margin-left: calc(-11px * .9);
     top: calc(100% + 2px);
     z-index: 11;
-    max-width: calc(100vw - 2 * var(--margin));
-    white-space: normal;
-    text-align: left;
-    line-height: 1.5;
-    transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .2s ease, visibility 0s;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 6px;
+    max-width: calc(100vw - 2 * var(--margin) + 11px * .9);
+    transition: opacity .2s ease, visibility 0s;
   }
-  .topbar .toggle[aria-expanded="true"] {
+  .filterline.away {
     opacity: 0;
     visibility: hidden;
     transition: opacity .2s ease, visibility 0s linear .2s;
   }
+  .filterline .toggle {
+    white-space: normal;
+    text-align: left;
+    line-height: 1.5;
+  }
 
   /* Closes the filters from inside them; pushed to the far end of the row. */
   .band-close { margin-left: auto; }
+  .band .clear, .band-close { margin-bottom: 2px; }
   .menu { position: relative; margin-left: auto; display: flex; align-items: center; }
 
   .wordmark {
@@ -382,7 +391,7 @@
   .rec:hover { color: var(--ink-strong); text-decoration-color: currentColor; }
   .rec:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
-  .opt[aria-pressed="true"], .opt[aria-expanded="true"] {
+  .opt[aria-expanded="true"] {
     color: var(--ink-strong);
     background: rgba(0,0,0,.07);
     border-color: rgba(0,0,0,.16);
@@ -391,10 +400,22 @@
      count, so a closed band still says what the painting is showing. */
   .toggle .n { color: var(--ink-strong); }
 
-  /* Shown only while a filter is on; it keeps its place while hidden, so
-     the band's height never changes with it. */
-  .clear { transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .3s ease; }
+  /* Clear undoes rather than chooses, so it is set apart in a pale shade of
+     the site's red block. Inside the band it keeps its place while hidden,
+     so the band's height never changes with it. */
+  .opt.clear {
+    color: rgb(168, 58, 48);
+    background: rgba(201, 74, 63, .09);
+    border-color: rgba(201, 74, 63, .18);
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease, opacity .3s ease;
+  }
+  .opt.clear:hover {
+    color: rgb(140, 44, 36);
+    background: rgba(201, 74, 63, .15);
+    border-color: rgba(201, 74, 63, .34);
+  }
   .clear[disabled] { opacity: 0; pointer-events: none; }
+  .clear[hidden] { display: none; }
 
   /* The filters, in one band under the bar that unrolls left to right from
      where Filter stands. Opened, it lies over the preview's strip (and on a
@@ -414,10 +435,13 @@
     transition: clip-path .45s ease-out, opacity .3s ease;
   }
   .band.open { clip-path: inset(0 0 -24px 0); opacity: 1; }
+  /* Items meet along their foot, so Clear and the close button sit level
+     with the sliders' row even where a group's name stands above its
+     slider. */
   .filters {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-end;
     gap: 6px clamp(18px, 2.4vw, 34px);
     /* Pulled out by a button's inset, so the text in it lines up with the
        name; stated in the buttons' 11px, not this box's own font size. */
@@ -437,9 +461,41 @@
     font-size: 10px;
     color: #a49a8e;
   }
-  /* The options wrap within their own column, so a second line starts under
-     the first option rather than under the group's name. */
-  .group .opts { display: flex; flex-wrap: wrap; gap: 1px; min-width: 0; }
+  /* Each group is a slider: its choices sit on one track, and a thumb under
+     the chosen one slides from choice to choice as another is picked, or as
+     it is dragged along the track. The track takes a finger's drag itself
+     rather than scrolling the page. */
+  .track {
+    position: relative;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    padding: 2px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .045);
+    touch-action: none;
+    cursor: pointer;
+  }
+  .thumb {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: var(--tx, 2px);
+    width: var(--tw, 0px);
+    border-radius: 999px;
+    background: #fcfbf8;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .07), 0 1px 3px rgba(40, 30, 20, .16);
+    transition: left .3s ease-out, width .3s ease-out;
+  }
+  .track .opt {
+    position: relative;
+    z-index: 1;
+    border: 0;
+    background: none;
+    padding: .62em .95em;
+  }
+  .track .opt:hover { background: none; }
+  .track .opt[aria-checked="true"] { color: var(--ink-strong); }
+  .track.dragging .thumb { transition-duration: .2s; }
 
   @media (max-width: 860px) {
     :root { --margin: 20px; }
@@ -448,8 +504,15 @@
     /* On a phone the two actions sit centred under the grid; on a desktop
        they line up with the name. */
     .actions { justify-content: center; margin-left: 0; }
-    .group { flex-direction: column; }
-    .group legend { width: 100%; margin: 4px 0 0; }
+    .group { flex-direction: column; align-items: flex-start; }
+    .group legend { width: 100%; margin: 4px 0 3px; padding-left: 0; }
+    /* Stacked, each slider's own edge lines up with the name rather than
+       the text inside it, and the close button takes the band's top corner
+       so it never wraps onto a line of its own. */
+    .filters { margin-left: 0; }
+    .band-close { position: absolute; top: 0; right: calc(var(--margin) - 11px * .9); margin: 0; }
+    /* Narrow enough for the year's seven stops on the smallest phones. */
+    .track .opt { padding: .62em .72em; letter-spacing: .12em; }
   }
 
   /* ---------------------------------------------------------------- card */
@@ -563,7 +626,10 @@
 
 <header class="topbar">
   <a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
-  <button type="button" class="opt toggle" id="toggle" aria-expanded="false" aria-controls="band">Filter<span class="n" id="n"></span></button>
+  <div class="filterline" id="filterline">
+    <button type="button" class="opt toggle" id="toggle" aria-expanded="false" aria-controls="band">Filter<span class="n" id="n"></span></button>
+    <button type="button" class="opt clear" id="qclear" aria-label="Clear filters" hidden>Clear</button>
+  </div>
   <div class="menu">
     <nav class="site-nav" id="site-nav" aria-label="Primary" inert>
       <a href="about.html">About</a>
@@ -869,11 +935,25 @@ var books = [
   var toggle = document.getElementById('toggle');
   var burger = document.getElementById('burger');
   var siteNav = document.getElementById('site-nav');
+  var filterline = document.getElementById('filterline');
+  var qclear = document.getElementById('qclear');
   var clear = document.createElement('button');
   clear.type = 'button';
   clear.className = 'opt clear';
   clear.textContent = 'Clear';
   clear.disabled = true;
+
+  /* Each group is a slider: a radio group of choices on one track, with a
+     thumb under the chosen one. A tap picks a choice; a drag along the
+     track picks whichever choice is under the finger as it goes, so the
+     painting follows the thumb stop by stop; the arrow keys step it. */
+  var tracks = [];
+
+  function pick(grp, v) {
+    if (active[grp.key] === v) return;
+    active[grp.key] = v;
+    render();
+  }
 
   GROUPS.forEach(function (grp) {
     var fs = document.createElement('fieldset');
@@ -881,26 +961,75 @@ var books = [
     var lg = document.createElement('legend');
     lg.textContent = grp.name;
     fs.appendChild(lg);
-    var opts = document.createElement('div');
-    opts.className = 'opts';
-    fs.appendChild(opts);
+    var track = document.createElement('div');
+    track.className = 'track';
+    track.setAttribute('role', 'radiogroup');
+    track.setAttribute('aria-label', grp.name);
+    var thumb = document.createElement('span');
+    thumb.className = 'thumb';
+    thumb.setAttribute('aria-hidden', 'true');
+    track.appendChild(thumb);
+    fs.appendChild(track);
+    var stops = [];
     ['all'].concat(grp.values).forEach(function (v) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'opt';
+      btn.setAttribute('role', 'radio');
       btn.textContent = v === 'all' ? 'All' : (grp.labels ? grp.labels[v] : v);
       btn.dataset.group = grp.key;
       btn.dataset.value = v;
-      btn.addEventListener('click', function () {
-        active[grp.key] = active[grp.key] === v ? 'all' : v;
-        render();
+      btn.addEventListener('click', function () { pick(grp, v); });
+      btn.addEventListener('keydown', function (e) {
+        var i = stops.indexOf(btn), to = null;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') to = stops[Math.min(stops.length - 1, i + 1)];
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') to = stops[Math.max(0, i - 1)];
+        if (e.key === 'Home') to = stops[0];
+        if (e.key === 'End') to = stops[stops.length - 1];
+        if (!to) return;
+        e.preventDefault();
+        to.focus();
+        pick(grp, to.dataset.value);
       });
-      opts.appendChild(btn);
+      track.appendChild(btn);
+      stops.push(btn);
       buttons.push(btn);
     });
+
+    // The stop under a point along the track, held to the ends past them.
+    function stopAt(x) {
+      for (var i = 0; i < stops.length; i++) {
+        if (x < stops[i].getBoundingClientRect().right) return stops[i];
+      }
+      return stops[stops.length - 1];
+    }
+    track.addEventListener('pointerdown', function (e) {
+      track.setPointerCapture(e.pointerId);
+      track.classList.add('dragging');
+      pick(grp, stopAt(e.clientX).dataset.value);
+    });
+    track.addEventListener('pointermove', function (e) {
+      if (!track.hasPointerCapture(e.pointerId)) return;
+      pick(grp, stopAt(e.clientX).dataset.value);
+    });
+    function release() { track.classList.remove('dragging'); }
+    track.addEventListener('pointerup', release);
+    track.addEventListener('pointercancel', release);
+
+    tracks.push({ grp: grp, track: track, thumb: thumb, stops: stops });
     filters.appendChild(fs);
   });
   filters.appendChild(clear);
+
+  // The thumb sits under the chosen stop, measured from the stop itself so
+  // it fits whatever width the stop's label gives it.
+  function placeThumbs() {
+    tracks.forEach(function (t) {
+      var on = t.stops.filter(function (b) { return b.dataset.value === active[t.grp.key]; })[0];
+      t.track.style.setProperty('--tx', on.offsetLeft + 'px');
+      t.track.style.setProperty('--tw', on.offsetWidth + 'px');
+    });
+  }
   var bandClose = document.createElement('button');
   bandClose.type = 'button';
   bandClose.className = 'opt band-close';
@@ -918,13 +1047,17 @@ var books = [
     panel.classList.toggle('open', open);
     btn.setAttribute('aria-expanded', open);
     panel.inert = !open;
+    if (panel === band) {
+      filterline.classList.toggle('away', open);
+      qclear.hidden = open || clear.disabled;
+    }
   }
   toggle.addEventListener('click', function () {
     var open = toggle.getAttribute('aria-expanded') !== 'true';
     setOpen(toggle, band, open);
-    // On a desktop the button just pressed disappears, so focus goes on to
-    // the first filter rather than being dropped.
-    if (open) band.querySelector('.opt').focus();
+    // The button just pressed disappears, so focus goes on to the first
+    // filter rather than being dropped.
+    if (open) band.querySelector('.track .opt[aria-checked="true"]').focus();
   });
   burger.addEventListener('click', function () {
     setOpen(burger, siteNav, burger.getAttribute('aria-expanded') !== 'true');
@@ -939,10 +1072,19 @@ var books = [
       return true;     // one at a time, the most recently reached first
     });
   });
-  clear.addEventListener('click', function () {
+  function clearAll() {
     active = { g: 'all', y: 'all', r: 'all' };
     render();
-    toggle.focus();     // the button just pressed is about to disappear
+  }
+  // Either Clear disappears once it has done its work, so focus moves on:
+  // in the open band to the first slider, from the folded line to Filter.
+  clear.addEventListener('click', function () {
+    clearAll();
+    band.querySelector('.track .opt[aria-checked="true"]').focus();
+  });
+  qclear.addEventListener('click', function () {
+    clearAll();
+    toggle.focus();
   });
 
   /* The pointer is a field the spots lean away from, wherever it is over
@@ -1267,7 +1409,7 @@ var books = [
   // line's height follows the phrase on it, which changes only with the
   // filters, when the painting is being rearranged anyway.
   function reserve() {
-    var r = toggle.offsetHeight + 8;
+    var r = filterline.offsetHeight + 8;
     // The preview hangs just under Filter.
     document.querySelector('.topbar').style.setProperty('--peek-top', r + 4 + 'px');
     // The preview's strip above the painting is kept free too, so it
@@ -1277,6 +1419,7 @@ var books = [
   }
 
   function layout() {
+    placeThumbs();      // a stop's width changes with the window on a phone
     reserve();
     var shown = books.filter(function (b) { return b.on; });
     var n = shown.length;
@@ -1356,7 +1499,10 @@ var books = [
 
   function render() {
     buttons.forEach(function (btn) {
-      btn.setAttribute('aria-pressed', active[btn.dataset.group] === btn.dataset.value);
+      var on = active[btn.dataset.group] === btn.dataset.value;
+      btn.setAttribute('aria-checked', on);
+      // Only the chosen stop is in the tab order; the arrows move along.
+      btn.tabIndex = on ? 0 : -1;
     });
     var shown = 0;
     books.forEach(function (b) {
@@ -1389,6 +1535,8 @@ var books = [
     toggle.setAttribute('aria-label', phrase ? 'Filter: ' + phrase : 'Filter');
     toggle.title = phrase ? 'Filter: ' + phrase : '';
     clear.disabled = !names.length;
+    qclear.hidden = !names.length || band.classList.contains('open');
+    placeThumbs();
 
     layout();
   }
