@@ -194,7 +194,9 @@
     justify-content: center;
     /* --reserve is Filter's line and the preview's strip, kept free above
        the spots: see reserve(). */
-    padding: calc(clamp(18px, 2.6vw, 40px) + var(--reserve, 0px)) var(--margin) clamp(18px, 2.6vw, 40px);
+    /* --below tops the foot of the gallery up so the last row stands at
+       least a diameter above the bottom of the page: see layout(). */
+    padding: calc(clamp(18px, 2.6vw, 40px) + var(--reserve, 0px)) var(--margin) max(clamp(18px, 2.6vw, 40px), var(--below, 0px));
   }
 
   .work {
@@ -213,6 +215,11 @@
      of the painting being torn down and rehung. */
   .canvas {
     position: relative;
+    /* A finger on the grid slides over the spots, as a mouse would, rather
+       than scrolling the page: that is how a touchscreen gets the preview
+       and the push. The page still scrolls from the bar, the foot and the
+       margins, which are at least a diameter wide. */
+    touch-action: none;
     width: var(--cw, 0px);
     height: var(--ch, 0px);
     /* A book leaving fades where it stood, but takes the new spot size like
@@ -275,8 +282,8 @@
      year. It hangs from the filters, not the painting: under the filter
      row, lined up with the name and Filter, in the same place whatever
      shape the grid takes. Its strip is kept free (see reserve()), so it
-     never moves the spots, and it takes no pointer. Only where there is a
-     pointer to hover with: on a touchscreen a tap opens the card instead. */
+     never moves the spots, and it takes no pointer. On a touchscreen it
+     follows a finger sliding over the grid, as it follows a mouse. */
   .peek {
     position: absolute;
     left: var(--margin);
@@ -316,7 +323,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  @media (hover: none) { .peek { display: none; } }
 
   .empty {
     position: absolute;
@@ -439,6 +445,9 @@
     :root { --margin: 20px; }
   }
   @media (max-width: 560px) {
+    /* On a phone the two actions sit centred under the grid; on a desktop
+       they line up with the name. */
+    .actions { justify-content: center; margin-left: 0; }
     .group { flex-direction: column; }
     .group legend { width: 100%; margin: 4px 0 0; }
   }
@@ -981,7 +990,6 @@ var books = [
   }
 
   var peekEl = document.getElementById('peek');
-  var canHover = matchMedia('(hover: hover)');
   function peek(b) {
     peekEl.textContent = '';
     // The cover is only fetched when a spot is first pointed at. Where it
@@ -1027,8 +1035,20 @@ var books = [
     light(on);
     field(x, y, on);
   }
+  // A press that slides is looking, not choosing: it must not open the card
+  // of the spot it started on when it lifts, which with a finger it would,
+  // since the press stays with that spot wherever the finger goes.
+  var press = null, slid = false;
+  gallery.addEventListener('pointerdown', function (e) {
+    press = { x: e.clientX, y: e.clientY };
+    slid = false;
+    pointer = { x: e.clientX, y: e.clientY };
+    if (!frame) frame = requestAnimationFrame(track);
+  });
+  addEventListener('pointerup', function () { press = null; });
   gallery.addEventListener('pointermove', function (e) {
     pointer = { x: e.clientX, y: e.clientY };
+    if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) slid = true;
     if (!frame) frame = requestAnimationFrame(track);
   });
   gallery.addEventListener('pointerleave', function () {
@@ -1211,7 +1231,10 @@ var books = [
       peek(b);
     });
     a.addEventListener('blur', function () { calm(); unpeek(); });
-    a.addEventListener('click', function () { openCard(b); });
+    a.addEventListener('click', function () {
+      if (slid) { slid = false; return; }
+      openCard(b);
+    });
     b.el = a;
     canvas.appendChild(a);
   });
@@ -1247,9 +1270,9 @@ var books = [
     var r = toggle.offsetHeight + 8;
     // The preview hangs just under Filter.
     document.querySelector('.topbar').style.setProperty('--peek-top', r + 4 + 'px');
-    // Where there is a pointer to hover with, the preview's strip above the
-    // painting is kept free too, so it appears without moving anything.
-    if (canHover.matches) r += PEEK;
+    // The preview's strip above the painting is kept free too, so it
+    // appears without moving anything.
+    r += PEEK;
     gallery.style.setProperty('--reserve', r + 'px');
   }
 
@@ -1267,7 +1290,7 @@ var books = [
     // On a phone the bar takes much of the screen, and fitting what is left
     // would leave spots too small to tap. There the painting may run on below
     // the fold, as tall as most of a screen.
-    if (W < 560) H = Math.max(H, innerHeight * 0.72);
+    if (W < 560) H = Math.max(H, innerHeight * 0.66);
 
     document.getElementById('empty').hidden = n > 0;
     if (!n) return;            // an empty canvas keeps the size it had
@@ -1298,6 +1321,13 @@ var books = [
     c = best.c; r = best.r;
     var D = Math.floor(Math.min(MAX_D, best.d) * 4) / 4;
     spotD = D;
+
+    // Where the grid runs on below the fold, the gap under it is the
+    // gallery's padding and the foot's row and nothing else, so the padding
+    // is topped up to make that gap a diameter. Where the grid fits, the
+    // sizing above already leaves at least that, and this asks for no more
+    // than the room there is.
+    gallery.style.setProperty('--below', Math.max(0, D - lab) + 'px');
 
     // Set on the figure, which the canvas and its spots both read.
     work.style.setProperty('--d', D + 'px');
