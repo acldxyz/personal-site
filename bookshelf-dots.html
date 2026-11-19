@@ -706,6 +706,9 @@
 /* t title · a author · y year · r recommendation · g genre · c colour family
    k dominant hex · s cover aspect (w/h) · p pages · u cover */
 var books = [
+  { t: "The Genius Zone", a: "Gay Hendricks", y: "2026", r: "X", g: "Non-Fiction", c: "White", k: "#f2f4f3", s: 0.644, p: 160, u: "https://m.media-amazon.com/images/P/1250246547.01.L.jpg" },
+  { t: "Children of Time", a: "Adrian Tchaikovsky", y: "2026", r: "X", g: "Sci-Fi", c: "Green", k: "#3f7a5a", s: 0.651, p: 416, u: "https://m.media-amazon.com/images/P/0316452505.01.L.jpg" },
+  { t: "The Big Leap", a: "Gay Hendricks", y: "2026", r: "X", g: "Non-Fiction", c: "White", k: "#e8e4da", s: 0.667, p: 224, u: "https://m.media-amazon.com/images/P/0061735361.01.L.jpg" },
   { t: "The Tao of Fundraising", a: "John Kim", y: "2026", r: "X", g: "Non-Fiction", c: "White", k: "#e8e4da", s: 0.667, p: 256, u: "https://m.media-amazon.com/images/P/163763496X.01.L.jpg" },
   { t: "The Enneagram: Nine Gateways to Presence", a: "Russ Hudson", y: "2026", r: "A", g: "Non-Fiction", c: "Purple", k: "#5b4a7a", s: 1, p: 400, u: "https://m.media-amazon.com/images/P/1683645790.01.L.jpg" },
   { t: "Echopraxia", a: "Peter Watts", y: "2026", r: "X", g: "Sci-Fi", c: "Orange", k: "#ce9045", s: 0.668, p: 384, u: "https://covers.openlibrary.org/b/id/8457790-L.jpg" },
@@ -873,6 +876,8 @@ var books = [
      colour comes within 10 of a spot here, it takes another from its cover. */
 
   var SPOT = {
+    "The Genius Zone": "#718fa5",
+    "The Big Leap": "#9db8dc",
     "The Metamorphosis of Prime Intellect": "#d1d1d1",
     "The Creative Act: A Way of Being": "#b2b9ae",
     "Trail Wise, Path Ways": "#828484",
