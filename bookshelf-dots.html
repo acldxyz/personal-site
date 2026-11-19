@@ -594,7 +594,7 @@
   }
 
   /* The cover is the link. It lifts a little when pointed at, as a book
-     picked up would, and says where it goes underneath. */
+     picked up would, and an arrow underneath marks it as a way out. */
   .buy {
     flex: none;
     display: flex;
@@ -1450,8 +1450,10 @@ var books = [
     if (big && !ready) {
       big.addEventListener('load', function () { if (big.naturalWidth > 8 && art.tagName === 'IMG') art.src = b.u; });
     }
+    // Only the arrow shows; the link's label says where it goes.
     var where = document.createElement('span');
-    where.textContent = 'Buy on Amazon ↗';
+    where.setAttribute('aria-hidden', 'true');
+    where.textContent = '↗';
     buy.appendChild(art);
     buy.appendChild(where);
     document.getElementById('card-title').textContent = b.t;
