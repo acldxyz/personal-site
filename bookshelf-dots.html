@@ -107,6 +107,26 @@
   .wordmark:hover { opacity: 1; }
   .wordmark:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 
+  /* The page's name beside the site's, so a visitor knows where they are:
+     the interface's small capitals, after a hairline, centred on the
+     two-line wordmark. */
+  .page-name {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 1.6vw, 18px);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .page-name::before {
+    content: '';
+    width: 1px;
+    height: 26px;
+    background: rgba(0, 0, 0, .16);
+  }
+
   /* Opens leftward from the menu button, on the page's white, over whatever
      it reaches; on a phone that is the wordmark too, and the row scrolls
      sideways rather than wrapping. Inert while closed. */
@@ -626,6 +646,7 @@
 
 <header class="topbar">
   <a class="wordmark" href="index.html">ADAM<br>DAWSON</a>
+  <h1 class="page-name">Bookshelf</h1>
   <div class="filterline" id="filterline">
     <button type="button" class="opt toggle" id="toggle" aria-expanded="false" aria-controls="band">Filter<span class="n" id="n"></span></button>
     <button type="button" class="opt clear" id="qclear" aria-label="Clear filters" hidden>Clear</button>
@@ -653,7 +674,6 @@
     </div>
 
     <div class="unseen">
-      <h1>Bookshelf<span id="which"></span></h1>
       <p id="count" aria-live="polite"></p>
     </div>
   </figure>
@@ -1518,7 +1538,7 @@ var books = [
     calm();
     unpeek();
 
-    // The unseen label names the selection for a screen reader.
+    // The unseen count, with the selection named, for a screen reader.
     var names = GROUPS.filter(function (g) { return active[g.key] !== 'all'; }).map(function (g) {
       var v = active[g.key];
       if (g.key === 'r') return v === 'A' ? 'All-time' : 'Recommended';
@@ -1527,9 +1547,9 @@ var books = [
       if (g.key === 'y') return g.labels[v].replace(/(\d+)/, '\u2019$1');
       return v;
     });
-    document.getElementById('which').textContent = names.length ? ' — ' + names.join(' · ') : '';
     document.getElementById('count').textContent =
-      (shown === books.length ? books.length + ' spots' : shown + ' of ' + books.length + ' spots');
+      (shown === books.length ? books.length + ' spots' : shown + ' of ' + books.length + ' spots') +
+      (names.length ? ' — ' + names.join(' · ') : '');
     var phrase = summary();
     document.getElementById('n').textContent = phrase ? ': ' + phrase : '';
     toggle.setAttribute('aria-label', phrase ? 'Filter: ' + phrase : 'Filter');
