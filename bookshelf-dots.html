@@ -593,15 +593,14 @@
     padding: clamp(20px, 3vw, 30px);
   }
 
-  /* The cover is the link. It lifts a little when pointed at, as a book
-     picked up would, and an arrow underneath marks it as a way out. */
+  /* The cover is the link, with nothing written under it: it lifts a little
+     when pointed at, as a book picked up would. Its label names the shop
+     and the new tab for anyone not seeing it. */
   .buy {
     flex: none;
     display: flex;
     flex-direction: column;
-    gap: 10px;
     text-decoration: none;
-    color: var(--ink-quiet);
   }
   .buy .art {
     display: block;
@@ -614,15 +613,13 @@
     transition: transform .3s ease-out, box-shadow .3s ease-out;
   }
   .buy:hover .art { transform: translateY(-3px); box-shadow: 6px 12px 22px -6px rgba(40,30,20,.42), inset 0 0 0 1px rgba(60,48,32,.14); }
-  .buy:hover { color: var(--ink-strong); }
   .buy:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 3px; }
-  .buy span, .facts dt, .card-close, .card h2, .card .by {
+  .facts dt, .card-close, .card h2, .card .by {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
     text-transform: uppercase;
   }
-  .buy span { transition: color .2s ease; }
 
   .card-text { min-width: 0; display: flex; flex-direction: column; padding-top: 2px; }
   .card h2 { color: var(--ink-strong); font-size: 13px; line-height: 1.45; }
@@ -1450,12 +1447,7 @@ var books = [
     if (big && !ready) {
       big.addEventListener('load', function () { if (big.naturalWidth > 8 && art.tagName === 'IMG') art.src = b.u; });
     }
-    // Only the arrow shows; the link's label says where it goes.
-    var where = document.createElement('span');
-    where.setAttribute('aria-hidden', 'true');
-    where.textContent = '↗';
     buy.appendChild(art);
-    buy.appendChild(where);
     document.getElementById('card-title').textContent = b.t;
     document.getElementById('card-by').textContent = b.a;
     document.getElementById('card-read').textContent = b.y === '≤ 2021' ? '2021 or earlier' : b.y;
