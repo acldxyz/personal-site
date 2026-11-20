@@ -331,14 +331,17 @@
     transition: opacity .2s ease;
   }
   .peek.on { opacity: 1; }
+  /* Sized from the cover's shape and painted the spot's colour until the
+     cover is in, so the line beside it never jumps. */
   .peek img, .peek .swatch {
     flex: none;
     height: 52px;
-    width: auto;
+    width: calc(52px * var(--s));
+    object-fit: cover;
+    background: var(--k);
     border-radius: 1px 2px 2px 1px;
     box-shadow: 2px 3px 6px -3px rgba(40,30,20,.4), inset 0 0 0 1px rgba(60,48,32,.14);
   }
-  .peek .swatch { width: calc(52px * var(--s)); background: var(--k); }
   .peek p {
     min-width: 0;
     padding-bottom: 1px;
@@ -558,10 +561,27 @@
       0 24px 60px -18px rgba(40,30,20,.38);
     max-width: min(620px, calc(100vw - 2 * var(--margin)));
     max-height: calc(100vh - 2 * var(--margin));
+    max-height: calc(100dvh - 2 * var(--margin));
     opacity: 0;
     transform: translateY(8px) scale(.98);
     transition: opacity .3s ease-out, transform .3s ease-out, overlay .3s allow-discrete, display .3s allow-discrete;
   }
+  /* The screen's height with the browser's bars showing, which the painting
+     is fitted to. A phone's toolbar slides away as the page scrolls and back
+     as it returns, changing the window's height each time but not this, so
+     the painting holds still while the page scrolls. 100vh where svh is
+     unknown. */
+  .screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100vh;
+    height: 100svh;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   .card[open] { opacity: 1; transform: none; }
   @starting-style { .card[open] { opacity: 0; transform: translateY(8px) scale(.98); } }
   .card::backdrop {
@@ -578,35 +598,33 @@
     padding: clamp(20px, 3vw, 30px);
   }
 
-  /* The cover is the link. It lifts a little when pointed at, as a book
-     picked up would, and says where it goes underneath. */
+  /* The cover is the link, with nothing written under it: it lifts a little
+     when pointed at, as a book picked up would. Its label names the shop
+     and the new tab for anyone not seeing it. */
   .buy {
     flex: none;
     display: flex;
     flex-direction: column;
-    gap: 10px;
     text-decoration: none;
-    color: var(--ink-quiet);
   }
   .buy .art {
     display: block;
     height: clamp(200px, 34vh, 290px);
-    width: auto;
+    width: calc(clamp(200px, 34vh, 290px) * var(--s));
+    object-fit: cover;
+    background: var(--k);
     border-radius: 1.5px 3px 3px 1.5px;
     box-shadow: 3px 5px 12px -4px rgba(40,30,20,.42), inset 0 0 0 1px rgba(60,48,32,.14);
     transition: transform .3s ease-out, box-shadow .3s ease-out;
   }
-  .buy .art.swatch { width: calc(clamp(200px, 34vh, 290px) * var(--s)); background: var(--k); }
   .buy:hover .art { transform: translateY(-3px); box-shadow: 6px 12px 22px -6px rgba(40,30,20,.42), inset 0 0 0 1px rgba(60,48,32,.14); }
-  .buy:hover { color: var(--ink-strong); }
   .buy:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 3px; }
-  .buy span, .facts dt, .card-close, .card h2, .card .by {
+  .facts dt, .card-close, .card h2, .card .by {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .16em;
     text-transform: uppercase;
   }
-  .buy span { transition: color .2s ease; }
 
   .card-text { min-width: 0; display: flex; flex-direction: column; padding-top: 2px; }
   .card h2 { color: var(--ink-strong); font-size: 13px; line-height: 1.45; }
@@ -632,8 +650,7 @@
        button at the top right. */
     .card { width: calc(100vw - 2 * var(--margin)); }
     .card-body { flex-direction: column; align-items: flex-start; }
-    .buy .art { height: 220px; }
-    .buy .art.swatch { width: calc(220px * var(--s)); }
+    .buy .art { height: 220px; width: calc(220px * var(--s)); }
     .facts { margin-top: 18px; }
   }
 
@@ -706,6 +723,8 @@
   </div>
   <button type="button" class="opt card-close" id="card-close" aria-label="Close">✕</button>
 </dialog>
+
+<div class="screen" id="screen" aria-hidden="true"></div>
 
 <script>
 /* t title · a author · y year · r recommendation · g genre · c colour family
@@ -1183,23 +1202,61 @@ var books = [
     if (b) { b.el.classList.add('lit'); peek(b); } else unpeek();
   }
 
+  /* Covers. The preview shows a small copy: Open Library's medium size or
+     Amazon's 160px one, both sharp at 52px on a 3x screen. Most Open Library
+     covers are unpacked from an archive.org zip on every request, which
+     takes a second or so, so the small copies are fetched ahead, a few at a
+     time once the page has settled, newest first. About 1.5MB in all, and
+     skipped where the visitor's browser is set to save data. Held here so
+     the page keeps them; an <img> asking for one again gets it at once. */
+  function small(u) {
+    return u.replace(/-L\.jpg$/, '-M.jpg').replace(/\.01\.L\.jpg$/, '.01.MZZZZZZZ.jpg');
+  }
+  var fetched = {};
+  function fetchCover(u) {
+    if (!fetched[u]) { var img = new Image(); img.decoding = 'async'; img.src = u; fetched[u] = img; }
+    return fetched[u];
+  }
+  function preload() {
+    if (navigator.connection && navigator.connection.saveData) return;
+    var queue = books.map(function (b) { return small(b.u); }), busy = 0;
+    function done() { busy--; next(); }
+    function next() {
+      while (busy < 4 && queue.length) {
+        var img = fetchCover(queue.shift());
+        if (img.complete) continue;
+        busy++;
+        img.addEventListener('load', done);
+        img.addEventListener('error', done);
+      }
+    }
+    next();
+  }
+  addEventListener('load', function () { setTimeout(preload, 300); });
+
+  // Where a cover fails, or is Amazon's blank for an unknown ISBN, the
+  // spot's colour in the cover's shape stands in.
+  function coverImg(b, u, cls) {
+    var swatch = document.createElement('span');
+    swatch.className = cls ? cls + ' swatch' : 'swatch';
+    swatch.style.setProperty('--k', b.paint);
+    swatch.style.setProperty('--s', b.s);
+    if (b.noCover) return swatch;
+    var art = document.createElement('img');
+    art.className = cls;
+    art.alt = '';
+    art.style.setProperty('--k', b.paint);
+    art.style.setProperty('--s', b.s);
+    art.src = u;
+    art.addEventListener('error', function () { b.noCover = true; if (art.parentNode) art.replaceWith(swatch); });
+    art.addEventListener('load', function () { if (art.naturalWidth < 8) art.dispatchEvent(new Event('error')); });
+    return art;
+  }
+
   var peekEl = document.getElementById('peek');
   function peek(b) {
     peekEl.textContent = '';
-    // The cover is only fetched when a spot is first pointed at. Where it
-    // fails, the spot's colour in the cover's shape stands in.
-    var swatch = document.createElement('span');
-    swatch.className = 'swatch';
-    swatch.style.setProperty('--k', b.paint);
-    swatch.style.setProperty('--s', b.s);
-    var art = swatch;
-    if (!b.noCover) {
-      art = document.createElement('img');
-      art.alt = '';
-      art.src = b.u;
-      art.addEventListener('error', function () { b.noCover = true; if (art.parentNode) art.replaceWith(swatch); });
-      art.addEventListener('load', function () { if (art.naturalWidth < 8) art.dispatchEvent(new Event('error')); });
-    }
+    var art = coverImg(b, small(b.u), '');
     var p = document.createElement('p');
     var t = document.createElement('b');
     t.textContent = b.t;
@@ -1222,12 +1279,18 @@ var books = [
     var x = pointer.x - box.left, y = pointer.y - box.top;
     var reach = REACH * 2 * spotD;
     if (x < -reach || y < -reach || x > box.width + reach || y > box.height + reach) { calm(); light(null); return; }
-    var on = null;
+    var on = spotAt(pointer.x, pointer.y);
+    light(on);
+    field(x, y, on);
+  }
+  // The spot a point is on, judged from where the spots rest.
+  function spotAt(clientX, clientY) {
+    var box = canvas.getBoundingClientRect();
+    var x = clientX - box.left, y = clientY - box.top, on = null;
     books.forEach(function (o) {
       if (o.on && Math.hypot(o.cx - x, o.cy - y) <= spotD / 2) on = o;
     });
-    light(on);
-    field(x, y, on);
+    return on;
   }
   // A press that slides is looking, not choosing: it must not open the card
   // of the spot it started on when it lifts, which with a finger it would,
@@ -1238,6 +1301,9 @@ var books = [
     slid = false;
     pointer = { x: e.clientX, y: e.clientY };
     if (!frame) frame = requestAnimationFrame(track);
+    // A press on a spot is likely to open its card: start on its full cover.
+    var b = spotD && spotAt(e.clientX, e.clientY);
+    if (b && !b.noCover) fetchCover(b.u);
   });
   addEventListener('pointerup', function () { press = null; });
   gallery.addEventListener('pointermove', function (e) {
@@ -1245,11 +1311,15 @@ var books = [
     if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) slid = true;
     if (!frame) frame = requestAnimationFrame(track);
   });
-  gallery.addEventListener('pointerleave', function () {
+  // A finger that starts in the margins and scrolls the page is cancelled by
+  // the browser: let the spots settle rather than hold the lean it began.
+  function letGo() {
     pointer = null;
     calm();
     light(null);
-  });
+  }
+  gallery.addEventListener('pointerleave', letGo);
+  gallery.addEventListener('pointercancel', function () { press = null; letGo(); });
 
   /* ---- card ---- */
 
@@ -1374,23 +1444,15 @@ var books = [
     buy.textContent = '';
     buy.href = buyUrl(b);
     buy.setAttribute('aria-label', 'Buy ' + b.t + ' on Amazon (opens in a new tab)');
-    var swatch = document.createElement('span');
-    swatch.className = 'art swatch';
-    swatch.style.setProperty('--k', b.paint);
-    swatch.style.setProperty('--s', b.s);
-    var art = swatch;
-    if (!b.noCover) {
-      art = document.createElement('img');
-      art.className = 'art';
-      art.alt = '';
-      art.src = b.u;
-      art.addEventListener('error', function () { b.noCover = true; if (art.parentNode) art.replaceWith(swatch); });
-      art.addEventListener('load', function () { if (art.naturalWidth < 8) art.dispatchEvent(new Event('error')); });
+    // The preview's small copy shows at once, and the full cover takes its
+    // place as soon as it is in.
+    var big = b.noCover ? null : fetchCover(b.u);
+    var ready = big && big.complete && big.naturalWidth > 8;
+    var art = coverImg(b, ready ? b.u : small(b.u), 'art');
+    if (big && !ready) {
+      big.addEventListener('load', function () { if (big.naturalWidth > 8 && art.tagName === 'IMG') art.src = b.u; });
     }
-    var where = document.createElement('span');
-    where.textContent = 'Buy on Amazon ↗';
     buy.appendChild(art);
-    buy.appendChild(where);
     document.getElementById('card-title').textContent = b.t;
     document.getElementById('card-by').textContent = b.a;
     document.getElementById('card-read').textContent = b.y === '≤ 2021' ? '2021 or earlier' : b.y;
@@ -1429,12 +1491,25 @@ var books = [
       peek(b);
     });
     a.addEventListener('blur', function () { calm(); unpeek(); });
-    a.addEventListener('click', function () {
-      if (slid) { slid = false; return; }
-      openCard(b);
-    });
     b.el = a;
     canvas.appendChild(a);
+  });
+
+  // A click opens the card of the spot it is on, judged from where the
+  // spots rest, the same test that lights them; not from what the click
+  // landed on. A spot leans away from a pointer coming at it across the gap
+  // and eases back once the pointer is on it, so a quick click just inside
+  // its edge lands where it rests but no longer is. Only where no spot rests
+  // does the target decide: the edge of a grown spot, or a pushed one. From
+  // the keyboard a click has no place and comes from the focused spot.
+  canvas.addEventListener('click', function (e) {
+    if (slid) { slid = false; return; }
+    var b = e.detail ? spotAt(e.clientX, e.clientY) : null;
+    if (!b) {
+      var el = e.target.closest('.spot');
+      books.forEach(function (o) { if (o.el === el) b = o; });
+    }
+    if (b && b.on) openCard(b);
   });
 
   /* ---- layout ----
@@ -1453,6 +1528,10 @@ var books = [
 
   // The foot's row of actions, which the grid is fitted above.
   function footHeight() { return document.getElementById('foot').offsetHeight; }
+
+  // The screen's height, not the window's: see .screen.
+  var screenEl = document.getElementById('screen');
+  function screenH() { return screenEl.offsetHeight || innerHeight; }
 
   // The preview's 52px cover and the gap around it, with room for a top-row
   // spot to grow toward it on hover without touching it.
@@ -1485,11 +1564,12 @@ var books = [
     var lab = footHeight();
     // A pixel short, so fractional sizes can never add up to more than the
     // room and nudge the foot down.
-    var H = innerHeight - top - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - lab - 1;
+    var SH = screenH();
+    var H = SH - top - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - lab - 1;
     // On a phone the bar takes much of the screen, and fitting what is left
     // would leave spots too small to tap. There the painting may run on below
     // the fold, as tall as most of a screen.
-    if (W < 560) H = Math.max(H, innerHeight * 0.66);
+    if (W < 560) H = Math.max(H, SH * 0.66);
 
     document.getElementById('empty').hidden = n > 0;
     if (!n) return;            // an empty canvas keeps the size it had
@@ -1673,8 +1753,13 @@ var books = [
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
   }
 
-  var pending = 0;
+  // A phone's toolbar sliding in or out fires resize with nothing about the
+  // screen changed; only a new width or screen height re-solves the grid.
+  var pending = 0, seen = innerWidth + 'x' + screenH();
   addEventListener('resize', function () {
+    var now = innerWidth + 'x' + screenH();
+    if (now === seen) return;
+    seen = now;
     cancelAnimationFrame(pending);
     pending = requestAnimationFrame(layout);
   });

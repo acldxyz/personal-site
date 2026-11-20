@@ -272,6 +272,19 @@ last row left-aligned and no blank places. The page itself is the canvas.
   is the only link to Amazon.
 - **Opening the filters or the menu never moves a spot.** Both are overlays.
 - **Save image** draws the spots on show, with a one-spot margin, to a PNG.
+- **Fitted to the screen, not the window.** The grid is sized to the screen's
+  height with the browser's bars showing (`100svh`, read from `.screen`), and
+  re-solved only when the width or that height changes. A phone's toolbar
+  sliding away as the page scrolls changes the window's height; sized to that,
+  the grid re-solved mid-scroll.
+- **Clicks are judged from where the spots rest**, as the lighting is, not from
+  the element under the pointer: a spot leans away from a pointer approaching
+  across the gap, so a quick click near its edge would otherwise land on the
+  page.
+- **Covers are fetched ahead.** Most Open Library covers come out of an
+  archive.org zip on each request, about a second apiece, so the preview's
+  small copies (Open Library `-M`, Amazon `MZZZZZZZ`) are preloaded after the
+  page loads, and the card shows the small copy until the full one is in.
 
 #### Adding a book
 
